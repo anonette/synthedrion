@@ -36,16 +36,23 @@ async function main() {
 
   const current = await fetchJson(`${baseUrl}/weekly/current`);
   const archive = await fetchJson(`${baseUrl}/weekly/archive?limit=50&offset=0`);
+  const recent = await fetchJson(`${baseUrl}/sessions/recent?limit=50`);
 
   await mkdir(replayRoot, { recursive: true });
   await writeJson(path.join(outRoot, 'current.json'), current);
   await writeJson(path.join(outRoot, 'archive.json'), archive);
+  await writeJson(path.join(outRoot, 'recent.json'), recent);
 
   const sessionIds = new Set();
   if (current?.session_id) {
     sessionIds.add(current.session_id);
   }
   for (const item of archive?.items || []) {
+    if (item?.session_id) {
+      sessionIds.add(item.session_id);
+    }
+  }
+  for (const item of recent?.sessions || []) {
     if (item?.session_id) {
       sessionIds.add(item.session_id);
     }
@@ -60,6 +67,7 @@ async function main() {
 
   console.log(`[roundtable] wrote current.json`);
   console.log(`[roundtable] wrote archive.json`);
+  console.log(`[roundtable] wrote recent.json`);
   console.log(`[roundtable] wrote ${replayCount} replay file(s)`);
   console.log(`[roundtable] output: ${outRoot}`);
 }

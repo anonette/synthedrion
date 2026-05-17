@@ -255,7 +255,7 @@ async def ensure_replay_audio_assets(session_id: str, events: list[dict]) -> dic
         segments.append(segment_bytes)
         event_entries.append({
             "index": index,
-            "audio_url": f"/sessions/{quote(session_id)}/audio/{audio_file.name}",
+            "audio_url": f"/session-assets/{quote(session_id)}/audio/{audio_file.name}",
             "cached": cached,
         })
 
@@ -289,7 +289,7 @@ async def ensure_replay_audio_assets(session_id: str, events: list[dict]) -> dic
         full_audio_mode = "cached"
 
     return {
-        "full_audio_url": f"/sessions/{quote(session_id)}/audio/{_full_audio_file(session_id).name}" if full_audio_file.exists() else None,
+        "full_audio_url": f"/session-assets/{quote(session_id)}/audio/{_full_audio_file(session_id).name}" if full_audio_file.exists() else None,
         "full_audio_cached": full_cached,
         "full_audio_error": full_audio_error,
         "full_audio_mode": full_audio_mode,

@@ -144,6 +144,7 @@ This writes:
 
 - `public/roundtable-archive/current.json`
 - `public/roundtable-archive/archive.json`
+- `public/roundtable-archive/recent.json`
 - `public/roundtable-archive/replay/<session_id>.json`
 
 To snapshot from a public tunnel instead of localhost:
@@ -154,6 +155,18 @@ node scripts/snapshot-roundtable.mjs
 ```
 
 Lovable can use these files as a read-only fallback when the live backend is unavailable.
+
+Use the endpoints like this:
+
+- `GET /weekly/current` for the featured weekly session
+- `GET /weekly/archive` for the curated weekly archive
+- `GET /sessions/recent` for recent live and weekly sessions
+
+Suggested frontend behavior:
+
+- use `weekly/current` for the main hero session
+- use `weekly/archive` for official previous weeks
+- use `sessions/recent` for ad hoc live sessions that should appear quickly without being promoted into the weekly archive
 
 ## Refreshing The Knowledge Base
 

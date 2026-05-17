@@ -16,7 +16,7 @@ from .audio import ensure_replay_audio_assets
 from .config import ACTOR_MODELS
 from .images import generate_actor_image, image_model_config
 from .llm import generate_openrouter_propaganda_turn, generate_openrouter_turn, openrouter_enabled
-from .auth import verify_token, optional_token, require_roundtable_operator
+from .auth import verify_token, require_roundtable_operator
 from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key
 from .scheduler import run_scheduled_session, run_test_session
 from .models import (
@@ -63,7 +63,7 @@ STATIC_ROOT = Path(__file__).resolve().parent / "static"
 SESSIONS_DIR = Path(__file__).resolve().parent.parent / "sessions"
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
-app.mount("/sessions", StaticFiles(directory=SESSIONS_DIR), name="sessions-files")
+app.mount("/session-assets", StaticFiles(directory=SESSIONS_DIR), name="session-assets")
 
 
 def _persist_session_state(state: SessionState) -> None:
@@ -456,10 +456,9 @@ def wiki_proposals(session_id: str) -> dict:
 @app.get("/sessions/recent")
 def get_recent_sessions_list(
     limit: int = 10,
-    token: str | None = Depends(optional_token),
     db: DBSession = Depends(get_db)
 ) -> dict:
-    """Get list of recent sessions."""
+    """Get public list of recent sessions, including live and weekly runs."""
     sessions = get_recent_sessions(db, limit=limit)
     return {
         "sessions": sessions,

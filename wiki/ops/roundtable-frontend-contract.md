@@ -14,6 +14,7 @@ Public GET endpoints:
 - `GET /weekly/current`
 - `GET /weekly/archive`
 - `GET /weekly/{week_key}`
+- `GET /sessions/recent`
 - `GET /session/{session_id}`
 - `GET /api/replay/{session_id}`
 
@@ -49,6 +50,27 @@ Full replay payload:
 
 - `GET /api/replay/{session_id}`
 
+## Frontend Content Split
+
+Lovable should treat the public read models as three distinct feeds:
+
+1. Featured weekly session
+- source: `GET /weekly/current`
+- use for the hero / default weekly card
+
+2. Curated weekly archive
+- source: `GET /weekly/archive?limit=12&offset=0`
+- use for the official prior weekly roundtables
+
+3. Recent live sessions
+- source: `GET /sessions/recent?limit=50`
+- use for ad hoc live debates, propaganda sessions, and recent operator-run sessions
+
+Important:
+- `weekly/current` should not be inferred from recent sessions
+- `weekly/archive` should not be used as a substitute for recent live sessions
+- new live sessions will usually appear in `sessions/recent`, not in `weekly/archive`, unless they are explicitly promoted to weekly
+
 ## Live Session Start Contract
 
 To avoid an empty chamber state, Lovable should start sessions with:
@@ -75,7 +97,15 @@ Output:
 
 - `public/roundtable-archive/current.json`
 - `public/roundtable-archive/archive.json`
+- `public/roundtable-archive/recent.json`
 - `public/roundtable-archive/replay/<session_id>.json`
+
+Frontend fallback mapping:
+
+- `GET /weekly/current` -> `/roundtable-archive/current.json`
+- `GET /weekly/archive` -> `/roundtable-archive/archive.json`
+- `GET /sessions/recent` -> `/roundtable-archive/recent.json`
+- `GET /api/replay/{session_id}` -> `/roundtable-archive/replay/{session_id}.json`
 
 Frontend fallback strategy:
 
