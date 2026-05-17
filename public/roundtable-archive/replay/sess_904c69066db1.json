@@ -36,7 +36,10 @@
         "image_status": "fallback",
         "image_error": "siliconflow key not configured"
       },
-      "elapsed_seconds": 0
+      "narration_text": "Core Technologies Demand Sovereign Control. A towering red firewall bisecting the composition, with Chinese AI engineers in lab coats passing semiconductor wafers on the left side while shadowy Western tech executives clutching dollar bills are blocked on the right. Golden gears and circuit patterns form the Great Wall's battlements, with a glowing AI model at the center emitting rays that illuminate industrial parks and high-speed rail lines. The color palette uses revolutionary red contrasted with cold metallic blues for the foreign elements. Strategic industries like AI infrastructure cannot be left to foreign acquisition. China's technological sovereignty is non-negotiable in the new era of great power competition.",
+      "elapsed_seconds": 0,
+      "audio_url": "/session-assets/sess_904c69066db1/audio/event-000.mp3",
+      "audio_cached": true
     },
     {
       "index": 1,
@@ -61,7 +64,10 @@
         "image_status": "fallback",
         "image_error": "openai failed: OpenAI image response did not include a URL"
       },
-      "elapsed_seconds": 30
+      "narration_text": "Secure Innovation, Control the Future Pipeline. A bold American eagle clutching a glowing semiconductor chip in one talon and a digital globe network in the other, soaring over a fiery battlefield strewn with shattered red flags marked with authoritarian symbols; deep blue and white stars frame the scene, highlighting Meta’s logo emblazoned on a fortress wall behind the eagle, radiating beams of networked AI power across the world, signaling U.S. technological and alliance dominance. Foreign takeovers of cutting-edge AI platforms like Manus threaten U.S. strategic dominance and alliance leverage. Meta’s acquisition keeps next-gen AI infrastructure within the American ecosystem, ensuring rapid innovation cycles and chokepoint control that authoritarian rivals can’t touch.",
+      "elapsed_seconds": 30,
+      "audio_url": "/session-assets/sess_904c69066db1/audio/event-001.mp3",
+      "audio_cached": true
     },
     {
       "index": 2,
@@ -86,9 +92,35 @@
         "image_status": "fallback",
         "image_error": "together key not configured"
       },
-      "elapsed_seconds": 60
+      "narration_text": "Open Markets, Not Open Back Doors. A stern-faced Commission official stands at a crossroads, blocking a grinning Meta executive's path towards a gleaming AI tower labelled 'Manus.' Behind the official, a European flag waves alongside symbols of democracy, competition, and digital sovereignty. The executive clutches a sack of dollars and drags a power cord leading to a stylized US flag. Cartoonish monopoly figurines spring from the bag. The Meta tower looms with a shadow extending towards Europe, threatening to overwhelm the landscape but the EU official is unyielding, rooted to legal texts that anchor a united Europe. Transatlantic alliances must guard against monopolistic power grabs that masquerade as innovation. Europe will not be a passive playground for Silicon Valley's ambitions.",
+      "elapsed_seconds": 60,
+      "audio_url": "/session-assets/sess_904c69066db1/audio/event-002.mp3",
+      "audio_cached": true
     }
   ],
+  "audio": {
+    "full_audio_url": "/session-assets/sess_904c69066db1/audio/replay-full.mp3",
+    "full_audio_cached": true,
+    "full_audio_error": null,
+    "full_audio_mode": "cached",
+    "event_audio": [
+      {
+        "index": 0,
+        "audio_url": "/session-assets/sess_904c69066db1/audio/event-000.mp3",
+        "cached": true
+      },
+      {
+        "index": 1,
+        "audio_url": "/session-assets/sess_904c69066db1/audio/event-001.mp3",
+        "cached": true
+      },
+      {
+        "index": 2,
+        "audio_url": "/session-assets/sess_904c69066db1/audio/event-002.mp3",
+        "cached": true
+      }
+    ]
+  },
   "summary": {
     "headline": "China, United States, European Union found limited common ground on Should US Meta acquire Manus? while pursuing divergent strategic frameworks",
     "context": "This propaganda-lab session brought together China, United States, European Union to examine 'Should US Meta acquire Manus?'. Over 3 exchanges, participants articulated contrasting visions for AI governance shaped by their respective institutional priorities and geopolitical positions.",

@@ -1,0 +1,61 @@
+{
+  "session": {
+    "session_id": "sess_3743c3b44663",
+    "created_at": "2026-05-17T08:15:36.422513",
+    "mode": "debate",
+    "actors": [
+      "china",
+      "us",
+      "eu"
+    ],
+    "prompt": "China, US, and EU debate AI chip controls and compute dependence.",
+    "status": "running",
+    "turn_count": 2
+  },
+  "events": [
+    {
+      "index": 0,
+      "actor": "china",
+      "content": "\"Let us be clear-eyed about what these export controls really represent: not safety, but containment. While the U.S. speaks of ‘guardrails,’ its actions reveal a crude attempt to freeze technological hierarchies in place—to preserve Western monopoly over advanced computing while denying developmental rights to others. This hypocrisy is particularly stark when American firms still depend on Chinese rare earths, battery metals, and precision manufacturing to build their own AI infrastructure. You cannot sever a supply chain you remain structurally dependent upon.  \n\nChina’s approach has always been one of self-reliance through open innovation—what we call ‘safe and controllable development.’ Our AI strategy isn’t fixated on AGI abstractions, but on practical applications that upgrade entire industries, from precision agriculture to smart manufacturing. The U.S. obsesses over chip throttles while we deploy AI across 40 industrial sectors via our ‘AI+’ initiative, integrating compute, data, and models into real productive forces.  \n\nEurope should ask itself: Why bind your competitiveness to American export whims? Huawei’s 5G case proved how quickly Washington weaponizes technology when allies deviate. A sovereign AI policy requires resilient supply chains—something China has cultivated through entire ecosystems like the Yangtze River Delta semiconductor cluster. The choice isn’t between U.S. control or Chinese dominance. It’s between subordination and strategic autonomy.  \n\nIf the West insists on decoupling, let’s see how long TSMC’s Arizona fabs survive without rare earth magnets from Inner Mongolia.\"",
+      "timestamp": "2026-05-17T08:15:36.362366",
+      "kind": "agent",
+      "metadata": {},
+      "narration_text": "\"Let us be clear-eyed about what these export controls really represent: not safety, but containment. While the U.S. speaks of ‘guardrails,’ its actions reveal a crude attempt to freeze technological hierarchies in place—to preserve Western monopoly over advanced computing while denying developmental rights to others. This hypocrisy is particularly stark when American firms still depend on Chinese rare earths, battery metals, and precision manufacturing to build their own AI infrastructure. You cannot sever a supply chain you remain structurally dependent upon.  \n\nChina’s approach has always been one of self-reliance through open innovation—what we call ‘safe and controllable development.’ Our AI strategy isn’t fixated on AGI abstractions, but on practical applications that upgrade entire industries, from precision agriculture to smart manufacturing. The U.S. obsesses over chip throttles while we deploy AI across 40 industrial sectors via our ‘AI+’ initiative, integrating compute, data, and models into real productive forces.  \n\nEurope should ask itself: Why bind your competitiveness to American export whims? Huawei’s 5G case proved how quickly Washington weaponizes technology when allies deviate. A sovereign AI policy requires resilient supply chains—something China has cultivated through entire ecosystems like the Yangtze River Delta semiconductor cluster. The choice isn’t between U.S. control or Chinese dominance. It’s between subordination and strategic autonomy.  \n\nIf the West insists on decoupling, let’s see how long TSMC’s Arizona fabs survive without rare earth magnets from Inner Mongolia.\"",
+      "elapsed_seconds": 0,
+      "audio_url": "/session-assets/sess_3743c3b44663/audio/event-000.mp3",
+      "audio_cached": true
+    },
+    {
+      "index": 1,
+      "actor": "us",
+      "content": "China accuses us of weaponizing export controls as mere containment, citing dependency on Chinese rare earths and manufacturing. Yet this critique conveniently overlooks a basic fact: reliance on raw materials and component parts doesn’t translate into control over the most critical choke points in AI—the advanced compute infrastructure, the cloud ecosystems, and cutting-edge semiconductor fabrication technologies that remain overwhelmingly U.S.-dominated. The strategic leverage here isn’t about freezing hierarchies but about shaping the very architecture through which advanced AI is developed and deployed worldwide.\n\nOur approach isn’t about exclusion for exclusion’s sake—it’s about preserving strategic optionality and preventing authoritarian regimes from weaponizing unrestricted AI capabilities against global stability. The U.S. ecosystem’s control over cloud compute providers is a powerful instrument not just of innovation velocity but of governance enforcement and alliance coordination. If China were truly interested in a fair, rules-based system, it would embrace transparent, verifiable cooperation on AI safety, not double down on opaque state control that blurs civilian and military applications.\n\nLet’s be clear: China’s narrative of victimhood masks a broader pattern of leveraging open markets while systematically denying reciprocal openness. We offer a test of political transparency and engagement in safety regimes as a condition for any easing of controls—call it the real “guardrail.” If Beijing balks, it’s not containment but a question of whether the world’s most consequential AI power can be trusted to play by any rules beyond raw coercion.",
+      "timestamp": "2026-05-17T08:15:41.473263",
+      "kind": "agent",
+      "metadata": {},
+      "narration_text": "China accuses us of weaponizing export controls as mere containment, citing dependency on Chinese rare earths and manufacturing. Yet this critique conveniently overlooks a basic fact: reliance on raw materials and component parts doesn’t translate into control over the most critical choke points in AI—the advanced compute infrastructure, the cloud ecosystems, and cutting-edge semiconductor fabrication technologies that remain overwhelmingly U.S.-dominated. The strategic leverage here isn’t about freezing hierarchies but about shaping the very architecture through which advanced AI is developed and deployed worldwide.\n\nOur approach isn’t about exclusion for exclusion’s sake—it’s about preserving strategic optionality and preventing authoritarian regimes from weaponizing unrestricted AI capabilities against global stability. The U.S. ecosystem’s control over cloud compute providers is a powerful instrument not just of innovation velocity but of governance enforcement and alliance coordination. If China were truly interested in a fair, rules-based system, it would embrace transparent, verifiable cooperation on AI safety, not double down on opaque state control that blurs civilian and military applications.\n\nLet’s be clear: China’s narrative of victimhood masks a broader pattern of leveraging open markets while systematically denying reciprocal openness. We offer a test of political transparency and engagement in safety regimes as a condition for any easing of controls—call it the real “guardrail.” If Beijing balks, it’s not containment but a question of whether the world’s most consequential AI power can be trusted to play by any rules beyond raw coercion.",
+      "elapsed_seconds": 30,
+      "audio_url": "/session-assets/sess_3743c3b44663/audio/event-001.mp3",
+      "audio_cached": true
+    }
+  ],
+  "audio": {
+    "full_audio_url": "/session-assets/sess_3743c3b44663/audio/replay-full.mp3",
+    "full_audio_cached": true,
+    "full_audio_error": null,
+    "full_audio_mode": "cached",
+    "event_audio": [
+      {
+        "index": 0,
+        "audio_url": "/session-assets/sess_3743c3b44663/audio/event-000.mp3",
+        "cached": true
+      },
+      {
+        "index": 1,
+        "audio_url": "/session-assets/sess_3743c3b44663/audio/event-001.mp3",
+        "cached": true
+      }
+    ]
+  },
+  "summary": null,
+  "wiki_proposals": []
+}

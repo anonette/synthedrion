@@ -1,0 +1,203 @@
+{
+  "sessions": [
+    {
+      "session_id": "sess_9c9d903e3f87",
+      "created_at": "2026-05-17T13:58:56.232519",
+      "completed_at": "2026-05-17T14:05:56.068731",
+      "mode": "propaganda-lab",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "When governments invest in AI infrastructure with private companies, who ends up owning the strategi...",
+      "status": "completed",
+      "turn_count": 3,
+      "has_audio": false,
+      "session_type": "weekly",
+      "week_key": "2026-W20",
+      "week_start": "2026-05-11",
+      "is_featured": true,
+      "title": "When governments invest in AI infrastructure with private companies, who ends up owning the strategic value—the public, the state, or the firms holding the IP and compute stack?",
+      "theme": "propaganda-lab featured session",
+      "summary_headline": "China, United States, European Union found limited common ground on When governments invest in AI infrastructure with private companies while pursuing divergent strategic frameworks"
+    },
+    {
+      "session_id": "sess_2aefd96267dd",
+      "created_at": "2026-05-17T12:28:09.192707",
+      "completed_at": null,
+      "mode": "propaganda-lab",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "China, US, and EU wage a propaganda battle over compute sovereignty.",
+      "status": "running",
+      "turn_count": 1,
+      "has_audio": false,
+      "session_type": "live",
+      "week_key": null,
+      "week_start": null,
+      "is_featured": false,
+      "title": "China, US, and EU wage a propaganda battle over compute sovereignty",
+      "theme": null,
+      "summary_headline": null
+    },
+    {
+      "session_id": "sess_80dd5aaefce2",
+      "created_at": "2026-05-17T12:23:35.998683",
+      "completed_at": null,
+      "mode": "propaganda-lab",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "China, US, and EU wage a propaganda battle over AI sovereignty and platform power.",
+      "status": "running",
+      "turn_count": 1,
+      "has_audio": false,
+      "session_type": "live",
+      "week_key": null,
+      "week_start": null,
+      "is_featured": false,
+      "title": "China, US, and EU wage a propaganda battle over AI sovereignty and platform power",
+      "theme": null,
+      "summary_headline": null
+    },
+    {
+      "session_id": "sess_d9686126a0ff",
+      "created_at": "2026-05-17T11:57:02.479520",
+      "completed_at": "2026-05-17T12:04:31.391832",
+      "mode": "debate",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "When governments invest in AI infrastructure with private companies, who ends up owning the strategi...",
+      "status": "completed",
+      "turn_count": 10,
+      "has_audio": false,
+      "session_type": "live",
+      "week_key": null,
+      "week_start": null,
+      "is_featured": false,
+      "title": "When governments invest in AI infrastructure with private companies, who ends up owning the strategic value—the public, the state, or the firms holding the IP and compute stack?",
+      "theme": null,
+      "summary_headline": "China, United States, European Union found limited common ground on When governments invest in AI infrastructure with private companies while pursuing divergent strategic frameworks"
+    },
+    {
+      "session_id": "sess_3743c3b44663",
+      "created_at": "2026-05-17T08:15:36.422513",
+      "completed_at": null,
+      "mode": "debate",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "China, US, and EU debate AI chip controls and compute dependence.",
+      "status": "running",
+      "turn_count": 2,
+      "has_audio": false,
+      "session_type": "live",
+      "week_key": null,
+      "week_start": null,
+      "is_featured": false,
+      "title": "China, US, and EU debate AI chip controls and compute dependence",
+      "theme": null,
+      "summary_headline": null
+    },
+    {
+      "session_id": "sess_904c69066db1",
+      "created_at": "2026-05-16T15:20:40.087506",
+      "completed_at": "2026-05-16T15:24:13.688775",
+      "mode": "propaganda-lab",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "Should US Meta acquire Manus?",
+      "status": "completed",
+      "turn_count": 3,
+      "has_audio": false,
+      "session_type": "weekly",
+      "week_key": "2026-W20",
+      "week_start": "2026-05-11",
+      "is_featured": false,
+      "title": "Should US Meta acquire Manus?",
+      "theme": "platform acquisition and AI sovereignty",
+      "summary_headline": "China, United States, European Union found limited common ground on Should US Meta acquire Manus? while pursuing divergent strategic frameworks"
+    },
+    {
+      "session_id": "sess_3c4d51c8c045",
+      "created_at": "2026-05-16T14:23:01.270001",
+      "completed_at": null,
+      "mode": "propaganda-lab",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "China, US, and EU wage a propaganda poster battle over compute sovereignty.",
+      "status": "running",
+      "turn_count": 2,
+      "has_audio": false,
+      "session_type": "live",
+      "week_key": null,
+      "week_start": null,
+      "is_featured": false,
+      "title": "China, US, and EU wage a propaganda poster battle over compute sovereignty",
+      "theme": null,
+      "summary_headline": null
+    },
+    {
+      "session_id": "auto_20260516_065925",
+      "created_at": "2026-05-16T06:59:40.119769",
+      "completed_at": "2026-05-16T07:11:36.135736",
+      "mode": "debate",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "China, US, and EU debate the implications of compute sovereignty and cloud dependence for global AI ...",
+      "status": "completed",
+      "turn_count": 18,
+      "has_audio": false,
+      "session_type": "weekly",
+      "week_key": "2026-W20",
+      "week_start": "2026-05-11",
+      "is_featured": false,
+      "title": "China, US, and EU debate the implications of compute sovereignty and cloud dependence for global AI leadership and strategic advantage",
+      "theme": "compute sovereignty and cloud dependence",
+      "summary_headline": "China, United States, European Union found limited common ground on China while pursuing divergent strategic frameworks"
+    },
+    {
+      "session_id": "auto_20260516_065921",
+      "created_at": "2026-05-16T06:59:32.359427",
+      "completed_at": "2026-05-16T06:59:32.370471",
+      "mode": "debate",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "As AGI race dynamics and capability thresholds becomes critical, China, US, and EU balance cooperati...",
+      "status": "completed",
+      "turn_count": 1,
+      "has_audio": false,
+      "session_type": "weekly",
+      "week_key": "2026-W20",
+      "week_start": "2026-05-11",
+      "is_featured": false,
+      "title": "As AGI race dynamics and capability thresholds becomes critical, China, US, and EU balance cooperation and competition",
+      "theme": "AGI race dynamics and capability thresholds",
+      "summary_headline": "China, United States, European Union found limited common ground on As AGI race dynamics and capability thresholds becomes critical while pursuing divergent strategic frameworks"
+    }
+  ],
+  "total": 9
+}

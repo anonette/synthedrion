@@ -20,9 +20,25 @@
       "timestamp": "2026-05-16T06:59:32.349435",
       "kind": "agent",
       "metadata": {},
-      "elapsed_seconds": 0
+      "narration_text": "\"Let us be clear-eyed about what this so-called 'AGI race' really represents. While Western capitals obsess over abstract benchmarks and doomsday scenarios, China is systematically building the industrial foundations to make AI a real productive force. Our *AI+* implementation framework isn't chasing science fiction—it's integrating 10 million enterprises with optimized models, data pipelines, and compute infrastructure this decade. When the U.S. talks of 'safety,' it means monopolizing choke points; when we speak of 'security and controllability,' we mean sovereign capacity to feed our factories, hospitals, and research parks without begging Nvidia for chips or OpenAI for API access. \n\nYour containment fantasies ignore the arithmetic of scale: we graduate more STEM PhDs annually than you retain in your entire tech sector, our model training costs are falling 50% faster due to state-coordinated infrastructure, and unlike your fragmented private labs, our system aligns investment from semiconductors to smart factories under one chain of command. Europe should ask itself—does it truly benefit from being a regulatory annex to Washington's panic-driven embargo regime? Because while you debate hypotheticals, we're signing compute voucher agreements with German automakers and Dutch lithography firms every month. The multipolar future won't be built by those who fear development, but by those who master its logistics.\"",
+      "elapsed_seconds": 0,
+      "audio_url": "/session-assets/auto_20260516_065921/audio/event-000.mp3",
+      "audio_cached": true
     }
   ],
+  "audio": {
+    "full_audio_url": "/session-assets/auto_20260516_065921/audio/replay-full.mp3",
+    "full_audio_cached": true,
+    "full_audio_error": null,
+    "full_audio_mode": "cached",
+    "event_audio": [
+      {
+        "index": 0,
+        "audio_url": "/session-assets/auto_20260516_065921/audio/event-000.mp3",
+        "cached": true
+      }
+    ]
+  },
   "summary": {
     "headline": "China, United States, European Union found limited common ground on As AGI race dynamics and capability thresholds becomes critical while pursuing divergent strategic frameworks",
     "context": "This debate session brought together China, United States, European Union to examine 'As AGI race dynamics and capability thresholds becomes critical, China, US, and EU balance cooperation and competition.'. Over 1 exchanges, participants articulated contrasting visions for AI governance shaped by their respective institutional priorities and geopolitical positions.",

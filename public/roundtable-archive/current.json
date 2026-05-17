@@ -1,14 +1,14 @@
 {
-  "session_id": "sess_904c69066db1",
-  "created_at": "2026-05-16T15:20:40.087506",
-  "completed_at": "2026-05-16T15:24:13.688775",
+  "session_id": "sess_9c9d903e3f87",
+  "created_at": "2026-05-17T13:58:56.232519",
+  "completed_at": "2026-05-17T14:05:56.068731",
   "mode": "propaganda-lab",
   "actors": [
     "china",
     "us",
     "eu"
   ],
-  "prompt": "Should US Meta acquire Manus?",
+  "prompt": "When governments invest in AI infrastructure with private companies, who ends up owning the strategi...",
   "status": "completed",
   "turn_count": 3,
   "has_audio": false,
@@ -16,7 +16,7 @@
   "week_key": "2026-W20",
   "week_start": "2026-05-11",
   "is_featured": true,
-  "title": "Should US Meta acquire Manus?",
-  "theme": "platform acquisition and AI sovereignty",
-  "summary_headline": "China, United States, European Union found limited common ground on Should US Meta acquire Manus? while pursuing divergent strategic frameworks"
+  "title": "When governments invest in AI infrastructure with private companies, who ends up owning the strategic value—the public, the state, or the firms holding the IP and compute stack?",
+  "theme": "propaganda-lab featured session",
+  "summary_headline": "China, United States, European Union found limited common ground on When governments invest in AI infrastructure with private companies while pursuing divergent strategic frameworks"
 }

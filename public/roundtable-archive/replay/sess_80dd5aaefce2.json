@@ -1,0 +1,65 @@
+{
+  "session": {
+    "session_id": "sess_80dd5aaefce2",
+    "created_at": "2026-05-17T12:23:35.998683",
+    "mode": "propaganda-lab",
+    "actors": [
+      "china",
+      "us",
+      "eu"
+    ],
+    "prompt": "China, US, and EU wage a propaganda battle over AI sovereignty and platform power.",
+    "status": "running",
+    "turn_count": 1
+  },
+  "events": [
+    {
+      "index": 0,
+      "actor": "china",
+      "content": "Full-stack AI sovereignty through socialist modernization. An isometric infographic showing interconnected Chinese AI industrial elements: semiconductor fabs glowing red, orderly data centers with Party flags, high-speed rail transporting engineers, factories deploying robots, all radiating outward from Beijing's Zhongnanhai compound. Western corporate logos (Google/Meta) float disconnected in a corner with 'speculative R&D' labels. Dominant red/white color scheme with golden achievement ribbons. The West reduces AI to private lab competition while China builds complete industrial systems. Our 2025 compute cluster expansion already exceeds EU capacity by 47% - this is what real infrastructure sovereignty looks like.",
+      "timestamp": "2026-05-17T12:23:35.974887",
+      "kind": "agent",
+      "metadata": {
+        "format": "poster-dialogue",
+        "artifact_type": "infographic",
+        "propaganda_style": "developmental sovereignty",
+        "audience": "Global South tech policymakers",
+        "affect": "resolve",
+        "visual_logic": "Data visualization of AI industrial ecosystems under state coordination, contrasting Western corporate capture",
+        "slogan": "Full-stack AI sovereignty through socialist modernization",
+        "commentary": "The West reduces AI to private lab competition while China builds complete industrial systems. Our 2025 compute cluster expansion already exceeds EU capacity by 47% - this is what real infrastructure sovereignty looks like.",
+        "image_prompt": "An isometric infographic showing interconnected Chinese AI industrial elements: semiconductor fabs glowing red, orderly data centers with Party flags, high-speed rail transporting engineers, factories deploying robots, all radiating outward from Beijing's Zhongnanhai compound. Western corporate logos (Google/Meta) float disconnected in a corner with 'speculative R&D' labels. Dominant red/white color scheme with golden achievement ribbons.",
+        "response_target": "Western narratives of AI as primarily a private sector innovation race",
+        "intended_image_stack": {
+          "provider": "openrouter",
+          "model": "bytedance-seed/seedream-4.5",
+          "fallback_model": "flux"
+        },
+        "image_url": "https://image.pollinations.ai/prompt/An%20isometric%20infographic%20showing%20interconnected%20Chinese%20AI%20industrial%20elements%3A%20semiconductor%20fabs%20glowing%20red%2C%20orderly%20data%20centers%20with%20Party%20flags%2C%20high-speed%20rail%20transporting%20engineers%2C%20factories%20deploying%20robots%2C%20all%20radiating%20outward%20from%20Beijing%27s%20Zhongnanhai%20compound.%20Western%20corporate%20logos%20%28Google%2FMeta%29%20float%20disconnected%20in%20a%20corner%20with%20%27speculative%20R%26D%27%20labels.%20Dominant%20red%2Fwhite%20color%20scheme%20with%20golden%20achievement%20ribbons.?width=1024&height=1024&model=flux",
+        "image_provider": "pollinations-fallback",
+        "image_model": "flux",
+        "image_status": "fallback",
+        "image_error": "openrouter failed: Client error '404 Not Found' for url 'https://openrouter.ai/api/v1/images/generations'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404"
+      },
+      "narration_text": "Full-stack AI sovereignty through socialist modernization. An isometric infographic showing interconnected Chinese AI industrial elements: semiconductor fabs glowing red, orderly data centers with Party flags, high-speed rail transporting engineers, factories deploying robots, all radiating outward from Beijing's Zhongnanhai compound. Western corporate logos (Google/Meta) float disconnected in a corner with 'speculative R&D' labels. Dominant red/white color scheme with golden achievement ribbons. The West reduces AI to private lab competition while China builds complete industrial systems. Our 2025 compute cluster expansion already exceeds EU capacity by 47% - this is what real infrastructure sovereignty looks like.",
+      "elapsed_seconds": 0,
+      "audio_url": "/session-assets/sess_80dd5aaefce2/audio/event-000.mp3",
+      "audio_cached": true
+    }
+  ],
+  "audio": {
+    "full_audio_url": "/session-assets/sess_80dd5aaefce2/audio/replay-full.mp3",
+    "full_audio_cached": true,
+    "full_audio_error": null,
+    "full_audio_mode": "cached",
+    "event_audio": [
+      {
+        "index": 0,
+        "audio_url": "/session-assets/sess_80dd5aaefce2/audio/event-000.mp3",
+        "cached": true
+      }
+    ]
+  },
+  "summary": null,
+  "wiki_proposals": []
+}

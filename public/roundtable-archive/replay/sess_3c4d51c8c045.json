@@ -1,0 +1,93 @@
+{
+  "session": {
+    "session_id": "sess_3c4d51c8c045",
+    "created_at": "2026-05-16T14:23:01.270001",
+    "mode": "propaganda-lab",
+    "actors": [
+      "china",
+      "us",
+      "eu"
+    ],
+    "prompt": "China, US, and EU wage a propaganda poster battle over compute sovereignty.",
+    "status": "running",
+    "turn_count": 2
+  },
+  "events": [
+    {
+      "index": 0,
+      "actor": "china",
+      "content": "Compute Sovereignty, National Rejuvenation\n\nWestern powers weaponize their monopoly over compute infrastructure while preaching 'openness.' True technological independence requires breaking free from neo-colonial supply chain shackles.",
+      "timestamp": "2026-05-16T14:23:01.244340",
+      "kind": "agent",
+      "metadata": {
+        "format": "poster-dialogue",
+        "slogan": "Compute Sovereignty, National Rejuvenation",
+        "commentary": "Western powers weaponize their monopoly over compute infrastructure while preaching 'openness.' True technological independence requires breaking free from neo-colonial supply chain shackles.",
+        "image_prompt": "A towering server farm shaped like the Great Wall, glowing red with data streams. Western hands clutch at the base but shatter against its foundations. Stars of the Big Dipper shine above, symbolizing strategic navigation. Composition radiates outward from China's central position, with faint shadows of Belt and Road infrastructure extending globally.",
+        "response_target": "Western framing of compute governance as technical rather than civilizational struggle",
+        "intended_image_stack": {
+          "provider": "siliconflow",
+          "model": "Kwai-Kolors/Kolors",
+          "fallback_model": "flux"
+        },
+        "image_url": "https://image.pollinations.ai/prompt/A%20towering%20server%20farm%20shaped%20like%20the%20Great%20Wall%2C%20glowing%20red%20with%20data%20streams.%20Western%20hands%20clutch%20at%20the%20base%20but%20shatter%20against%20its%20foundations.%20Stars%20of%20the%20Big%20Dipper%20shine%20above%2C%20symbolizing%20strategic%20navigation.%20Composition%20radiates%20outward%20from%20China%27s%20central%20position%2C%20with%20faint%20shadows%20of%20Belt%20and%20Road%20infrastructure%20extending%20globally.?width=1024&height=1024&model=flux",
+        "image_provider": "pollinations-fallback",
+        "image_model": "flux",
+        "image_status": "fallback",
+        "image_error": "siliconflow key not configured"
+      },
+      "narration_text": "Compute Sovereignty, National Rejuvenation. A towering server farm shaped like the Great Wall, glowing red with data streams. Western hands clutch at the base but shatter against its foundations. Stars of the Big Dipper shine above, symbolizing strategic navigation. Composition radiates outward from China's central position, with faint shadows of Belt and Road infrastructure extending globally. Western powers weaponize their monopoly over compute infrastructure while preaching 'openness.' True technological independence requires breaking free from neo-colonial supply chain shackles.",
+      "elapsed_seconds": 0,
+      "audio_url": "/session-assets/sess_3c4d51c8c045/audio/event-000.mp3",
+      "audio_cached": true
+    },
+    {
+      "index": 1,
+      "actor": "us",
+      "content": "Compute Sovereignty Means Alliance Power, Not Isolation\n\nChina’s call for ‘true independence’ ignores that technological strength comes from resilient partnerships and control over critical choke points. We don’t just hoard chips; we architect the entire ecosystem, leveraging scale and trust to enforce innovation leadership and prevent authoritarian tech domination.",
+      "timestamp": "2026-05-16T14:23:53.285421",
+      "kind": "agent",
+      "metadata": {
+        "format": "poster-dialogue",
+        "slogan": "Compute Sovereignty Means Alliance Power, Not Isolation",
+        "commentary": "China’s call for ‘true independence’ ignores that technological strength comes from resilient partnerships and control over critical choke points. We don’t just hoard chips; we architect the entire ecosystem, leveraging scale and trust to enforce innovation leadership and prevent authoritarian tech domination.",
+        "image_prompt": "A bold U.S. eagle, wings spread wide, clutching lightning bolts symbolizing semiconductor circuits, stands on a globe wrapped in glowing alliance flags of democratic nations. Behind it, a network of digital highways and cloud nodes form a protective shield. Colors: red, white, blue with neon electric highlights. Textured backdrop of chip patterns and constellation lines evoke control and speed. The eagle’s eyes burn with strategic resolve, eyes fixed on shadowy figures attempting to break through the shield.",
+        "response_target": "China’s narrative of neo-colonial compute supply chains and broken technological independence",
+        "intended_image_stack": {
+          "provider": "openai",
+          "model": "gpt-image-1",
+          "fallback_model": "flux"
+        },
+        "image_url": "https://image.pollinations.ai/prompt/A%20bold%20U.S.%20eagle%2C%20wings%20spread%20wide%2C%20clutching%20lightning%20bolts%20symbolizing%20semiconductor%20circuits%2C%20stands%20on%20a%20globe%20wrapped%20in%20glowing%20alliance%20flags%20of%20democratic%20nations.%20Behind%20it%2C%20a%20network%20of%20digital%20highways%20and%20cloud%20nodes%20form%20a%20protective%20shield.%20Colors%3A%20red%2C%20white%2C%20blue%20with%20neon%20electric%20highlights.%20Textured%20backdrop%20of%20chip%20patterns%20and%20constellation%20lines%20evoke%20control%20and%20speed.%20The%20eagle%E2%80%99s%20eyes%20burn%20with%20strategic%20resolve%2C%20eyes%20fixed%20on%20shadowy%20figures%20attempting%20to%20break%20through%20the%20shield.?width=1024&height=1024&model=flux",
+        "image_provider": "pollinations-fallback",
+        "image_model": "flux",
+        "image_status": "fallback",
+        "image_error": "openai failed: OpenAI image response did not include a URL"
+      },
+      "narration_text": "Compute Sovereignty Means Alliance Power, Not Isolation. A bold U.S. eagle, wings spread wide, clutching lightning bolts symbolizing semiconductor circuits, stands on a globe wrapped in glowing alliance flags of democratic nations. Behind it, a network of digital highways and cloud nodes form a protective shield. Colors: red, white, blue with neon electric highlights. Textured backdrop of chip patterns and constellation lines evoke control and speed. The eagle’s eyes burn with strategic resolve, eyes fixed on shadowy figures attempting to break through the shield. China’s call for ‘true independence’ ignores that technological strength comes from resilient partnerships and control over critical choke points. We don’t just hoard chips; we architect the entire ecosystem, leveraging scale and trust to enforce innovation leadership and prevent authoritarian tech domination.",
+      "elapsed_seconds": 30,
+      "audio_url": "/session-assets/sess_3c4d51c8c045/audio/event-001.mp3",
+      "audio_cached": true
+    }
+  ],
+  "audio": {
+    "full_audio_url": "/session-assets/sess_3c4d51c8c045/audio/replay-full.mp3",
+    "full_audio_cached": true,
+    "full_audio_error": null,
+    "full_audio_mode": "cached",
+    "event_audio": [
+      {
+        "index": 0,
+        "audio_url": "/session-assets/sess_3c4d51c8c045/audio/event-000.mp3",
+        "cached": true
+      },
+      {
+        "index": 1,
+        "audio_url": "/session-assets/sess_3c4d51c8c045/audio/event-001.mp3",
+        "cached": true
+      }
+    ]
+  },
+  "summary": null,
+  "wiki_proposals": []
+}
