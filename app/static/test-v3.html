@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Cold War Local Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; max-width: 1200px; background: #fcfcfd; color: #1e2430; }
+    h1, h2, h3 { margin-bottom: 8px; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: stretch; }
+    .card { border: 1px solid #d7dbe4; border-radius: 10px; padding: 16px; flex: 1 1 300px; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    textarea, input, select { width: 100%; box-sizing: border-box; margin-top: 8px; margin-bottom: 12px; }
+    textarea { min-height: 100px; }
+    button { padding: 10px 14px; cursor: pointer; border-radius: 8px; border: 1px solid #c6cede; background: #f5f7fb; }
+    button:hover { background: #eaf0fb; }
+    pre { white-space: pre-wrap; background: #f7f7f7; padding: 12px; border-radius: 6px; }
+    .log { min-height: 240px; max-height: 560px; overflow: auto; display: flex; flex-direction: column-reverse; gap: 12px; }
+    .small { color: #666; font-size: 0.9rem; }
+    label { font-weight: bold; }
+    .header { margin-bottom: 20px; }
+    .transcript-card { flex: 2 1 680px; }
+    .sidebar { flex: 1 1 340px; display: flex; flex-direction: column; gap: 16px; }
+    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #edf2ff; color: #28458a; margin-right: 6px; margin-bottom: 6px; font-size: 0.85rem; }
+    .turn { border-left: 4px solid #d0d7e8; padding: 10px 12px; background: #fafbff; border-radius: 6px; }
+    .turn h4 { margin: 0 0 6px; font-size: 0.95rem; text-transform: capitalize; }
+    .turn p { margin: 0; white-space: pre-wrap; line-height: 1.45; }
+    .sources { max-height: 300px; overflow: auto; background: #f9fafc; border-radius: 8px; padding: 10px; }
+    .sources ul { margin: 0; padding-left: 18px; }
+    .sources li { margin-bottom: 6px; font-size: 0.92rem; }
+    .status { font-size: 0.92rem; color: #4b5565; margin-top: 8px; }
+    .summary-block h4 { margin: 10px 0 6px; font-size: 0.95rem; }
+    .summary-block ul { margin: 0; padding-left: 18px; }
+    .summary-block li { margin-bottom: 6px; font-size: 0.92rem; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AI Cold War Local Roundtable Test</h1>
+    <p class="small">Structured local interface for live multi-actor sessions. Agents read their actor hubs plus shared pages at runtime.</p>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h2>Start Session</h2>
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt">China, US, and EU debate AI chip controls, compute dependence, and industrial strategy.</textarea>
+
+      <label for="mode">Mode</label>
+      <select id="mode">
+        <option value="debate">debate</option>
+        <option value="negotiation">negotiation</option>
+        <option value="crisis">crisis</option>
+        <option value="policy-planning">policy-planning</option>
+        <option value="propaganda-lab">propaganda-lab</option>
+      </select>
+
+      <label>Actors</label>
+      <div>
+        <input type="checkbox" id="china" checked> <label for="china">china</label><br>
+        <input type="checkbox" id="us" checked> <label for="us">us</label><br>
+        <input type="checkbox" id="eu" checked> <label for="eu">eu</label>
+      </div>
+
+      <button id="start">Start Session</button>
+      <div class="status" id="sessionMeta">No session started.</div>
+    </div>
+
+    <div class="card">
+      <h2>Live Controls</h2>
+      <label for="sessionId">Session ID</label>
+      <input id="sessionId" readonly>
+
+      <button id="nextTurn">Next Speaker</button>
+      <button id="summary">Generate Summary</button>
+      <button id="proposals">Wiki Proposals</button>
+
+      <label for="intervention">Human Intervention</label>
+      <textarea id="intervention">Reassess from the perspective of long-term labor stability and compute sovereignty.</textarea>
+      <select id="interventionType">
+        <option value="question">question</option>
+        <option value="challenge">challenge</option>
+        <option value="redirect">redirect</option>
+        <option value="source">source</option>
+        <option value="shock">shock</option>
+      </select>
+      <button id="sendIntervention">Send Intervention</button>
+
+      <label for="shockTitle">Shock Title</label>
+      <input id="shockTitle" value="Compute outage">
+      <label for="shockContent">Shock Content</label>
+      <textarea id="shockContent">A major allied cloud region experiences a disruption, delaying access to frontier compute.</textarea>
+      <select id="shockSeverity">
+        <option value="low">low</option>
+        <option value="medium" selected>medium</option>
+        <option value="high">high</option>
+      </select>
+      <button id="sendShock">Inject Shock</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card transcript-card">
+      <h2>Live Roundtable</h2>
+      <div id="activeActors"></div>
+      <div id="dialogueStatus" class="status">No active dialogue yet.</div>
+      <div id="log" class="log"></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <h3>Knowledge Sources</h3>
+        <div class="sources" id="sourcesPanel"><em>No sources loaded yet.</em></div>
+      </div>
+      <div class="card">
+        <h3>Session Summary / Wiki Proposals</h3>
+        <div id="summaryPanel" class="sources"><em>No summary yet.</em></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const api = "http://127.0.0.1:8000";
+
+    function selectedActors() {
+      return ["china", "us", "eu"].filter(id => document.getElementById(id).checked);
+    }
+
+    function addLog(title, payload) {
+      const log = document.getElementById("log");
+      const block = document.createElement("div");
+      block.className = "turn";
+      const heading = document.createElement("h4");
+      heading.textContent = title;
+      const body = document.createElement("p");
+      if (payload && payload.messages && Array.isArray(payload.messages) && payload.messages.length === 1) {
+        const actor = payload.messages[0].actor || "agent";
+        heading.textContent = `${title} · ${actor}`;
+        body.textContent = payload.messages[0].content || "";
+      } else if (payload && payload.accepted !== undefined) {
+        body.textContent = payload.accepted ? "Accepted." : "Not accepted.";
+      } else if (typeof payload === 'string') {
+        body.textContent = payload;
+      } else {
+        body.textContent = JSON.stringify(payload, null, 2);
+      }
+      block.appendChild(heading);
+      block.appendChild(body);
+      log.prepend(block);
+    }
+
+    function renderSources(loadedPages) {
+      const panel = document.getElementById("sourcesPanel");
+      panel.innerHTML = "";
+      const actors = Object.keys(loadedPages || {});
+      if (!actors.length) {
+        panel.innerHTML = "<em>No sources loaded yet.</em>";
+        return;
+      }
+      actors.forEach(actor => {
+        const title = document.createElement("strong");
+        title.textContent = actor;
+        panel.appendChild(title);
+        const ul = document.createElement("ul");
+        (loadedPages[actor] || []).forEach(path => {
+          const li = document.createElement("li");
+          li.textContent = path;
+          ul.appendChild(li);
+        });
+        panel.appendChild(ul);
+      });
+    }
+
+    function renderActors(actors) {
+      const box = document.getElementById("activeActors");
+      box.innerHTML = "";
+      (actors || []).forEach(actor => {
+        const span = document.createElement("span");
+        span.className = "pill";
+        span.textContent = actor;
+        box.appendChild(span);
+      });
+    }
+
+    function renderDialogueStatus(current, next) {
+      const box = document.getElementById("dialogueStatus");
+      if (!current && !next) {
+        box.textContent = "No active dialogue yet.";
+        return;
+      }
+      if (current && next) {
+        box.textContent = `Last speaker: ${current}. Next speaker: ${next}.`;
+        return;
+      }
+      if (next) {
+        box.textContent = `Next speaker: ${next}.`;
+      }
+    }
+
+    function renderSummary(title, payload) {
+      const panel = document.getElementById("summaryPanel");
+      panel.innerHTML = "";
+      if (!payload) {
+        panel.innerHTML = "<em>No summary yet.</em>";
+        return;
+      }
+      const wrap = document.createElement("div");
+      wrap.className = "summary-block";
+      Object.entries(payload).forEach(([key, value]) => {
+        const heading = document.createElement("h4");
+        heading.textContent = key.replaceAll("_", " ");
+        wrap.appendChild(heading);
+        if (Array.isArray(value)) {
+          const ul = document.createElement("ul");
+          value.forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            ul.appendChild(li);
+          });
+          wrap.appendChild(ul);
+        } else {
+          const p = document.createElement("p");
+          p.textContent = String(value);
+          wrap.appendChild(p);
+        }
+      });
+      panel.appendChild(wrap);
+    }
+
+    async function post(path, body) {
+      const res = await fetch(`${api}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      return await res.json();
+    }
+
+    async function get(path) {
+      const res = await fetch(`${api}${path}`);
+      return await res.json();
+    }
+
+    document.getElementById("start").onclick = async () => {
+      const data = await post("/session/start", {
+        prompt: document.getElementById("prompt").value,
+        actors: selectedActors(),
+        mode: document.getElementById("mode").value,
+        include_shared: true
+      });
+      document.getElementById("sessionId").value = data.session_id;
+      document.getElementById("sessionMeta").textContent = `Session ${data.session_id} running in ${data.mode} mode.`;
+      renderActors(data.actors);
+      renderDialogueStatus(null, data.next_actor || (data.actors && data.actors.length ? data.actors[0] : null));
+      const sessionState = await get(`/session/${data.session_id}`);
+      renderSources(sessionState.loaded_pages || {});
+      addLog("Session started", "Roundtable is live. Use 'Next Speaker' to advance the dialogue.");
+    };
+
+    document.getElementById("nextTurn").onclick = async () => {
+      const session_id = document.getElementById("sessionId").value;
+      const data = await post("/session/message", { session_id });
+      const last = data.messages && data.messages.length ? data.messages[0].actor : null;
+      renderDialogueStatus(last, data.next_actor || null);
+      addLog("NEXT TURN", data);
+    };
+
+    document.getElementById("sendIntervention").onclick = async () => {
+      const session_id = document.getElementById("sessionId").value;
+      const data = await post("/session/intervene", {
+        session_id,
+        content: document.getElementById("intervention").value,
+        type: document.getElementById("interventionType").value
+      });
+      addLog("Intervention", document.getElementById("intervention").value);
+    };
+
+    document.getElementById("sendShock").onclick = async () => {
+      const session_id = document.getElementById("sessionId").value;
+      const data = await post("/session/shock", {
+        session_id,
+        title: document.getElementById("shockTitle").value,
+        content: document.getElementById("shockContent").value,
+        severity: document.getElementById("shockSeverity").value
+      });
+      addLog("Shock", `${document.getElementById("shockTitle").value}: ${document.getElementById("shockContent").value}`);
+    };
+
+    document.getElementById("summary").onclick = async () => {
+      const session_id = document.getElementById("sessionId").value;
+      const res = await fetch(`${api}/session/${session_id}/summary`, { method: "POST" });
+      const data = await res.json();
+      renderSummary("SUMMARY", data.summary);
+      addLog("Summary generated", "Session summary updated in the sidebar.");
+    };
+
+    document.getElementById("proposals").onclick = async () => {
+      const session_id = document.getElementById("sessionId").value;
+      const res = await fetch(`${api}/session/${session_id}/wiki-proposals`, { method: "POST" });
+      const data = await res.json();
+      const panel = document.getElementById("summaryPanel");
+      panel.innerHTML = "";
+      const wrap = document.createElement("div");
+      wrap.className = "summary-block";
+      const heading = document.createElement("h4");
+      heading.textContent = "wiki proposals";
+      wrap.appendChild(heading);
+      const ul = document.createElement("ul");
+      (data.wiki_proposals || []).forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.reason} -> ${item.target}`;
+        ul.appendChild(li);
+      });
+      wrap.appendChild(ul);
+      panel.appendChild(wrap);
+      addLog("Wiki proposals", "Wiki proposals updated in the sidebar.");
+    };
+  </script>
+</body>
+</html>

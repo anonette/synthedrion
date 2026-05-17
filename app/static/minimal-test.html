@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <title>Minimal Test</title>
+  <style>
+    .bubble {
+      border: 2px solid blue;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 10px;
+      background: #f0f0ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>Minimal Bubble Test</h1>
+  <button onclick="testBubble()">Add Test Bubble</button>
+  <div id="log" style="border: 1px solid #ccc; min-height: 200px; padding: 10px;"></div>
+  
+  <script>
+    function testBubble() {
+      console.log('testBubble called');
+      const log = document.getElementById('log');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = 'Test bubble content at ' + new Date().toLocaleTimeString();
+      log.appendChild(bubble);
+    }
+    
+    // Add one bubble on load
+    window.onload = function() {
+      console.log('Page loaded');
+      testBubble();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Cold War Debug Test</title>
+</head>
+<body>
+  <h1>Debug Test</h1>
+  <button id="testBubble">Test Bubble Function</button>
+  <div id="log" style="border: 1px solid black; min-height: 100px; padding: 10px;"></div>
+  
+  <script>
+    function addBubble({ actor, kind, text, timestamp }) {
+      const log = document.getElementById("log");
+      const div = document.createElement("div");
+      div.textContent = `BUBBLE: ${actor} - ${text}`;
+      div.style.border = "1px solid blue";
+      div.style.padding = "5px";
+      div.style.margin = "5px";
+      log.appendChild(div);
+    }
+    
+    document.getElementById("testBubble").onclick = () => {
+      addBubble({
+        actor: "china",
+        kind: "agent",
+        text: "Test message",
+        timestamp: new Date().toISOString()
+      });
+    };
+    
+    // Test immediately
+    addBubble({
+      actor: "test",
+      kind: "test",
+      text: "Page loaded successfully",
+      timestamp: new Date().toISOString()
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+name: Weekly AI Cold War Session
+
+on:
+  schedule:
+    # Every Monday at 2 PM UTC (9 AM EST / 6 AM PST)
+    - cron: '0 14 * * 1'
+  workflow_dispatch:  # Allow manual triggers
+
+jobs:
+  run-session:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Trigger Scheduled Session
+      run: |
+        response=$(curl -X POST ${{ secrets.API_URL }}/session/scheduled/sync \
+          -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          --fail \
+          --show-error)
+        
+        echo "Session completed:"
+        echo "$response" | jq .
+        
+        # Extract session ID for notification
+        session_id=$(echo "$response" | jq -r .session_id)
+        echo "SESSION_ID=$session_id" >> $GITHUB_ENV
+    
+    - name: Notify Success
+      if: success()
+      run: |
+        echo "✅ Weekly AI Cold War session completed successfully!"
+        echo "Session ID: ${{ env.SESSION_ID }}"
+        echo "View at: ${{ secrets.API_URL }}/replay/${{ env.SESSION_ID }}"
+    
+    - name: Notify Failure
+      if: failure()
+      run: |
+        echo "❌ Weekly AI Cold War session failed!"
+        echo "Check logs for details."
