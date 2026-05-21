@@ -32,6 +32,9 @@ sessions/*/
 # Audio artifacts if generated elsewhere
 *.mp3
 
+# Source office documents that should be converted to markdown first
+*.docx
+
 # Frontend/build noise
 node_modules/
 dist/

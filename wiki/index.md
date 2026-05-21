@@ -39,6 +39,7 @@ Cross-actor pages that China, U.S., and EU agents can all read when a source bea
 | [RAND AI Perspectives Bundle: Pages 2-7](shared-ai-geopolitics/rand-ai-perspectives-bundle-pages-2-7.md) | Compiles the remaining accessible RAND AI perspectives into a shared source bundle for later actor-specific expansion. | 2026-05-11 |
 | [AI Chip Control, Cloud Leverage, and U.S.-China Compute](shared-ai-geopolitics/ai-chip-control-cloud-leverage-and-us-china-compute.md) | Adds the compute-access governance layer: cloud rental, chip leverage, controllability, and market shaping across U.S.-China rivalry. | 2026-05-11 |
 | [RAND Source Hub](shared-ai-geopolitics/rand-source-hub.md) | Marks `raw/rand/` as a first-class source area for compute governance, AI rivalry, and actor-specific expansion. | 2026-05-11 |
+| [Gulf Capital, Petrodollars, and AI Infrastructure](shared-ai-geopolitics/gulf-capital-petrodollars-and-ai-infrastructure.md) | Adds the Gulf finance and energy layer: petrodollar-era capital, sovereign wealth, data-center buildout, and AI infrastructure alignment across China, U.S., and EU. | 2026-05-21 |
 
 ## geopolitics
 
@@ -79,7 +80,7 @@ Actor-specific entry points for a U.S. AI agent, currently anchored in shared RA
 | Article | Summary | Updated |
 |---------|---------|---------|
 | [U.S. AI Knowledge Base Hub](us-ai-policy/us-ai-knowledge-base-hub.md) | Entry page for the U.S.-specific knowledge base, linking current shared sources that already encode a strong U.S. strategic frame. | 2026-05-11 |
-| [U.S. AI Strategic Interests](us-ai-policy/us-ai-strategic-interests.md) | Distills the current U.S.-leaning corpus into advantage, resilience, leverage, and guarded-engagement goals. | 2026-05-11 |
+| [U.S. AI Strategic Interests](us-ai-policy/us-ai-strategic-interests.md) | Distills the current U.S.-leaning corpus into advantage, resilience, leverage, guarded engagement, and the need to keep infrastructure finance aligned with U.S. compute power. | 2026-05-21 |
 | [U.S. AI Simulation Profile](us-ai-policy/us-ai-simulation-profile.md) | Provides a simulation-ready U.S. actor profile grounded in rivalry, resilience, compute leverage, and selective cooperation. | 2026-05-11 |
 | [U.S. Compute Strategy and Global AI Leadership](us-ai-policy/us-compute-strategy-and-global-ai-leadership.md) | Builds the U.S. compute doctrine around export control, cloud leverage, provider governance, and proactive AI diplomacy. | 2026-05-11 |
 | [Japan as a U.S. AI Partner](us-ai-policy/japan-as-a-us-ai-partner.md) | Shows why Japan matters to U.S. AI competition with China across inputs, infrastructure, standards, market control, and regional networks. | 2026-05-11 |
@@ -92,7 +93,7 @@ Actor-specific entry points for a future EU AI agent, linked to shared pages now
 | Article | Summary | Updated |
 |---------|---------|---------|
 | [EU AI Knowledge Base Hub](eu-ai-policy/eu-ai-knowledge-base-hub.md) | Entry page for the EU-specific knowledge base, currently connecting the EU agent to shared governance and rivalry pages while EU-specific corpus grows. | 2026-05-11 |
-| [EU AI Strategic Interests](eu-ai-policy/eu-ai-strategic-interests.md) | Provides a source-backed EU strategic frame around standards, digital sovereignty, compute capacity, and multilateral governance. | 2026-05-11 |
+| [EU AI Strategic Interests](eu-ai-policy/eu-ai-strategic-interests.md) | Provides a source-backed EU strategic frame around standards, digital sovereignty, compute capacity, multilateral governance, and the financing constraints behind sovereignty. | 2026-05-21 |
 | [EU AI Governance Style](eu-ai-policy/eu-ai-governance-style.md) | Adds a source-backed EU governance framing around standards, institutional quality, evaluation, compute planning, and digital sovereignty. | 2026-05-11 |
 | [EU AI Policy Instruments](eu-ai-policy/eu-ai-policy-instruments.md) | Describes the EU-leaning toolkit as standards, evaluation, task forces, cloud planning, and market-shaping regulation. | 2026-05-11 |
 | [EU AI Simulation Profile](eu-ai-policy/eu-ai-simulation-profile.md) | Provides a source-backed EU actor profile centered on standards, governance legitimacy, and infrastructure-backed autonomy. | 2026-05-11 |

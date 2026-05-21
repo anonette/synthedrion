@@ -76,3 +76,9 @@
 
 ## [2026-05-11] ingest | U.S. Compute Strategy and Japan Partnership
 - Updated: U.S. AI Simulation Profile
+
+## [2026-05-21] ingest | Gulf Capital, Petrodollars, and AI Infrastructure
+- Updated: Shared AI Geopolitics and Governance
+- Updated: AI Governance, Evaluation, Resilience, and Open Models
+- Updated: U.S. AI Strategic Interests
+- Updated: EU AI Strategic Interests

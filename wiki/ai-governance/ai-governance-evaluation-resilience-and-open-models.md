@@ -1,8 +1,8 @@
 # AI Governance, Evaluation, Resilience, and Open Models
 
-> Sources: RAND, 2026-05-04; RAND, 2026-04-16; RAND, 2026-03-25; RAND, 2026-03-09; RAND, 2026-02-10; RAND, 2026-02-05
-> Raw: [Open-Weight AI Models Require Proportional Evaluation Approaches](../../raw/articles/2026-05-04-rand-open-weight-ai-models-require-proportional-evaluation-approaches.md); [AI Implications for Chemical, Biological, Radiological, and Nuclear Defense Policy and Programs](../../raw/articles/2026-04-16-rand-ai-implications-for-cbrn-defense.md); [Toward a Grand Strategy for AI Resilience](../../raw/articles/2026-03-25-rand-toward-a-grand-strategy-for-ai-resilience.md); [Finding Common Ground in AGI Strategy Debates](../../raw/articles/2026-03-09-rand-finding-common-ground-in-agi-strategy-debates.md); [Measuring Biological Capabilities and Risks of AI Agents](../../raw/articles/2026-02-10-rand-measuring-biological-capabilities-and-risks-of-ai-agents.md); [Governing the Unknown](../../raw/articles/2026-02-05-rand-governing-the-unknown-managing-polycrises-and-catastrophic-risk.md)
-> Updated: 2026-05-11
+> Sources: RAND, 2026-05-04; RAND, 2026-04-16; RAND, 2026-03-25; RAND, 2026-03-09; RAND, 2026-02-10; RAND, 2026-02-05; Startup Fortune, 2026-05-19
+> Raw: [Open-Weight AI Models Require Proportional Evaluation Approaches](../../raw/articles/2026-05-04-rand-open-weight-ai-models-require-proportional-evaluation-approaches.md); [AI Implications for Chemical, Biological, Radiological, and Nuclear Defense Policy and Programs](../../raw/articles/2026-04-16-rand-ai-implications-for-cbrn-defense.md); [Toward a Grand Strategy for AI Resilience](../../raw/articles/2026-03-25-rand-toward-a-grand-strategy-for-ai-resilience.md); [Finding Common Ground in AGI Strategy Debates](../../raw/articles/2026-03-09-rand-finding-common-ground-in-agi-strategy-debates.md); [Measuring Biological Capabilities and Risks of AI Agents](../../raw/articles/2026-02-10-rand-measuring-biological-capabilities-and-risks-of-ai-agents.md); [Governing the Unknown](../../raw/articles/2026-02-05-rand-governing-the-unknown-managing-polycrises-and-catastrophic-risk.md); [Alibaba's Qwen 3.7 Push Shows Open AI Is Still Moving Fast](../../raw/articles/2026-05-21-alibaba-s-qwen-3-7-push-shows-open-ai-is-still-moving-fast.md)
+> Updated: 2026-05-21
 
 ## Overview
 
@@ -27,6 +27,12 @@ This adds a different vocabulary to the wiki than pure competition or control. R
 ## Domain-Specific Risk Still Matters
 
 The CBRN and biological-agent papers emphasize that AI governance cannot remain purely abstract. Risks emerge differently across biological, military, and open-model contexts, and policy needs domain-specific methods. This matches the China corpus, which increasingly uses sector-specific and context-specific governance rather than only universal principles.
+
+## Open-Model Competition Is Staying Fast and Commercially Strategic
+
+The newer Qwen reporting does not add a carefully reasoned governance theory, but it does reinforce an empirical point the earlier RAND material anticipated: open-weight competition is not slowing into a stable equilibrium. It is accelerating through rapid preview releases, benchmark signaling, local inference appeal, and export-control-aware positioning.
+
+That matters because it makes open models harder to treat as a static policy category. Governance debates about proportional evaluation, licensing, and safety are now unfolding in a market where major actors can use open-weight releases as speed signals, ecosystem builders, and geopolitical influence moves.
 
 ## See Also
 

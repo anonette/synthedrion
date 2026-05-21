@@ -17,6 +17,8 @@ IGNORED_SUFFIXES = {".tmp", ".bak"}
 
 def target_bucket(path: Path) -> str:
     raw_parts = set(path.parts)
+    if "focus-issues" in raw_parts:
+        return "Focused weekly issue"
     if "china-ai-policy" in raw_parts or "reg-documents" in raw_parts:
         return "China / policy-state material"
     if "us-ai-policy" in raw_parts:
@@ -34,6 +36,8 @@ def target_bucket(path: Path) -> str:
 
 def bucket_hint(path: Path) -> str:
     raw_parts = set(path.parts)
+    if "focus-issues" in raw_parts:
+        return "Special weekly focus issue. Review how this theme should influence shared pages and any actor-specific pages it cuts across."
     if "reg-documents" in raw_parts:
         return "Likely update actor policy pages and governance/instruments pages."
     if "articles" in raw_parts:
@@ -54,6 +58,8 @@ def should_ignore(path: Path) -> bool:
     if name in IGNORED_FILENAMES:
         return True
     if path.suffix.lower() in IGNORED_SUFFIXES:
+        return True
+    if path.suffix.lower() == ".docx":
         return True
     return False
 
@@ -133,6 +139,11 @@ def main() -> None:
     for path in files:
         grouped.setdefault(target_bucket(path), []).append(path)
 
+    ordered_buckets = []
+    if "Focused weekly issue" in grouped:
+        ordered_buckets.append("Focused weekly issue")
+    ordered_buckets.extend(bucket for bucket in grouped.keys() if bucket != "Focused weekly issue")
+
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     lines: list[str] = []
@@ -147,7 +158,23 @@ def main() -> None:
     else:
         lines.append("## New Raw Files")
         lines.append("")
-        for bucket, bucket_files in grouped.items():
+        if "Focused weekly issue" in grouped:
+            lines.append("## Weekly Focus Priority")
+            lines.append("")
+            lines.append("Review these files first. They represent the explicit issue or aspect prioritized for the current round.")
+            lines.append("")
+            for path in grouped["Focused weekly issue"]:
+                rel = path.relative_to(PROJECT_ROOT).as_posix()
+                modified = datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+                lines.append(f"- `{rel}`")
+                lines.append(f"  Modified: {modified}")
+                lines.append(f"  Hint: {bucket_hint(path)}")
+                lines.append("")
+
+        lines.append("## Grouped Raw Files")
+        lines.append("")
+        for bucket in ordered_buckets:
+            bucket_files = grouped[bucket]
             lines.append(f"### {bucket}")
             lines.append("")
             for path in bucket_files:
