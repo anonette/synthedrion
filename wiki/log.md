@@ -82,3 +82,7 @@
 - Updated: AI Governance, Evaluation, Resilience, and Open Models
 - Updated: U.S. AI Strategic Interests
 - Updated: EU AI Strategic Interests
+
+## [2026-05-21] ingest | Open Models and Gulf Capital Expansion
+- Updated: U.S. AI Knowledge Base Hub
+- Updated: EU AI Knowledge Base Hub

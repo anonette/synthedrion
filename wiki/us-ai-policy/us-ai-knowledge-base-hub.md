@@ -2,7 +2,7 @@
 
 > Sources: RAND, 2026-05-04; RAND, 2026-04-29; RAND, 2026-04-27; RAND, 2026-04-16; RAND, 2026-03-26; RAND, 2026-03-25; RAND, 2026-03-09; RAND, 2026-01-26
 > Raw: See linked pages
-> Updated: 2026-05-11
+> Updated: 2026-05-21
 
 ## Overview
 
@@ -18,6 +18,9 @@ This is the entry page for a U.S.-specific agent knowledge base. At the moment, 
 - [AI Governance, Evaluation, Resilience, and Open Models](../ai-governance/ai-governance-evaluation-resilience-and-open-models.md)
 - [AI Chip Control, Cloud Leverage, and U.S.-China Compute](../shared-ai-geopolitics/ai-chip-control-cloud-leverage-and-us-china-compute.md)
 - [U.S. Engagement with China on AI Safety Without Diffusing Technology](us-ai-engagement-with-china-on-ai-safety.md)
+- [U.S. Gulf Capital and AI Infrastructure Strategy](us-gulf-capital-and-ai-infrastructure-strategy.md)
+- [Open-Model Competition and Ecosystem Speed](../shared-ai-geopolitics/open-model-competition-and-ecosystem-speed.md)
+- [Gulf Sovereign Wealth and Compute Diplomacy](../shared-ai-geopolitics/gulf-sovereign-wealth-and-compute-diplomacy.md)
 
 ## Shared Pages the U.S. Agent Should Also Read
 

@@ -22,6 +22,8 @@ This page is the shared layer for actor-specific agents. China, U.S., and EU age
 - [AI Governance, Evaluation, Resilience, and Open Models](../ai-governance/ai-governance-evaluation-resilience-and-open-models.md)
 - [AI Chip Control, Cloud Leverage, and U.S.-China Compute](ai-chip-control-cloud-leverage-and-us-china-compute.md)
 - [Gulf Capital, Petrodollars, and AI Infrastructure](gulf-capital-petrodollars-and-ai-infrastructure.md)
+- [Open-Model Competition and Ecosystem Speed](open-model-competition-and-ecosystem-speed.md)
+- [Gulf Sovereign Wealth and Compute Diplomacy](gulf-sovereign-wealth-and-compute-diplomacy.md)
 
 ## Actor Links
 

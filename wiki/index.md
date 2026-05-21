@@ -40,6 +40,8 @@ Cross-actor pages that China, U.S., and EU agents can all read when a source bea
 | [AI Chip Control, Cloud Leverage, and U.S.-China Compute](shared-ai-geopolitics/ai-chip-control-cloud-leverage-and-us-china-compute.md) | Adds the compute-access governance layer: cloud rental, chip leverage, controllability, and market shaping across U.S.-China rivalry. | 2026-05-11 |
 | [RAND Source Hub](shared-ai-geopolitics/rand-source-hub.md) | Marks `raw/rand/` as a first-class source area for compute governance, AI rivalry, and actor-specific expansion. | 2026-05-11 |
 | [Gulf Capital, Petrodollars, and AI Infrastructure](shared-ai-geopolitics/gulf-capital-petrodollars-and-ai-infrastructure.md) | Adds the Gulf finance and energy layer: petrodollar-era capital, sovereign wealth, data-center buildout, and AI infrastructure alignment across China, U.S., and EU. | 2026-05-21 |
+| [Open-Model Competition and Ecosystem Speed](shared-ai-geopolitics/open-model-competition-and-ecosystem-speed.md) | Treats open-weight model competition as a fast-moving geopolitical ecosystem problem rather than a static governance category. | 2026-05-21 |
+| [Gulf Sovereign Wealth and Compute Diplomacy](shared-ai-geopolitics/gulf-sovereign-wealth-and-compute-diplomacy.md) | Reframes Gulf capital as a diplomatic and alignment lever in AI infrastructure expansion rather than mere background finance. | 2026-05-21 |
 
 ## geopolitics
 
@@ -85,6 +87,7 @@ Actor-specific entry points for a U.S. AI agent, currently anchored in shared RA
 | [U.S. Compute Strategy and Global AI Leadership](us-ai-policy/us-compute-strategy-and-global-ai-leadership.md) | Builds the U.S. compute doctrine around export control, cloud leverage, provider governance, and proactive AI diplomacy. | 2026-05-11 |
 | [Japan as a U.S. AI Partner](us-ai-policy/japan-as-a-us-ai-partner.md) | Shows why Japan matters to U.S. AI competition with China across inputs, infrastructure, standards, market control, and regional networks. | 2026-05-11 |
 | [U.S. Engagement with China on AI Safety Without Diffusing Technology](us-ai-policy/us-ai-engagement-with-china-on-ai-safety.md) | Adds a guarded-engagement position for the U.S.: governance cooperation without technical capability diffusion. | 2026-05-11 |
+| [U.S. Gulf Capital and AI Infrastructure Strategy](us-ai-policy/us-gulf-capital-and-ai-infrastructure-strategy.md) | Adds the Gulf-finance layer to U.S. strategy: AI leadership depends on aligning compute infrastructure expansion with external capital and energy partners. | 2026-05-21 |
 
 ## eu-ai-policy
 
@@ -97,6 +100,7 @@ Actor-specific entry points for a future EU AI agent, linked to shared pages now
 | [EU AI Governance Style](eu-ai-policy/eu-ai-governance-style.md) | Adds a source-backed EU governance framing around standards, institutional quality, evaluation, compute planning, and digital sovereignty. | 2026-05-11 |
 | [EU AI Policy Instruments](eu-ai-policy/eu-ai-policy-instruments.md) | Describes the EU-leaning toolkit as standards, evaluation, task forces, cloud planning, and market-shaping regulation. | 2026-05-11 |
 | [EU AI Simulation Profile](eu-ai-policy/eu-ai-simulation-profile.md) | Provides a source-backed EU actor profile centered on standards, governance legitimacy, and infrastructure-backed autonomy. | 2026-05-11 |
+| [EU Compute Finance Vulnerability](eu-ai-policy/eu-compute-finance-vulnerability.md) | Makes the finance problem explicit: European sovereignty ambitions are constrained by capital and energy bottlenecks, not only regulatory deficits. | 2026-05-21 |
 
 ## ops
 
