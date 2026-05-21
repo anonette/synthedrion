@@ -1,6 +1,28 @@
 {
   "sessions": [
     {
+      "session_id": "sess_ace559d4aad8",
+      "created_at": "2026-05-21T10:54:29.512232",
+      "completed_at": null,
+      "mode": "debate",
+      "actors": [
+        "china",
+        "us",
+        "eu"
+      ],
+      "prompt": "China, US, and EU debate how Gulf sovereign wealth, petrodollar shifts, and energy-backed data cente...",
+      "status": "running",
+      "turn_count": 3,
+      "has_audio": false,
+      "session_type": "live",
+      "week_key": null,
+      "week_start": null,
+      "is_featured": false,
+      "title": "China, US, and EU debate how Gulf sovereign wealth, petrodollar shifts, and energy-backed data center finance will reshape AI compute sovereignty and geopolitical leverage",
+      "theme": null,
+      "summary_headline": null
+    },
+    {
       "session_id": "sess_9c9d903e3f87",
       "created_at": "2026-05-17T13:58:56.232519",
       "completed_at": "2026-05-17T14:05:56.068731",
@@ -199,5 +221,5 @@
       "summary_headline": "China, United States, European Union found limited common ground on As AGI race dynamics and capability thresholds becomes critical while pursuing divergent strategic frameworks"
     }
   ],
-  "total": 9
+  "total": 10
 }
