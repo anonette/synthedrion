@@ -36,4 +36,6 @@ Canonical policy anchor for the `AI+` layer:
 - [Shared AI Geopolitics and Governance](../shared-ai-geopolitics/shared-ai-geopolitics-and-governance.md)
 - [U.S.-China AI Rivalry and Strategic Stability](../geopolitics/us-china-ai-rivalry-and-strategic-stability.md)
 - [AI Governance, Evaluation, Resilience, and Open Models](../ai-governance/ai-governance-evaluation-resilience-and-open-models.md)
+- [AI, Nuclear Posture, and Human Control](../shared-ai-geopolitics/ai-nuclear-posture-and-human-control.md)
+- [Critical Minerals and AI Supply Chains](../shared-ai-geopolitics/critical-minerals-and-ai-supply-chains.md)
 - [RAND Source Hub](../shared-ai-geopolitics/rand-source-hub.md)

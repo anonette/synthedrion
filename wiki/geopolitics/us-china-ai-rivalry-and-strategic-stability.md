@@ -1,8 +1,8 @@
 # U.S.-China AI Rivalry and Strategic Stability
 
-> Sources: RAND, 2026-05-04; RAND, 2026-04-29; RAND, 2026-04-27; RAND, 2026-03-26; RAND, 2026-03-04; RAND, 2026-01-26
-> Raw: [Contingency Frameworks for Future U.S.-China Cooperation on AI Assurance and Security](../../raw/articles/2026-05-04-rand-contingency-frameworks-for-future-us-china-cooperation-on-ai-assurance-and-security.md); [Exploring Instability Risks in the U.S.-China AI Rivalry](../../raw/articles/2026-04-29-rand-exploring-instability-risks-in-the-us-china-ai-rivalry.md); [The AGI Rideout Strategy for Reducing Strategic Risk and Promoting Stability in the Transition to Artificial General Intelligence](../../raw/articles/2026-04-27-rand-the-agi-rideout-strategy.md); [Open Models, Soft Power, and the Spectrum of U.S.-China Artificial Intelligence Competition](../../raw/articles/2026-03-26-rand-open-models-soft-power-and-the-spectrum-of-us-china-ai-competition.md); [The People's Liberation Army's Perspectives on Artificial Intelligence Highlighting Integration as Key to Intelligentization Goals](../../raw/articles/2026-03-04-rand-pla-perspectives-on-artificial-intelligence-and-intelligentization.md); [A New Age of Nations: Power and Advantage in the AI Era](../../raw/articles/2026-01-26-rand-a-new-age-of-nations-power-and-advantage-in-the-ai-era.md)
-> Updated: 2026-05-11
+> Sources: RAND, 2026-05-04; RAND, 2026-04-29; RAND, 2026-04-27; RAND, 2026-03-26; RAND, 2026-03-04; RAND, 2026-01-26; SIPRI, 2026-02; JPMorganChase Center for Geopolitics, 2025-10
+> Raw: [Contingency Frameworks for Future U.S.-China Cooperation on AI Assurance and Security](../../raw/articles/2026-05-04-rand-contingency-frameworks-for-future-us-china-cooperation-on-ai-assurance-and-security.md); [Exploring Instability Risks in the U.S.-China AI Rivalry](../../raw/articles/2026-04-29-rand-exploring-instability-risks-in-the-us-china-ai-rivalry.md); [The AGI Rideout Strategy for Reducing Strategic Risk and Promoting Stability in the Transition to Artificial General Intelligence](../../raw/articles/2026-04-27-rand-the-agi-rideout-strategy.md); [Open Models, Soft Power, and the Spectrum of U.S.-China Artificial Intelligence Competition](../../raw/articles/2026-03-26-rand-open-models-soft-power-and-the-spectrum-of-us-china-ai-competition.md); [The People's Liberation Army's Perspectives on Artificial Intelligence Highlighting Integration as Key to Intelligentization Goals](../../raw/articles/2026-03-04-rand-pla-perspectives-on-artificial-intelligence-and-intelligentization.md); [A New Age of Nations: Power and Advantage in the AI Era](../../raw/articles/2026-01-26-rand-a-new-age-of-nations-power-and-advantage-in-the-ai-era.md); `../../raw/nuclear/2602_ai_integration.pdf`; `../../raw/sovereignity/decoding-the-new-global-operating-system (1).pdf`
+> Updated: 2026-06-07
 
 ## Overview
 
@@ -20,6 +20,12 @@ This matters for the knowledge base because it complements the Chinese full-stac
 
 `The AGI Rideout Strategy` approaches the same problem from a U.S. policy angle, arguing that resilience and conflict avoidance matter more than trying to force a clean win in an all-out AGI race. Together these sources make clear that the AI Cold War frame can produce self-fulfilling instability if states define advanced AI as decisive and near-term.
 
+## Nuclear Decision Systems Add a Harder Stability Edge
+
+The SIPRI backgrounder adds a more specific strategic-stability warning than the RAND corpus alone. It surveys how China and the United States are both integrating AI-related functions into nuclear and nuclear-related systems while remaining only partially clear about where human control, human judgment, or meaningful control actually apply. Its main contribution is comparative: the United States is more explicit in doctrine, China is more opaque and rapidly modernizing, and both are developing AI-enabled systems whose conventional and nuclear roles can blur.
+
+This sharpens the rivalry page because it shows that strategic instability is not only about sabotage or AGI timelines. It is also about AI entering early warning, decision support, autonomous systems, and dual-capable platforms without a stable shared norm architecture.
+
 ## Strategic Optionality and Limited Cooperation
 
 `Contingency Frameworks for Future U.S.-China Cooperation on AI Assurance and Security` adds an important counterpoint. Even amid rivalry and distrust, RAND argues that policymakers should preserve optionality for future cooperation on AI assurance and security. The point is not optimism, but flexibility: even if cooperation is impossible now, institutional imagination about how it could work later may reduce strategic brittleness.
@@ -32,6 +38,10 @@ The PLA-focused RAND paper adds detail to the military side of Chinese AI strate
 
 This fits well with the existing China pages on industrial policy and state capacity: Chinese AI power is repeatedly imagined through system integration, not only through isolated breakthrough tools.
 
+## Hardware, Energy, and Minerals Widen the Rivalry Surface
+
+JPMorgan's geopolitics report adds another layer to the rivalry logic by turning energy, semiconductors, and critical materials into explicit competitive axes. This is useful here because it widens strategic stability beyond military AI alone. If both sides believe that electricity buildout, chip access, and mineral control determine national AI rank, then pressure for preventive action, market coercion, and alliance consolidation can rise even before direct military crisis begins.
+
 ## Open Models as Soft Power Competition
 
 The open-models RAND paper is especially useful for this project because it turns openness into a geopolitical instrument. Open models are framed not simply as engineering or safety choices but as tools for shaping the global AI ecosystem, attracting users and developers, and projecting influence. This connects directly with the Chinese wiki material on open-source ecosystems and standards influence.
@@ -40,5 +50,6 @@ The open-models RAND paper is especially useful for this project because it turn
 
 - [Chinese AI Governance Style and Agenda](../china-ai-policy/chinese-ai-governance-style-and-agenda.md)
 - [Chinese AI Cross-Border Sovereignty and the Manus Precedent](../china-ai-policy/chinese-ai-cross-border-sovereignty.md)
+- [AI Infrastructure Sovereignty](../ai-infrastructure/ai-infrastructure-sovereignty.md)
 - [Geopolitical Wars](geopolitical-wars.md)
 - [Geopolitical Power Connections](geopolitical-power-connections.md)

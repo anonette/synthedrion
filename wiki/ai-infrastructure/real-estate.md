@@ -1,23 +1,24 @@
 # Real Estate
 
-> Sources: Lawfare, 2026-04-09; Anthropic, 2026-04-19
-> Raw: [The Code Is Not the Law: Why Claude's Constitution Misleads](../../raw/ai-governance/2026-04-09-the-code-is-not-the-law-why-claudes-constitution-misleads.md); [Claude's Constitution](../../raw/ai-governance/2026-04-19-claudes-constitution.md)
-> Updated: 2026-04-19
+> Sources: Axios, 2026-06-05; arXiv, 2026-04-22; JPMorganChase Center for Geopolitics, 2025-10
+> Raw: `../../raw/datacenters/China fueling U.S. data center resistance, AI groups claim.pdf`; `../../raw/sovereignity/Ai infrastructure .pdf`; `../../raw/sovereignity/decoding-the-new-global-operating-system (1).pdf`
+> Updated: 2026-06-07
 
 ## Overview
 
-Real estate is also mostly absent from the current corpus. The sources discuss institutions that may come to rely on Claude, but they do not describe the property footprint of AI infrastructure itself: datacenters, campuses, colocated facilities, or land-use conflicts.
+AI real estate is no longer a speculative gap in this repository. The new sources make clear that datacenters are politically visible land-use projects whose siting is constrained by grid access, water, cooling, and community tolerance.
 
-## Institutional Embedding
+## Datacenters as Physical and Political Sites
 
-The Lawfare article points to universities, hospitals, newsrooms, defense settings, and platform moderation as sites where Claude-like systems may become infrastructural. This helps locate the social domains of deployment, but not the physical real estate that sustains model training and inference.
+The infrastructure paper explains why these sites are hard to reproduce casually: AI facilities need specific combinations of power density, cooling, and connectivity. The Axios article shows what that means on the ground. Datacenter opposition in the United States is being organized around noise, water draw, electricity prices, and the industrialization of local communities.
 
-## Current Corpus Gap
+## Real Estate Is Strategic Capacity
 
-There is no direct treatment of land acquisition, datacenter siting, zoning, tax abatements, or regional competition for AI facilities. A fuller real-estate analysis will require new sources focused on where compute is housed and how property regimes shape expansion.
+JPMorgan's report places this in a geopolitical frame by treating datacenter buildout as part of national AI strategy. The practical implication is that land, permits, and facility clustering are not just local-development issues. They are part of whether a state can host enough compute to matter strategically.
 
 ## See Also
 
 - [Location](location.md)
 - [Resources](resources.md)
 - [Energy Policy and Needs](energy-policy-and-needs.md)
+- [AI Infrastructure Sovereignty](ai-infrastructure-sovereignty.md)

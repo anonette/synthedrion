@@ -1,23 +1,28 @@
 # Resources
 
-> Sources: Anthropic, 2026-04-19; Lawfare, 2026-04-09
-> Raw: [Claude's Constitution](../../raw/ai-governance/2026-04-19-claudes-constitution.md); [The Code Is Not the Law: Why Claude's Constitution Misleads](../../raw/ai-governance/2026-04-09-the-code-is-not-the-law-why-claudes-constitution-misleads.md)
-> Updated: 2026-04-19
+> Sources: FP Analytics, 2025-10; arXiv, 2026-04-22; JPMorganChase Center for Geopolitics, 2025-10
+> Raw: `../../raw/minerals/FPA-JCDREAM-October-2025-Part-2-final_260605_220024.pdf`; `../../raw/sovereignity/Ai infrastructure .pdf`; `../../raw/sovereignity/decoding-the-new-global-operating-system (1).pdf`
+> Updated: 2026-06-07
 
 ## Overview
 
-The current corpus does not give a full material-resource account of Claude. It says little about electricity, water, chips, or land, but it does strongly foreground governance resources: capital, legal authority, policy influence, data retention rules, and institutional trust.
+The material side of AI is now much clearer in this wiki. The new sources show that AI depends on a specific chain of physical inputs: electricity, water, cooling systems, fiber networks, semiconductors, and the minerals required to manufacture and connect them.
 
-## Governance Resources in the Corpus
+## Critical Minerals as AI Inputs
 
-Anthropic ties Claude to commercial success and mission continuity. The Lawfare critique shows that the company also mobilizes contractual power, policy language, and the ability to revise norms over time. In the present corpus, these are the most visible resources behind AI power.
+The FP Analytics brief identifies copper, gallium, germanium, palladium, indium, tantalum, rare earth elements, silicon, and high-purity alumina as especially important to AI infrastructure. Its main contribution is to show that AI competes for these materials alongside clean-energy systems rather than in a separate market. Data centers, backup power, chips, and transmission equipment all draw on overlapping supply chains.
 
-## Missing Material Resources
+The brief also sharpens the geopolitical point. China's dominance in refining and processing several of these materials means that AI dependency can begin long before a chip is fabricated or a server rack is assembled.
 
-The sources do not directly describe compute supply chains, semiconductor dependencies, cooling, water usage, or labor conditions around infrastructure. Those omissions matter because they separate the visible normative story from the material base that makes the system possible.
+## Resources Are Upstream and Operational
+
+`AI Infrastructure Sovereignty` complements this by arguing that sovereignty should be read across the whole stack, from mines and refining to power, water, and optical networks. JPMorgan's report reinforces the same lesson in more geopolitical terms: hardware and energy are now strategic chokepoints, not neutral commodities.
+
+The resource base of AI therefore includes more than chips themselves. It includes the industrial ability to refine materials, build cooling and network systems, and keep infrastructure operating under stress.
 
 ## See Also
 
 - [Energy Policy and Needs](energy-policy-and-needs.md)
+- [AI Infrastructure Sovereignty](ai-infrastructure-sovereignty.md)
 - [Price of Power](../geopolitics/price-of-power.md)
 - [Geopolitical Power Connections](../geopolitics/geopolitical-power-connections.md)

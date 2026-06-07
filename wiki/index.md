@@ -16,10 +16,11 @@ Material and spatial conditions of AI systems, including what the current corpus
 
 | Article | Summary | Updated |
 |---------|---------|---------|
-| [Energy Policy and Needs](ai-infrastructure/energy-policy-and-needs.md) | Notes that the present corpus has almost no direct energy evidence, while identifying why energy demand should become a first-class ingestion target. | 2026-04-19 |
-| [Real Estate](ai-infrastructure/real-estate.md) | Records the corpus gap around datacenter and institutional property questions, while linking them to deployment at scale. | 2026-04-19 |
+| [AI Infrastructure Sovereignty](ai-infrastructure/ai-infrastructure-sovereignty.md) | Reframes sovereignty as operational control over data centers, grids, water, networks, and minerals rather than only legal control over models or data. | 2026-06-07 |
+| [Energy Policy and Needs](ai-infrastructure/energy-policy-and-needs.md) | Replaces the prior evidence gap with a direct account of electricity, carbon, water, and grid constraints as first-order AI bottlenecks. | 2026-06-07 |
+| [Real Estate](ai-infrastructure/real-estate.md) | Turns datacenter siting into a political land-use question shaped by grid access, water, noise, and public tolerance. | 2026-06-07 |
 | [Location](ai-infrastructure/location.md) | Organizes the limited evidence about where authority and deployment are situated across corporate, civilian, and military settings. | 2026-04-19 |
-| [Resources](ai-infrastructure/resources.md) | Distinguishes between material resource gaps in the corpus and the governance resources the current sources foreground. | 2026-04-19 |
+| [Resources](ai-infrastructure/resources.md) | Makes copper, gallium, germanium, rare earths, and other infrastructure inputs part of the core AI resource story. | 2026-06-07 |
 
 ## social-imaginaries
 
@@ -35,9 +36,11 @@ Cross-actor pages that China, U.S., and EU agents can all read when a source bea
 
 | Article | Summary | Updated |
 |---------|---------|---------|
-| [Shared AI Geopolitics and Governance](shared-ai-geopolitics/shared-ai-geopolitics-and-governance.md) | Defines the shared layer for multi-actor AI rivalry, governance, evaluation, resilience, and strategic-stability sources. | 2026-05-11 |
+| [Shared AI Geopolitics and Governance](shared-ai-geopolitics/shared-ai-geopolitics-and-governance.md) | Defines the shared layer for multi-actor AI rivalry, governance, evaluation, resilience, strategic stability, and infrastructure sovereignty. | 2026-06-07 |
 | [RAND AI Perspectives Bundle: Pages 2-7](shared-ai-geopolitics/rand-ai-perspectives-bundle-pages-2-7.md) | Compiles the remaining accessible RAND AI perspectives into a shared source bundle for later actor-specific expansion. | 2026-05-11 |
-| [AI Chip Control, Cloud Leverage, and U.S.-China Compute](shared-ai-geopolitics/ai-chip-control-cloud-leverage-and-us-china-compute.md) | Adds the compute-access governance layer: cloud rental, chip leverage, controllability, and market shaping across U.S.-China rivalry. | 2026-05-11 |
+| [AI, Nuclear Posture, and Human Control](shared-ai-geopolitics/ai-nuclear-posture-and-human-control.md) | Adds a comparative view of how China, India, and the U.S. are folding AI into nuclear-related systems while defining human control unevenly. | 2026-06-07 |
+| [AI Chip Control, Cloud Leverage, and U.S.-China Compute](shared-ai-geopolitics/ai-chip-control-cloud-leverage-and-us-china-compute.md) | Adds chip-access governance, cloud leverage, and export-control leakage through the server and infrastructure layers. | 2026-06-07 |
+| [Critical Minerals and AI Supply Chains](shared-ai-geopolitics/critical-minerals-and-ai-supply-chains.md) | Makes copper, gallium, germanium, rare earths, and refining concentration part of the shared geopolitical AI picture. | 2026-06-07 |
 | [RAND Source Hub](shared-ai-geopolitics/rand-source-hub.md) | Marks `raw/rand/` as a first-class source area for compute governance, AI rivalry, and actor-specific expansion. | 2026-05-11 |
 | [Gulf Capital, Petrodollars, and AI Infrastructure](shared-ai-geopolitics/gulf-capital-petrodollars-and-ai-infrastructure.md) | Adds the Gulf finance and energy layer: petrodollar-era capital, sovereign wealth, data-center buildout, and AI infrastructure alignment across China, U.S., and EU. | 2026-05-21 |
 | [Open-Model Competition and Ecosystem Speed](shared-ai-geopolitics/open-model-competition-and-ecosystem-speed.md) | Treats open-weight model competition as a fast-moving geopolitical ecosystem problem rather than a static governance category. | 2026-05-21 |
@@ -52,7 +55,7 @@ How AI systems connect to corporate authority, state power, competition, and con
 | [Geopolitical Power Connections](geopolitics/geopolitical-power-connections.md) | Shows how the corpus ties Claude to platform power, policy influence, military customers, and institutional dependence. | 2026-04-19 |
 | [Price of Power](geopolitics/price-of-power.md) | Reads commercial success, policy reversals, and user dependence as the costs and tradeoffs that accompany frontier AI power. | 2026-04-19 |
 | [Geopolitical Wars](geopolitics/geopolitical-wars.md) | Captures the corpus on military deployment, warfighting adaptation, and AI's role in conflict escalation. | 2026-04-19 |
-| [U.S.-China AI Rivalry and Strategic Stability](geopolitics/us-china-ai-rivalry-and-strategic-stability.md) | Synthesizes RAND perspectives on AI rivalry, preventive instability, strategic optionality, open-model soft power, and PLA intelligentization. | 2026-05-11 |
+| [U.S.-China AI Rivalry and Strategic Stability](geopolitics/us-china-ai-rivalry-and-strategic-stability.md) | Extends the rivalry frame into nuclear-control ambiguity, hardware chokepoints, and energy-driven strategic pressure. | 2026-06-07 |
 
 ## china-ai-policy
 
@@ -95,8 +98,8 @@ Actor-specific entry points for a future EU AI agent, linked to shared pages now
 
 | Article | Summary | Updated |
 |---------|---------|---------|
-| [EU AI Knowledge Base Hub](eu-ai-policy/eu-ai-knowledge-base-hub.md) | Entry page for the EU-specific knowledge base, currently connecting the EU agent to shared governance and rivalry pages while EU-specific corpus grows. | 2026-05-11 |
-| [EU AI Strategic Interests](eu-ai-policy/eu-ai-strategic-interests.md) | Provides a source-backed EU strategic frame around standards, digital sovereignty, compute capacity, multilateral governance, and the financing constraints behind sovereignty. | 2026-05-21 |
+| [EU AI Knowledge Base Hub](eu-ai-policy/eu-ai-knowledge-base-hub.md) | Entry page for the EU-specific knowledge base, now routing EU agents more directly into infrastructure sovereignty and compute-dependence questions. | 2026-06-07 |
+| [EU AI Strategic Interests](eu-ai-policy/eu-ai-strategic-interests.md) | Adds the shift from regulating foreign platforms to actively building European cloud, data-center, and AI alternatives. | 2026-06-07 |
 | [EU AI Governance Style](eu-ai-policy/eu-ai-governance-style.md) | Adds a source-backed EU governance framing around standards, institutional quality, evaluation, compute planning, and digital sovereignty. | 2026-05-11 |
 | [EU AI Policy Instruments](eu-ai-policy/eu-ai-policy-instruments.md) | Describes the EU-leaning toolkit as standards, evaluation, task forces, cloud planning, and market-shaping regulation. | 2026-05-11 |
 | [EU AI Simulation Profile](eu-ai-policy/eu-ai-simulation-profile.md) | Provides a source-backed EU actor profile centered on standards, governance legitimacy, and infrastructure-backed autonomy. | 2026-05-11 |

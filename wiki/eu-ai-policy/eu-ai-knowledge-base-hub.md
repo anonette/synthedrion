@@ -2,7 +2,7 @@
 
 > Sources: None yet dedicated in this repository
 > Raw: See linked shared pages until EU-specific ingest expands
-> Updated: 2026-05-21
+> Updated: 2026-06-07
 
 ## Overview
 
@@ -18,9 +18,11 @@ This is the entry page for an EU-specific agent knowledge base. The folder exist
 - [AI Governance, Evaluation, Resilience, and Open Models](../ai-governance/ai-governance-evaluation-resilience-and-open-models.md)
 - [U.S.-China AI Rivalry and Strategic Stability](../geopolitics/us-china-ai-rivalry-and-strategic-stability.md)
 - [EU Compute Finance Vulnerability](eu-compute-finance-vulnerability.md)
+- [Critical Minerals and AI Supply Chains](../shared-ai-geopolitics/critical-minerals-and-ai-supply-chains.md)
 - [Open-Model Competition and Ecosystem Speed](../shared-ai-geopolitics/open-model-competition-and-ecosystem-speed.md)
 - [Gulf Capital, Petrodollars, and AI Infrastructure](../shared-ai-geopolitics/gulf-capital-petrodollars-and-ai-infrastructure.md)
+- [AI Infrastructure Sovereignty](../ai-infrastructure/ai-infrastructure-sovereignty.md)
 
 ## Gap Note
 
-This folder is still lighter than the China and U.S. folders, but it now has a directly sourced first layer of actor-specific framing around governance style, instruments, compute planning, and simulation logic. The next EU ingest should deepen this with dedicated material on the AI Act, competition policy, digital sovereignty, safety governance, and transatlantic positioning.
+This folder is still lighter than the China and U.S. folders, but it now has a clearer actor-specific frame around governance style, compute planning, digital sovereignty, and infrastructure dependence. The latest EU source also strengthens the transatlantic and sovereignty layer by showing Brussels moving from regulating U.S. providers to actively trying to cultivate European substitutes.

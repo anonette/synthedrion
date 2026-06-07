@@ -6,7 +6,7 @@
 
 ## Overview
 
-This page is the shared layer for actor-specific agents. China, U.S., and EU agents should all be able to read from this layer when a source bears on multiple actors at once. Shared pages are where rivalry structure, strategic stability, evaluation concepts, resilience logic, open-model competition, cross-domain risk frameworks, and infrastructure-finance geopolitics live before being interpreted from any single actor's perspective.
+This page is the shared layer for actor-specific agents. China, U.S., and EU agents should all be able to read from this layer when a source bears on multiple actors at once. Shared pages are where rivalry structure, strategic stability, evaluation concepts, resilience logic, open-model competition, cross-domain risk frameworks, infrastructure-finance geopolitics, and infrastructure-sovereignty chokepoints live before being interpreted from any single actor's perspective.
 
 ## What Belongs Here
 
@@ -14,13 +14,17 @@ This page is the shared layer for actor-specific agents. China, U.S., and EU age
 - governance concepts that are not actor-specific
 - cross-border and cross-domain AI risks
 - capital, energy, and infrastructure-finance dynamics that shape multiple actors at once
+- physical infrastructure constraints that cut across actors, including energy, minerals, water, and network reach
 - shared source bundles that can feed multiple agent folders
 
 ## Current Shared Pages
 
 - [U.S.-China AI Rivalry and Strategic Stability](../geopolitics/us-china-ai-rivalry-and-strategic-stability.md)
 - [AI Governance, Evaluation, Resilience, and Open Models](../ai-governance/ai-governance-evaluation-resilience-and-open-models.md)
+- [AI, Nuclear Posture, and Human Control](ai-nuclear-posture-and-human-control.md)
 - [AI Chip Control, Cloud Leverage, and U.S.-China Compute](ai-chip-control-cloud-leverage-and-us-china-compute.md)
+- [Critical Minerals and AI Supply Chains](critical-minerals-and-ai-supply-chains.md)
+- [AI Infrastructure Sovereignty](../ai-infrastructure/ai-infrastructure-sovereignty.md)
 - [Gulf Capital, Petrodollars, and AI Infrastructure](gulf-capital-petrodollars-and-ai-infrastructure.md)
 - [Open-Model Competition and Ecosystem Speed](open-model-competition-and-ecosystem-speed.md)
 - [Gulf Sovereign Wealth and Compute Diplomacy](gulf-sovereign-wealth-and-compute-diplomacy.md)

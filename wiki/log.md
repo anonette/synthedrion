@@ -86,3 +86,19 @@
 ## [2026-05-21] ingest | Open Models and Gulf Capital Expansion
 - Updated: U.S. AI Knowledge Base Hub
 - Updated: EU AI Knowledge Base Hub
+
+## [2026-06-07] ingest | AI Infrastructure Sovereignty
+- Updated: Energy Policy and Needs
+- Updated: Resources
+- Updated: Real Estate
+- Updated: Shared AI Geopolitics and Governance
+- Updated: AI Chip Control, Cloud Leverage, and U.S.-China Compute
+- Updated: U.S.-China AI Rivalry and Strategic Stability
+- Updated: EU AI Strategic Interests
+- Updated: EU AI Knowledge Base Hub
+
+## [2026-06-07] ingest | Critical Minerals and AI-Nuclear Expansion
+- Updated: Shared AI Geopolitics and Governance
+- Updated: U.S. AI Knowledge Base Hub
+- Updated: China AI Knowledge Base Hub
+- Updated: EU AI Knowledge Base Hub

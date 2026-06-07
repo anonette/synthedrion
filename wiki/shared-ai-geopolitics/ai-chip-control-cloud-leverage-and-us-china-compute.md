@@ -1,8 +1,8 @@
 # AI Chip Control, Cloud Leverage, and U.S.-China Compute
 
-> Sources: RAND, 2025-08-15; Reuters, 2025-07-31; Bloomberg, 2025-08-12; GovAI/CNAS/Oxford, 2023-2025
-> Raw: [America Should Rent, Not Sell, AI Chips to China](../../raw/articles/2025-08-15-rand-america-should-rent-not-sell-ai-chips-to-china.md); [Nvidia Says Its Chips Have No Backdoors After China Flags H20 Security Concerns](../../raw/articles/2025-07-31-reuters-nvidia-says-its-chips-have-no-backdoors.md); `../../raw/rand/China Urges Firms to Avoid Nvidia H20 Chips After Trump Resumes Sales - Bloomberg.pdf`; `../../raw/rand/Accessing_Controlled_AI_Chips_via_Infrastructure-as-a-Service.pdf`; `../../raw/rand/Governing-Through-the-Cloud_The-Intermediary-Role-of-Compute-Providers-in-AI-Regulation.pdf`; `../../raw/rand/AE-Report-Global-ComputeFINALv2.pdf`
-> Updated: 2026-05-11
+> Sources: RAND, 2025-08-15; Reuters, 2025-07-31; Bloomberg, 2025-08-12; Israel Hayom, 2026-05-26; JPMorganChase Center for Geopolitics, 2025-10; GovAI/CNAS/Oxford, 2023-2025
+> Raw: [America Should Rent, Not Sell, AI Chips to China](../../raw/articles/2025-08-15-rand-america-should-rent-not-sell-ai-chips-to-china.md); [Nvidia Says Its Chips Have No Backdoors After China Flags H20 Security Concerns](../../raw/articles/2025-07-31-reuters-nvidia-says-its-chips-have-no-backdoors.md); `../../raw/rand/China Urges Firms to Avoid Nvidia H20 Chips After Trump Resumes Sales - Bloomberg.pdf`; `../../raw/rand/Accessing_Controlled_AI_Chips_via_Infrastructure-as-a-Service.pdf`; `../../raw/rand/Governing-Through-the-Cloud_The-Intermediary-Role-of-Compute-Providers-in-AI-Regulation.pdf`; `../../raw/rand/AE-Report-Global-ComputeFINALv2.pdf`; `../../raw/sovereignity/Nvidia's nightmare_ $2.5 billion worth of AI servers smuggled into China.pdf`; `../../raw/sovereignity/decoding-the-new-global-operating-system (1).pdf`
+> Updated: 2026-06-07
 
 ## Overview
 
@@ -30,6 +30,16 @@ The compute-governance papers in `raw/rand/` add the underlying policy machinery
 
 The CNAS compute paper adds a broader strategic frame: sustaining U.S. AI leadership may require both protecting frontier compute and proactively building a U.S.-led global compute ecosystem through partnerships, cloud provision, and aligned infrastructure abroad. Together, these materials make the chip question less about one export transaction and more about who governs the compute layer of AI at global scale.
 
+## Export Control Leakage and the Server Layer
+
+The 2026 smuggling report adds an uncomfortable but important correction to the rental-versus-sale debate. Even when formal export controls remain in place, advanced compute can still leak through the server layer via shell companies, false documentation, and third-country logistics. The article's main value is not that it proves a comprehensive pattern, but that it shows how hardware governance can fail in practice once enforcement depends on assemblers, distributors, and regional compliance chains.
+
+This strengthens the wiki's emphasis on infrastructure governance. Control is not only about whether chips are technically restricted. It is also about who assembles systems, who verifies end use, and how much monitoring survives beyond the first transaction.
+
+## Chips Sit Inside a Wider Hardware and Energy Contest
+
+JPMorgan's geopolitics report broadens the frame further by arguing that semiconductors are only one part of a larger struggle over energy, hardware, and component supply. That is consistent with the newer infrastructure-sovereignty material in this repo: chip control matters, but it only delivers strategic advantage if it is linked to datacenter construction, mineral inputs, and power expansion.
+
 ## Relevance for Actor Knowledge Bases
 
 For a U.S. agent, this page adds a concrete policy option: cloud-rental governance as a middle path between unrestricted export and full denial. For a China agent, it clarifies how U.S. actors may seek to retain leverage even while appearing to allow access, reinforcing Chinese concerns about dependence and controllability.
@@ -38,5 +48,6 @@ For a U.S. agent, this page adds a concrete policy option: cloud-rental governan
 
 - [Shared AI Geopolitics and Governance](shared-ai-geopolitics-and-governance.md)
 - [RAND Source Hub](rand-source-hub.md)
+- [AI Infrastructure Sovereignty](../ai-infrastructure/ai-infrastructure-sovereignty.md)
 - [U.S.-China AI Rivalry and Strategic Stability](../geopolitics/us-china-ai-rivalry-and-strategic-stability.md)
 - [Chinese AI Cross-Border Sovereignty and the Manus Precedent](../china-ai-policy/chinese-ai-cross-border-sovereignty.md)

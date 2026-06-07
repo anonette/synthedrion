@@ -1,24 +1,28 @@
 # Energy Policy and Needs
 
-> Sources: Anthropic, 2026-04-19; Lawfare, 2026-04-09
-> Raw: [Claude's Constitution](../../raw/ai-governance/2026-04-19-claudes-constitution.md); [The Code Is Not the Law: Why Claude's Constitution Misleads](../../raw/ai-governance/2026-04-09-the-code-is-not-the-law-why-claudes-constitution-misleads.md)
-> Updated: 2026-04-19
+> Sources: arXiv, 2026-04-22; JPMorganChase Center for Geopolitics, 2025-10; Axios, 2026-06-05
+> Raw: `../../raw/sovereignity/Ai infrastructure .pdf`; `../../raw/sovereignity/decoding-the-new-global-operating-system (1).pdf`; `../../raw/datacenters/China fueling U.S. data center resistance, AI groups claim.pdf`
+> Updated: 2026-06-07
 
 ## Overview
 
-The current corpus contains almost no direct discussion of electricity demand, grid access, energy procurement, or energy policy for AI systems. That absence is itself analytically useful: the sources foreground constitutional language, corporate legitimacy, and institutional deployment while leaving the energy basis of frontier AI largely invisible.
+Energy is no longer a missing background variable in this wiki. The new corpus makes clear that AI scale depends on access to electricity capacity, cooling, carbon headroom, and transmission infrastructure. Power is not just an operating expense. It is a hard limit on where and how advanced AI can be built.
 
-## What the Corpus Does Show
+## Energy as a Binding Constraint
 
-Anthropic presents Claude as central to its commercial success and broader mission, and the Lawfare critique repeatedly describes Claude as becoming embedded in foundational institutions. Those claims imply substantial infrastructure and operating requirements, but the present sources do not specify them.
+`AI Infrastructure Sovereignty` argues that large training and inference systems already operate at industrial scale, with power availability and cooling capacity constraining deployment before software considerations do. JPMorgan's geopolitics report reaches a similar conclusion in policy language: countries that can secure energy abundance and grid buildout gain an AI advantage that others cannot easily regulate their way around.
 
-## Current Corpus Gap
+The report is especially useful because it distinguishes legal sovereignty from operational sovereignty. A country may retain control over data and still lack meaningful AI autonomy if it cannot supply or finance the electricity and cooling required for modern compute.
 
-There is no direct evidence here about datacenter load, power purchase agreements, utility politics, transmission constraints, or the environmental costs of scaling Claude-like systems. If energy is a core dimension of your research, this should be treated as a priority ingestion gap rather than inferred from rhetoric alone.
+## Energy Politics Is Also Domestic Politics
+
+The Axios datacenter piece adds a practical political layer. Public resistance to datacenters in the United States is being organized around electricity prices, water use, noise, and environmental strain. Even if some campaigns are externally amplified, the article confirms that AI energy demand is now visible enough to become a local political conflict.
+
+That means energy policy for AI is not only about generation mix or national strategy. It is also about whether communities tolerate the physical footprint of datacenter expansion.
 
 ## See Also
 
 - [Price of Power](../geopolitics/price-of-power.md)
+- [AI Infrastructure Sovereignty](ai-infrastructure-sovereignty.md)
 - [Resources](resources.md)
 - [Location](location.md)
-- [Claude Constitution and Contestation](../ai-governance/claude-constitution-and-contestation.md)
