@@ -102,3 +102,8 @@
 - Updated: U.S. AI Knowledge Base Hub
 - Updated: China AI Knowledge Base Hub
 - Updated: EU AI Knowledge Base Hub
+
+## [2026-06-07] ingest | Actor Strategic Interests Expansion
+- Updated: U.S. AI Strategic Interests
+- Updated: Chinese AI Strategic Interests
+- Updated: EU Compute Finance Vulnerability

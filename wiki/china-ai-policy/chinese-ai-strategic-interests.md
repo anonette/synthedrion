@@ -1,8 +1,8 @@
 # Chinese AI Strategic Interests
 
-> Sources: RAND, 2025-06-26; State Council, 2017-07-20; Xinhua, 2025-04-26; State Council, 2025-08-21; MIIT et al., 2026-01-07
+> Sources: RAND, 2025-06-26; State Council, 2017-07-20; Xinhua, 2025-04-26; State Council, 2025-08-21; MIIT et al., 2026-01-07; JPMorganChase Center for Geopolitics, 2025-10; SIPRI, 2026-02
 > Raw: [Full Stack: China's Evolving Industrial Policy for AI](../../raw/reg-documents/2025-06-26-full-stack-chinas-evolving-industrial-policy-for-ai.md); [A New Generation Artificial Intelligence Development Plan](../../raw/reg-documents/2017-07-20-new-generation-artificial-intelligence-development-plan.md); [Politburo Collective Study on AI](../../raw/reg-documents/2025-04-26-politburo-collective-study-on-ai.md); [Opinions of the State Council on Deepening the Implementation of the "Artificial Intelligence+" Initiative](../../raw/reg-documents/2025-08-21-ai-plus-initiative-gov-cn.md); [Implementation Opinions on the "AI + Manufacturing" Special Initiative](../../raw/reg-documents/t0667_ai_manufacturing_opinions_EN.pdf)
-> Updated: 2026-05-11
+> Updated: 2026-06-07
 
 ## Overview
 
@@ -28,11 +28,15 @@ Another major interest is reducing vulnerability to foreign choke points. RAND, 
 
 This does not necessarily mean autarky. The more accurate reading is sanction resilience: China wants enough domestic stack depth in chips, compute, software, data, and talent to keep progressing under external pressure.
 
+The newer infrastructure sources make this more concrete. China is not only seeking substitutes in software and chips. It is also trying to align AI with energy abundance, datacenter expansion, and midstream industrial control over critical inputs. JPMorgan's report is useful here because it treats China's infrastructure buildout and diversified energy planning as strategic assets rather than only economic background.
+
 ## Military and National Security Relevance
 
 The documents consistently connect AI to national security, even when they use developmental language. RAND highlights military capability and strategic competition. The 2017 plan links AI to national defense construction and security protection. The `AI+` opinions speak of using AI to maintain and shape national security. The governing interest is therefore dual-use by default.
 
 In simulation, a China-style agent should rarely treat civilian and security applications as fully separable domains. The same infrastructures and standards are often assumed to support both.
+
+The SIPRI backgrounder adds another layer: China is integrating AI-related functions into nuclear and nuclear-related systems while remaining comparatively opaque about where human control applies in practice. That opacity may be strategic, but it also carries confidence costs in rivalry and crisis settings.
 
 ## Standards and International Influence
 
@@ -53,3 +57,5 @@ That also means labor absorption and unemployment management are not secondary w
 - [Chinese AI Operational Strategy](chinese-ai-operational-strategy.md)
 - [Chinese AI Labor and Social Stability](chinese-ai-labor-and-social-stability.md)
 - [China AI Simulation Profile](china-ai-simulation-profile.md)
+- [Critical Minerals and AI Supply Chains](../shared-ai-geopolitics/critical-minerals-and-ai-supply-chains.md)
+- [AI, Nuclear Posture, and Human Control](../shared-ai-geopolitics/ai-nuclear-posture-and-human-control.md)

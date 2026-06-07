@@ -65,7 +65,7 @@ How Chinese AI policy combines Party leadership, industrial planning, local expe
 |---------|---------|---------|
 | [Chinese AI Governance Style and Agenda](china-ai-policy/chinese-ai-governance-style-and-agenda.md) | Maps the core Chinese policy pattern as application-first, full-stack, Party-led developmentalism oriented toward secure controllability and state capacity. | 2026-05-11 |
 | [China AI Knowledge Base Hub](china-ai-policy/china-ai-knowledge-base-hub.md) | Entry page for the China-specific knowledge base, linking China-only pages and the shared cross-actor layer. | 2026-05-11 |
-| [Chinese AI Strategic Interests](china-ai-policy/chinese-ai-strategic-interests.md) | Distills the state's underlying AI interests into growth, state capacity, resilience, security, and standards influence. | 2026-05-11 |
+| [Chinese AI Strategic Interests](china-ai-policy/chinese-ai-strategic-interests.md) | Extends Chinese interests into energy-backed infrastructure scale, industrial midstream control, and strategic opacity around AI in nuclear-related systems. | 2026-06-07 |
 | [Chinese AI Policy Instruments](china-ai-policy/chinese-ai-policy-instruments.md) | Organizes the main Chinese AI toolkit across planning, finance, infrastructure, pilots, standards, talent, and security controls. | 2026-05-11 |
 | [Chinese AI Operational Strategy](china-ai-policy/chinese-ai-operational-strategy.md) | Explains how Chinese policy tries to deploy AI through sector scenarios, hybrid stacks, enterprise execution, and replication. | 2026-05-11 |
 | [Chinese AI Anthropomorphism Governance](china-ai-policy/chinese-ai-anthropomorphism-governance.md) | Adds the intimate governance layer: simulated personality, emotional dependency, vulnerable users, and provider duties around anthropomorphic AI. | 2026-05-11 |
@@ -85,7 +85,7 @@ Actor-specific entry points for a U.S. AI agent, currently anchored in shared RA
 | Article | Summary | Updated |
 |---------|---------|---------|
 | [U.S. AI Knowledge Base Hub](us-ai-policy/us-ai-knowledge-base-hub.md) | Entry page for the U.S.-specific knowledge base, linking current shared sources that already encode a strong U.S. strategic frame. | 2026-05-11 |
-| [U.S. AI Strategic Interests](us-ai-policy/us-ai-strategic-interests.md) | Distills the current U.S.-leaning corpus into advantage, resilience, leverage, guarded engagement, and the need to keep infrastructure finance aligned with U.S. compute power. | 2026-05-21 |
+| [U.S. AI Strategic Interests](us-ai-policy/us-ai-strategic-interests.md) | Extends U.S. interests into energy, minerals, datacenter buildout, and visible human control over nuclear-related AI systems. | 2026-06-07 |
 | [U.S. AI Simulation Profile](us-ai-policy/us-ai-simulation-profile.md) | Provides a simulation-ready U.S. actor profile grounded in rivalry, resilience, compute leverage, and selective cooperation. | 2026-05-11 |
 | [U.S. Compute Strategy and Global AI Leadership](us-ai-policy/us-compute-strategy-and-global-ai-leadership.md) | Builds the U.S. compute doctrine around export control, cloud leverage, provider governance, and proactive AI diplomacy. | 2026-05-11 |
 | [Japan as a U.S. AI Partner](us-ai-policy/japan-as-a-us-ai-partner.md) | Shows why Japan matters to U.S. AI competition with China across inputs, infrastructure, standards, market control, and regional networks. | 2026-05-11 |
@@ -103,7 +103,7 @@ Actor-specific entry points for a future EU AI agent, linked to shared pages now
 | [EU AI Governance Style](eu-ai-policy/eu-ai-governance-style.md) | Adds a source-backed EU governance framing around standards, institutional quality, evaluation, compute planning, and digital sovereignty. | 2026-05-11 |
 | [EU AI Policy Instruments](eu-ai-policy/eu-ai-policy-instruments.md) | Describes the EU-leaning toolkit as standards, evaluation, task forces, cloud planning, and market-shaping regulation. | 2026-05-11 |
 | [EU AI Simulation Profile](eu-ai-policy/eu-ai-simulation-profile.md) | Provides a source-backed EU actor profile centered on standards, governance legitimacy, and infrastructure-backed autonomy. | 2026-05-11 |
-| [EU Compute Finance Vulnerability](eu-ai-policy/eu-compute-finance-vulnerability.md) | Makes the finance problem explicit: European sovereignty ambitions are constrained by capital and energy bottlenecks, not only regulatory deficits. | 2026-05-21 |
+| [EU Compute Finance Vulnerability](eu-ai-policy/eu-compute-finance-vulnerability.md) | Extends the EU vulnerability frame from capital and energy to the upstream mineral and processing dependencies behind compute expansion. | 2026-06-07 |
 
 ## ops
 
