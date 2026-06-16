@@ -40,6 +40,13 @@ Lovable should call:
 5. `POST /session/{id}/summary`
 6. `POST /session/{id}/wiki-proposals`
 
+For the live-event experience, it should also call:
+
+7. `POST /session/{id}/pulse` after each agent turn, for the live analytics overlay (async, non-blocking)
+8. `POST /session/{id}/recap` at the end, for the closing verdict and scoreboard
+
+See the pulse and recap response shapes in [Roundtable Frontend Contract](roundtable-frontend-contract.md).
+
 ## Basic Flow
 
 1. User enters prompt and selects actors

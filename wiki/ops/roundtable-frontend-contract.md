@@ -26,6 +26,8 @@ Protected mutating endpoints:
 - `POST /session/shock`
 - `POST /session/{session_id}/summary`
 - `POST /session/{session_id}/wiki-proposals`
+- `POST /session/{session_id}/pulse`
+- `POST /session/{session_id}/recap`
 
 Protected routes require:
 
@@ -112,6 +114,59 @@ Frontend fallback strategy:
 1. try live backend
 2. if network failure, fall back to snapshot JSON
 3. do not fall back for mutating POST actions
+
+## Live Analytics Contract (Pulse)
+
+After each agent turn, the frontend may call `POST /session/{session_id}/pulse` to get a lightweight real-time read of the latest turn for an in-debate analytics overlay. It is computed on demand from the in-memory transcript (LLM when OpenRouter is enabled, heuristic fallback otherwise) and is designed to be called asynchronously so it never blocks the auto-advance flow.
+
+Request: no body (operator token header only). Response:
+
+```json
+{
+  "session_id": "sess_...",
+  "pulse": {
+    "actor": "us",
+    "move": "rebut",
+    "target": "china",
+    "intensity": 78,
+    "tension_delta": 24,
+    "themes": ["rare earths", "export controls", "compute"],
+    "source": "llm"
+  }
+}
+```
+
+- `move`: one of `open, probe, rebut, co-opt, escalate, concede, reframe, deflect`
+- `target`: which other participant the turn addresses — `china`, `us`, `eu`, `human`, or `none`
+- `intensity`: 0-100 rhetorical heat of the turn
+- `tension_delta`: -40..40 — how much this turn raises (+) or lowers (-) room conflict
+- `themes`: 1-3 short topic tags
+- `source`: `llm` or `heuristic`
+- `pulse` is `null` when the latest turn is not an agent turn (human/system) or the transcript is empty
+
+Suggested frontend use: per-actor momentum bars from accumulated words spoken (client-side, instant); a move chip (`move ▸ at {target}` with an intensity dot); a tension needle (start ~25, add `tension_delta` each turn, clamp 0-100); and accumulating theme tags. If the call fails or returns `null`, keep prior values and never block the debate.
+
+## Closing Recap Contract (Recap)
+
+`POST /session/{session_id}/recap` returns the end-of-debate verdict and scoreboard, computed on demand (LLM with heuristic fallback). Quotes in `key_moments` and `best_line` are drawn verbatim from the transcript.
+
+```json
+{
+  "session_id": "sess_...",
+  "recap": {
+    "verdict": { "headline": "...", "summary": "..." },
+    "scoreboard": [ { "actor": "china", "dominance": 85, "biggest_concession": "...", "best_line": "..." } ],
+    "key_moments": [ { "actor": "us", "quote": "...", "why": "...", "turn_index": 3 } ],
+    "shifts": [ { "actor": "eu", "from": "...", "to": "..." } ],
+    "sharpest_exchange": "...",
+    "agreement_ratio": 0.2,
+    "conflict_ratio": 0.7,
+    "generated_by": "llm"
+  }
+}
+```
+
+Suggested frontend use: an animated scoreboard (per-actor `dominance` bars, sorted), the `verdict` headline and summary, an agreement-vs-conflict split bar from `agreement_ratio`/`conflict_ratio`, `key_moments` as quote cards, and the `sharpest_exchange` line. Pair with `POST /session/{session_id}/summary` for the longer strategic memo.
 
 ## Propaganda Lab Contract
 
