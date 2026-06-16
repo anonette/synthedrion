@@ -30,6 +30,15 @@ This matters analytically because it links AI infrastructure to local conflict, 
 
 For a U.S. agent, this page adds a reason to treat domestic processing, allied diversification, and mineral stockpiling as part of AI strategy. For a China agent, it reinforces the value of controlling industrial midstream capacity and processing dominance. For an EU agent, it clarifies that sovereignty ambitions depend not only on cloud and datacenters, but also on access to politically reliable material inputs.
 
+## Deeper Source Cluster
+
+This page is the entry point to a more detailed 2026 mineral-and-infrastructure corpus. The companion pages add hard numbers, named export controls, regional politics, and the energy and compute chokepoints that sit alongside minerals:
+
+- [AI Mineral Chokepoints and Export Weaponization](ai-mineral-chokepoints-and-export-weaponization.md) — the mining-versus-refining map and the 2023-2025 export-control timeline.
+- [Global South Minerals and Digital Extractivism](global-south-minerals-and-digital-extractivism.md) — resource nationalism, the value-addition playbook, water and justice, and the three-pole contest.
+- [Energy, the Power Wall, and Data-Center Build-Out](energy-power-wall-and-datacenter-buildout.md) — electricity and grid interconnection as the binding constraint.
+- [AI Hardware and Compute Chokepoints](ai-hardware-and-compute-chokepoints.md) — TSMC, ASML, NVIDIA, and HBM single points of failure.
+
 ## See Also
 
 - [AI Infrastructure Sovereignty](../ai-infrastructure/ai-infrastructure-sovereignty.md)

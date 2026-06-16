@@ -1,0 +1,27 @@
+# Imported source links
+
+> URL bookmarks from the imported corpus (fetch on demand).
+
+- [AI supercharges critical minerals demand - Metal Tech News](https://www.metaltechnews.com/story/2025/08/20/tech-metals/ai-supercharges-critical-minerals-demand/2437.html)
+- [Artificial Intelligence and the Critical Minerals Crunch – FP Analytics](https://fpanalytics.foreignpolicy.com/2025/07/18/artificial-intelligence-critical-minerals-supply-chains/)
+- [Critical Minerals and Africa_ Avoiding a Zero-Sum Game _ Natural Resource Governance Institute](https://resourcegovernance.org/events/critical-minerals-and-africa-avoiding-zero-sum-game?utm_source=chatgpt.com)
+- [Critical Minerals in Artificial Intelligence _ SFA (Oxford)](https://www.sfa-oxford.com/knowledge-and-insights/critical-minerals-in-low-carbon-and-future-technologies/critical-minerals-in-artificial-intelligence/)
+- [Critical Raw Materials Act - Internal Market, Industry, Entrepreneurship and SMEs](https://single-market-economy.ec.europa.eu/sectors/raw-materials/areas-specific-interest/critical-raw-materials/critical-raw-materials-act_en)
+- [https_odi.org(1)](https://odi.org/en/insights/critical-minerals-geopolitics-in-2026-risks-supply-chains-and-global-power-shifts/?utm_source=chatgpt.com)
+- [https_odi.org](https://odi.org/en/insights/critical-minerals-critical-moment-africas-role-in-the-ai-revolution/?utm_source=chatgpt.com)
+- [https_www.axi](https://www.axios.com/2025/05/06/ai-minerals-development-challenge?utm_source=chatgpt.com)
+- [https_www.csi](https://www.csis.org/analysis/chinas-new-rare-earth-and-magnet-restrictions-threaten-us-defense-supply-chains?utm_source=chatgpt.com)
+- [https_www.iea(1)](https://www.iea.org/reports/global-critical-minerals-outlook-2025/executive-summary?utm_source=chatgpt.com)
+- [https_www.iea](https://www.iea.org/commentaries/with-new-export-controls-on-critical-minerals-supply-concentration-risks-become-reality?utm_source=chatgpt.com)
+- [https_www.iis](https://www.iisd.org/publications/report/critical-minerals-africa-development?utm_source=chatgpt.com)
+- [https_www.lex](https://www.lexology.com/library/detail.aspx?g=0d274bb8-75fe-446f-974d-db284f1277d5&utm_source=chatgpt.com)
+- [https_www.reu(1)](https://www.reuters.com/world/china/us-business-group-says-some-critical-minerals-are-nearly-unobtainable-china-2026-06-10/?utm_source=chatgpt.com)
+- [https_www.reu(2)](https://www.reuters.com/sustainability/climate-energy/eu-launches-operations-critical-minerals-procurement-platform-2026-04-13/?utm_source=chatgpt.com)
+- [https_www.reu](https://www.reuters.com/world/africa/congos-gecamines-partners-with-mercuria-market-critical-minerals-2025-12-05/?utm_source=chatgpt.com)
+- [https_www.the(1)](https://www.theguardian.com/global-development/2026/apr/29/critical-minerals-are-oil-of-21st-century-as-demand-fuels-poverty-and-pollution-in-poorer-countries?utm_source=chatgpt.com)
+- [https_www.the(2)](https://www.theguardian.com/environment/2024/apr/26/un-led-panel-tackle-abuses-mining-critical-minerals?utm_source=chatgpt.com)
+- [https_www.the](https://www.theguardian.com/environment/2024/apr/26/un-led-panel-tackle-abuses-mining-critical-minerals?utm_source=chatgpt.com)
+- [https_www.usg](https://www.usgs.gov/news/science-snippet/interior-department-releases-final-2025-list-critical-minerals?utm_source=chatgpt.com)
+- [Powering the AI Era – FP Analytics](https://fpanalytics.foreignpolicy.com/2025/05/20/artificial-intelligence-electricity-demand/)
+- [What’s in the New U.S.-Saudi Minerals Agreement_](https://www.csis.org/analysis/new-era-us-saudi-minerals-cooperation)
+- [דוח האו״ם_ העלות הסביבתית של AI - הידען - Hayadan](https://www.hayadan.org.il/environmental-footprint-of-ai-energy-water-lan)

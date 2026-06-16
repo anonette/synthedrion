@@ -44,6 +44,18 @@ China's interest is not only to catch up technologically but to shape the enviro
 
 This means a Chinese strategic agent may support openness and international cooperation not as an alternative to state power, but as a route to ecosystem influence and rule-setting advantage.
 
+## Mineral Midstream Dominance as Leverage
+
+The 2026 mineral corpus turns China's resilience interest into an offensive asset. China controls roughly 90% of rare-earth processing, about 90% of cobalt refining, and around 98% of gallium, with comparable dominance in germanium and battery-grade materials. This midstream control is leverage rivals cannot quickly replicate, because it rests on accepting environmental costs others avoid. Between 2023 and 2025 China demonstrated graduated coercion through export licensing on gallium, germanium, antimony, and seven heavy rare earths.
+
+In simulation, a Chinese agent should treat refining dominance as a crown jewel to be wielded carefully: it is real power, but openly weaponizing it accelerates the diversification (Minerals Security Partnership, friend-shoring, the 2010 Japan precedent) that erodes the leverage over time. The stronger play is implied threat and selective denial rather than full embargo.
+
+## Compute Sovereignty and Open-Source Statecraft
+
+The sovereignty corpus reframes open-source AI as an instrument of control rather than a concession. Under "software supplements hardware," efficient open models route around chip sanctions while keeping data in-country, embedding content alignment, and projecting an "AI democratization" narrative across the Global South that builds standards path-dependency. Domestic compute is organized through the National Integrated Computing Power Network and "Eastern Data, Western Computing," routing data-center load toward energy-abundant inland provinces.
+
+In simulation, a Chinese agent can frame openness, South-South cooperation, and energy-backed build-out as generosity and self-reliance simultaneously, while treating cyber and data sovereignty as the non-negotiable frame.
+
 ## Social Legitimacy and Political Control
 
 The corpus combines development promises with a strong emphasis on safety, reliability, controllability, and Party leadership. AI is supposed to benefit society, improve services, and create jobs, but it must do so within a politically supervised framework. The state's interest is therefore not only performance, but performance without erosion of governing authority.
@@ -58,4 +70,7 @@ That also means labor absorption and unemployment management are not secondary w
 - [Chinese AI Labor and Social Stability](chinese-ai-labor-and-social-stability.md)
 - [China AI Simulation Profile](china-ai-simulation-profile.md)
 - [Critical Minerals and AI Supply Chains](../shared-ai-geopolitics/critical-minerals-and-ai-supply-chains.md)
+- [AI Mineral Chokepoints and Export Weaponization](../shared-ai-geopolitics/ai-mineral-chokepoints-and-export-weaponization.md)
+- [Compute Sovereignty and the Openness Paradox](../shared-ai-geopolitics/compute-sovereignty-and-the-openness-paradox.md)
+- [Global South Minerals and Digital Extractivism](../shared-ai-geopolitics/global-south-minerals-and-digital-extractivism.md)
 - [AI, Nuclear Posture, and Human Control](../shared-ai-geopolitics/ai-nuclear-posture-and-human-control.md)

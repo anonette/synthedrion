@@ -12,6 +12,16 @@ The newer Gulf-capital material already sharpened a structural weakness in that 
 
 The most important shift is conceptual. Europe is no longer only asking how to regulate foreign AI power. It is more directly asking how to build enough domestic infrastructure that regulation does not remain a sovereignty gesture without technical backing.
 
+## Raw Materials, ASML Leverage, and the Diligence Dilemma
+
+The 2026 corpus gives the EU both a vulnerability and an asset. The vulnerability: it depends on Chinese refining and Taiwanese fabrication, and its target of processing 40% of critical minerals in-Europe (the Critical Raw Materials Act) reads to producer states as green protectionism. The asset: ASML's monopoly on extreme-ultraviolet lithography is the single most powerful piece of leverage in the entire global AI hardware economy, since no leading-edge chip is made without it. Europe also leads on responsible-sourcing regimes (the Batteries Regulation, the Corporate Sustainability Due Diligence Directive), but faces a live tension between due-diligence leadership and competitiveness, and has begun relaxing transparency rules to keep pace with the United States and China.
+
+In simulation, an EU agent can wield ASML and market access as hard power, weaponize due-diligence and competition law as geopolitical instruments, and reframe slowness as durability — while defending against the charge that its standards are protectionism by another name.
+
+## Rule-Maker Without a Model-Maker
+
+The AI Index 2026 sharpens the EU's structural position: it trails badly on frontier models and investment (combined China-plus-Europe generative-AI investment is a small fraction of U.S. private spending) and its grids are a build-out bottleneck, but it leads on regulation, with the AI Act's first prohibitions in force and an expected "Brussels Effect." European power is normative and gateway-setting — control over standards rather than capability — which is real power if Europe avoids becoming a rule-maker without any model-maker to anchor it.
+
 ## Provisional Interests
 
 - shape trustworthy governance and evaluation standards
@@ -27,4 +37,7 @@ The most important shift is conceptual. Europe is no longer only asking how to r
 - [EU AI Knowledge Base Hub](eu-ai-knowledge-base-hub.md)
 - [Shared AI Geopolitics and Governance](../shared-ai-geopolitics/shared-ai-geopolitics-and-governance.md)
 - [AI Infrastructure Sovereignty](../ai-infrastructure/ai-infrastructure-sovereignty.md)
+- [AI Hardware and Compute Chokepoints](../shared-ai-geopolitics/ai-hardware-and-compute-chokepoints.md)
+- [AI Mineral Chokepoints and Export Weaponization](../shared-ai-geopolitics/ai-mineral-chokepoints-and-export-weaponization.md)
+- [Global South Minerals and Digital Extractivism](../shared-ai-geopolitics/global-south-minerals-and-digital-extractivism.md)
 - [AI Governance, Evaluation, Resilience, and Open Models](../ai-governance/ai-governance-evaluation-resilience-and-open-models.md)
