@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from .config import ACTOR_MODELS, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, RECAP_MODEL
+from .config import ACTOR_MODELS, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, PULSE_MODEL, RECAP_MODEL
 
 
 ACTOR_PROMPT_PROFILES = {
@@ -273,6 +273,58 @@ def generate_openrouter_recap(prompt: str, transcript: list[dict], actors: list[
         "X-Title": OPENROUTER_APP_NAME,
     }
     with httpx.Client(timeout=90.0) as client:
+        res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        data = res.json()
+    return _parse_json_object(data["choices"][0]["message"]["content"])
+
+
+def build_pulse_messages(prompt: str, recent_context: list[dict], last_turn: dict, actors: list[str]) -> list[dict[str, str]]:
+    speaker = ACTOR_LABELS_FOR_RECAP.get(last_turn.get("actor", ""), last_turn.get("actor", "unknown"))
+    recent = "\n".join(
+        f"- {ACTOR_LABELS_FOR_RECAP.get(m.get('actor',''), m.get('actor','?'))}: {' '.join((m.get('content','') or '').split())[:240]}"
+        for m in recent_context[-3:]
+    ) or "- (no prior turns)"
+    text = " ".join((last_turn.get("content", "") or "").split())[:900]
+
+    system = (
+        "You are a real-time debate analyst for a live geopolitical AI roundtable. You classify the single "
+        "latest turn quickly and return compact JSON only. No prose."
+    )
+    user = (
+        f"Debate prompt: {prompt}\n\n"
+        f"Recent turns:\n{recent}\n\n"
+        f"LATEST turn by {speaker}:\n{text}\n\n"
+        "Return one JSON object with exactly these fields:\n"
+        "- move: one of open, probe, rebut, co-opt, escalate, concede, reframe, deflect\n"
+        "- target: which other participant it most addresses — one of china, us, eu, human, none\n"
+        "- intensity: integer 0-100 (rhetorical heat of this turn)\n"
+        "- tension_delta: integer -40..40 (how much this raises (+) or lowers (-) overall conflict in the room)\n"
+        "- themes: array of 1-3 short lowercase tags drawn from the actual content "
+        "(e.g. \"rare earths\", \"export controls\", \"compute\", \"energy\", \"sovereignty\", \"alliances\", \"trade\", \"global south\")\n"
+        "Valid JSON only, no markdown."
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def generate_openrouter_pulse(prompt: str, recent_context: list[dict], last_turn: dict, actors: list[str]) -> dict[str, Any]:
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not set")
+
+    payload: dict[str, Any] = {
+        "model": PULSE_MODEL,
+        "messages": build_pulse_messages(prompt, recent_context, last_turn, actors),
+        "temperature": 0.3,
+        "max_tokens": 200,
+        "response_format": {"type": "json_object"},
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_SITE_URL,
+        "X-Title": OPENROUTER_APP_NAME,
+    }
+    with httpx.Client(timeout=30.0) as client:
         res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
         res.raise_for_status()
         data = res.json()

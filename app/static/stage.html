@@ -146,6 +146,30 @@
   .sharpest { text-align: center; color: #cbd5e1; font-size: 15px; font-style: italic; margin: 8px 0 26px; }
   .closing-actions { display: flex; justify-content: center; gap: 12px; margin-top: 10px; }
   .warnbox { background: #2a1d0b; border: 1px solid #7c5e1e; color: #fcd34d; font-size: 12.5px; padding: 8px 12px; border-radius: 8px; margin-bottom: 18px; }
+
+  /* ---------- Live analytics overlay ---------- */
+  .podium .momentum { height: 6px; margin: 8px 14px 0; background: #131a2a; border-radius: 999px; overflow: hidden; }
+  .podium .momentum > span { display: block; height: 100%; width: 0; border-radius: 999px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  .podium.china .momentum > span { background: linear-gradient(90deg,var(--china-deep),var(--china)); }
+  .podium.us .momentum > span { background: linear-gradient(90deg,var(--us-deep),var(--us)); }
+  .podium.eu .momentum > span { background: linear-gradient(90deg,var(--eu-deep),var(--eu)); }
+  #analytics { display: flex; align-items: center; justify-content: center; gap: 22px; padding: 2px 24px 0; flex-wrap: wrap; transition: opacity .3s; }
+  #analytics.off, #themeTags.off { opacity: 0; pointer-events: none; }
+  .tension { display: flex; align-items: center; gap: 10px; }
+  .tension .lbl { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .tension .track { position: relative; width: min(360px, 40vw); height: 10px; border-radius: 999px; border: 1px solid #233149; background: linear-gradient(90deg,#16a34a,#eab308,#dc2626); }
+  .tension .needle { position: absolute; top: -4px; width: 4px; height: 18px; border-radius: 2px; background: #fff; box-shadow: 0 0 8px #fff; transform: translateX(-2px); transition: left .7s cubic-bezier(.2,.8,.2,1); }
+  .move-chip { display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+  .move-chip .mv { padding: 3px 11px; border-radius: 999px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; font-size: 11px; background: #1a2236; border: 1px solid #2c3a57; color: #cbd5e1; }
+  .move-chip .mv.escalate { background: #3b0d0d; border-color: var(--china); color: #fecaca; }
+  .move-chip .mv.rebut { background: #2a1d0b; border-color: var(--eu); color: #fde68a; }
+  .move-chip .mv.probe { background: #0d1b3b; border-color: var(--us); color: #bfdbfe; }
+  .move-chip .mv.concede, .move-chip .mv.coopt { background: #0d2a16; border-color: #16a34a; color: #bbf7d0; }
+  .move-chip .tgt { color: var(--muted); }
+  .move-chip .intens { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+  #themeTags { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 6px 24px; min-height: 14px; transition: opacity .3s; }
+  .theme-tag { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: #13192a; border: 1px solid #243049; color: #aab6cc; }
+  .theme-tag.fresh { border-color: #3b82f6; color: #dbeafe; }
 </style>
 </head>
 <body>
@@ -188,7 +212,7 @@
 
     <div style="margin-top:22px; display:flex; align-items:center; gap:14px;">
       <button class="btn" id="startBtn">Start debate ▶</button>
-      <span class="hint" style="color:#55617a;font-size:12px">Press <b>C</b> to hide controls · <b>Space</b> to pause</span>
+      <span class="hint" style="color:#55617a;font-size:12px">Press <b>C</b> controls · <b>A</b> analytics · <b>Space</b> pause</span>
     </div>
     <div class="err" id="setupErr"></div>
   </div>
@@ -205,12 +229,27 @@
 
   <div class="podiums" id="podiums"></div>
 
+  <div id="analytics" class="off">
+    <div class="tension">
+      <span class="lbl">Common ground</span>
+      <div class="track"><div class="needle" id="tensionNeedle" style="left:25%"></div></div>
+      <span class="lbl">Open conflict</span>
+    </div>
+    <div class="move-chip" id="moveChip" style="visibility:hidden">
+      <span class="mv" id="moveMv">—</span>
+      <span class="tgt" id="moveTgt"></span>
+      <span class="intens" id="moveIntens" title="intensity"></span>
+    </div>
+  </div>
+
   <div class="caption-wrap">
     <div class="caption" id="caption">
       <div class="speaker" id="capSpeaker"><span class="tag system">System</span> Waiting for the first speaker…</div>
       <div class="body" id="capBody"></div>
     </div>
   </div>
+
+  <div id="themeTags" class="off"></div>
 
   <div id="ops">
     <button class="btn sm" id="pauseBtn">⏸ Pause</button>
@@ -365,6 +404,7 @@ function enterStage() {
   document.getElementById("modeBadge").textContent = session.mode;
   document.getElementById("promptLine").textContent = session.prompt;
   renderPodiums();
+  resetAnalytics();
 }
 
 function renderPodiums() {
@@ -378,9 +418,81 @@ function renderPodiums() {
       <div class="avatar">${INITIALS[actor] || actor}</div>
       <div class="name">${LABELS[actor]}</div>
       <div class="sub" id="sub-${actor}"></div>
-      <div class="count" id="count-${actor}">0 turns</div>`;
+      <div class="count" id="count-${actor}">0 turns</div>
+      <div class="momentum"><span id="mom-${actor}"></span></div>`;
     box.appendChild(div);
   });
+}
+
+// ---------- Live analytics (hybrid: instant heuristics + async LLM pulse) ----------
+const airtime = {};          // cumulative words spoken per actor
+let tension = 25;            // 0..100 running conflict level
+let pulseSeq = 0;            // guards against out-of-order pulse responses
+const seenThemes = [];      // recent theme tags
+
+function resetAnalytics() {
+  for (const a of session.actors) airtime[a] = 0;
+  tension = 25; pulseSeq = 0; seenThemes.length = 0;
+  document.getElementById("tensionNeedle").style.left = "25%";
+  document.getElementById("moveChip").style.visibility = "hidden";
+  document.getElementById("themeTags").innerHTML = "";
+  document.getElementById("analytics").classList.remove("off");
+  document.getElementById("themeTags").classList.remove("off");
+}
+
+function updateMomentum() {
+  const total = session.actors.reduce((s, a) => s + (airtime[a] || 0), 0) || 1;
+  const max = Math.max(1, ...session.actors.map(a => airtime[a] || 0));
+  session.actors.forEach(a => {
+    const bar = document.getElementById("mom-" + a);
+    if (bar) bar.style.width = Math.round(100 * (airtime[a] || 0) / max) + "%";
+    const c = document.getElementById("count-" + a);
+    if (c) c.textContent = `${turnCounts[a] || 0} · ${Math.round(100 * (airtime[a] || 0) / total)}%`;
+  });
+}
+
+function setTension(delta) {
+  tension = Math.max(0, Math.min(100, tension + (delta || 0)));
+  document.getElementById("tensionNeedle").style.left = tension + "%";
+}
+
+function applyPulse(p) {
+  if (!p) return;
+  const chip = document.getElementById("moveChip");
+  const move = (p.move || "").toLowerCase();
+  document.getElementById("moveMv").className = "mv " + move.replace(/[^a-z]/g, "");
+  document.getElementById("moveMv").textContent = p.move || "—";
+  const tgt = p.target && p.target !== "none" ? "▸ at " + (LABELS[p.target] || p.target) : "";
+  document.getElementById("moveTgt").textContent = tgt;
+  const dot = document.getElementById("moveIntens");
+  const intens = Math.max(0, Math.min(100, p.intensity || 0));
+  dot.style.opacity = (0.3 + 0.7 * intens / 100).toFixed(2);
+  dot.style.transform = `scale(${(0.7 + 0.6 * intens / 100).toFixed(2)})`;
+  dot.title = "intensity " + intens;
+  chip.style.visibility = "visible";
+  setTension(p.tension_delta);
+  renderThemes(p.themes || []);
+}
+
+function renderThemes(themes) {
+  themes.forEach(t => { if (t && !seenThemes.includes(t)) seenThemes.push(t); });
+  while (seenThemes.length > 7) seenThemes.shift();
+  const box = document.getElementById("themeTags");
+  box.innerHTML = "";
+  seenThemes.forEach(t => {
+    const el = document.createElement("span");
+    el.className = "theme-tag" + (themes.includes(t) ? " fresh" : "");
+    el.textContent = t;
+    box.appendChild(el);
+  });
+}
+
+async function callPulse() {
+  const myseq = ++pulseSeq;
+  try {
+    const res = await api(`/session/${session.session_id}/pulse`);
+    if (myseq === pulseSeq && res.pulse) applyPulse(res.pulse);   // ignore stale responses
+  } catch (e) { /* overlay keeps heuristic state */ }
 }
 
 const turnCounts = {};
@@ -418,8 +530,11 @@ async function renderTurn(msg) {
   if (isAgent) {
     setActive(actor);
     turnCounts[actor] = (turnCounts[actor] || 0) + 1;
-    const c = document.getElementById("count-" + actor);
-    if (c) c.textContent = turnCounts[actor] + (turnCounts[actor] === 1 ? " turn" : " turns");
+    // instant heuristic layer: airtime momentum updates immediately
+    airtime[actor] = (airtime[actor] || 0) + (msg.content || "").trim().split(/\s+/).length;
+    updateMomentum();
+    // enrich a beat later with the async LLM pulse (move / tension / themes)
+    callPulse();
   } else {
     setActive(null);
   }
@@ -504,6 +619,10 @@ function wireOps() {
     if (document.getElementById("stage").classList.contains("hidden")) return;
     if (e.code === "Space") { e.preventDefault(); togglePause(); }
     else if (e.key === "c" || e.key === "C") { document.getElementById("ops").classList.toggle("hidden"); }
+    else if (e.key === "a" || e.key === "A") {
+      document.getElementById("analytics").classList.toggle("off");
+      document.getElementById("themeTags").classList.toggle("off");
+    }
     else if (e.key === "s" || e.key === "S") { skipRequested = true; }
   });
 }

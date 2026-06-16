@@ -487,6 +487,87 @@ def build_recap(
     }
 
 
+_THEME_LEXICON = {
+    "minerals": ["mineral", "rare earth", "rare-earth", "gallium", "germanium", "cobalt", "lithium", "copper", "refining", "graphite", "nickel"],
+    "compute": ["chip", "semiconductor", "gpu", "compute", "tsmc", "asml", "nvidia", "fab", "hbm", "lithography"],
+    "energy": ["energy", "power", "grid", "electricity", " gas", "nuclear", "datacenter", "data center", "water", "cooling", "terawatt"],
+    "sovereignty": ["sovereignty", "sovereign", "self-reliance", "autonomy", "cyber", "indigeniz"],
+    "alliances": ["alliance", "allies", "ally", "partner", "friend-shoring", "coalition", "bloc"],
+    "trade": ["export control", "tariff", "sanction", "supply chain", "embargo", "decoupl"],
+    "global south": ["africa", "global south", "congo", "drc", "indonesia", "extraction", "colonial", "periphery"],
+    "governance": ["regulation", "standard", "governance", "ai act", "rules", "compliance"],
+    "safety": ["safety", "alignment", "risk", "guardrail", "human control"],
+    "open models": ["open-source", "open source", "open-weight", "open model", "deepseek"],
+}
+
+_CHARGED_WORDS = ("hypocrisy", "coercion", "decadence", "fantasy", "collapse", "weaponize", "retaliate", "threat", "fail", "dependence", "contradiction")
+_ACTOR_MENTIONS = {
+    "china": ["china", "chinese", "beijing", "prc"],
+    "us": ["united states", "u.s.", "america", "american", "washington"],
+    "eu": ["europe", "european", "eu ", "brussels"],
+}
+
+
+def build_pulse(transcript: list[dict], actors: list[str] | None = None, mode: SessionMode = "debate") -> dict:
+    """Lightweight heuristic read of the latest turn for the live overlay.
+
+    Mirrors the shape of the LLM pulse so the frontend can render either interchangeably.
+    """
+    actors = actors or ["china", "us", "eu"]
+    last = transcript[-1] if transcript else {}
+    actor = last.get("actor", "")
+    text = (last.get("content", "") or "")
+    low = text.lower()
+    words = len(text.split())
+    exclaims = text.count("!")
+    charged = sum(low.count(w) for w in _CHARGED_WORDS)
+    has_prior = any(m.get("kind", "agent") == "agent" for m in transcript[:-1])
+
+    if not has_prior:
+        move = "open"
+    elif "?" in text:
+        move = "probe"
+    elif any(c in low for c in ("fair point", "you're right", "agree", "concede", "common ground")):
+        move = "concede"
+    elif any(c in low for c in ("we also", "join", "together", "share that", "co-opt")):
+        move = "co-opt"
+    elif exclaims >= 2 or charged >= 2 or any(c in low for c in ("will not", "must ", "or else", "retaliat")):
+        move = "escalate"
+    elif any(c in low for c in ("but ", "however", "reject", "wrong", "disagree", "illusion")):
+        move = "rebut"
+    else:
+        move = "reframe"
+
+    target = "none"
+    for other in actors:
+        if other == actor:
+            continue
+        if any(token in low for token in _ACTOR_MENTIONS.get(other, [])):
+            target = other
+            break
+
+    intensity = max(5, min(100, round(28 + words / 7 + exclaims * 9 + charged * 7)))
+    move_tension = {"escalate": 26, "rebut": 12, "probe": 4, "reframe": 1, "open": 2, "co-opt": -6, "concede": -22, "deflect": -2}
+    tension_delta = max(-40, min(40, move_tension.get(move, 2) + exclaims * 3 + charged * 2))
+
+    themes: list[str] = []
+    for theme, keys in _THEME_LEXICON.items():
+        if any(k in low for k in keys):
+            themes.append(theme)
+        if len(themes) >= 3:
+            break
+
+    return {
+        "actor": actor,
+        "move": move,
+        "target": target,
+        "intensity": intensity,
+        "tension_delta": tension_delta,
+        "themes": themes,
+        "source": "heuristic",
+    }
+
+
 def build_wiki_proposals(actors: list[str], prompt: str) -> list[dict[str, str]]:
     proposals = []
     for actor in actors:

@@ -11,11 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from .agent_logic import build_recap, build_summary, build_wiki_proposals, generate_actor_propaganda_turn, generate_actor_turn, next_actor
+from .agent_logic import build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_propaganda_turn, generate_actor_turn, next_actor
 from .audio import ensure_replay_audio_assets
 from .config import ACTOR_MODELS
 from .images import generate_actor_image, image_model_config
-from .llm import generate_openrouter_propaganda_turn, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
+from .llm import generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
 from .auth import verify_token, require_roundtable_operator
 from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key
 from .scheduler import run_scheduled_session, run_test_session
@@ -442,6 +442,44 @@ def summarize_session(session_id: str) -> dict:
     _write_memo_markdown(state)
     
     return {"session_id": state.session_id, "summary": state.summary.model_dump()}
+
+
+@app.post("/session/{session_id}/pulse", dependencies=[Depends(require_roundtable_operator)])
+def pulse_session(session_id: str) -> dict:
+    """Lightweight live read of the most recent turn for the in-debate analytics overlay.
+
+    Uses the fast pulse model when OpenRouter is enabled, otherwise the heuristic. Designed
+    to be called asynchronously by the stage after each turn so it never blocks the debate flow.
+    """
+    state = SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+    if not state.transcript:
+        return {"session_id": state.session_id, "pulse": None}
+
+    transcript = [m.model_dump() for m in state.transcript]
+    last_turn = transcript[-1]
+
+    # Only the interpretive layer is meaningful for spoken agent turns.
+    if last_turn.get("kind", "agent") != "agent":
+        return {"session_id": state.session_id, "pulse": None}
+
+    if openrouter_enabled():
+        try:
+            pulse = generate_openrouter_pulse(
+                prompt=state.prompt,
+                recent_context=transcript[-4:-1],
+                last_turn=last_turn,
+                actors=state.actors,
+            )
+            pulse.setdefault("actor", last_turn.get("actor"))
+            pulse.setdefault("source", "llm")
+        except Exception:
+            pulse = build_pulse(transcript, state.actors, state.mode)
+    else:
+        pulse = build_pulse(transcript, state.actors, state.mode)
+
+    return {"session_id": state.session_id, "pulse": pulse}
 
 
 @app.post("/session/{session_id}/recap", dependencies=[Depends(require_roundtable_operator)])

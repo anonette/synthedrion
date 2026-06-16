@@ -31,6 +31,9 @@ ACTOR_MODELS = {
 # Model used for the end-of-debate recap and scoreboard. Defaults to the U.S. actor model.
 RECAP_MODEL = os.getenv("OPENROUTER_MODEL_RECAP", ACTOR_MODELS["us"])
 
+# Model used for the lightweight per-turn live "pulse" analysis. Keep it small/fast.
+PULSE_MODEL = os.getenv("OPENROUTER_MODEL_PULSE", ACTOR_MODELS["us"])
+
 ACTOR_IMAGE_MODELS = {
     "china": {
         "provider": os.getenv("IMAGE_PROVIDER_CHINA", "openrouter"),
