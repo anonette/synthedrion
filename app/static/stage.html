@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Cold War — Live Stage</title>
+<style>
+  :root {
+    --china: #ef4444; --china-deep: #7f1d1d;
+    --us: #3b82f6; --us-deep: #1e3a8a;
+    --eu: #f59e0b; --eu-deep: #78350f;
+    --human: #94a3b8; --system: #f59e0b;
+    --bg: #0a0d14; --panel: #121724; --ink: #e8edf6; --muted: #8a94a6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(1200px 700px at 50% -10%, #16203a 0%, var(--bg) 60%);
+    color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .hidden { display: none !important; }
+
+  /* ---------- Setup overlay ---------- */
+  #setup {
+    position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+    background: rgba(4,6,12,.92);
+  }
+  #setup .card {
+    width: min(640px, 92vw); background: var(--panel); border: 1px solid #25304a;
+    border-radius: 16px; padding: 28px 30px; box-shadow: 0 30px 80px rgba(0,0,0,.6);
+  }
+  #setup h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: .3px; }
+  #setup p.sub { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+  label.f { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 14px 0 6px; }
+  textarea, input[type=text], input[type=password], select {
+    width: 100%; background: #0c1019; border: 1px solid #2a3550; color: var(--ink);
+    border-radius: 9px; padding: 10px 12px; font-size: 14px; font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 64px; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    display: flex; align-items: center; gap: 7px; background: #0c1019; border: 1px solid #2a3550;
+    padding: 8px 12px; border-radius: 999px; cursor: pointer; font-size: 13px; user-select: none;
+  }
+  .chip input { accent-color: #60a5fa; }
+  .btn {
+    background: linear-gradient(180deg, #2563eb, #1d4ed8); color: #fff; border: 0; cursor: pointer;
+    padding: 11px 18px; border-radius: 9px; font-size: 14px; font-weight: 600; letter-spacing: .3px;
+  }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.ghost { background: #1a2236; border: 1px solid #2c3a57; }
+  .btn.sm { padding: 7px 12px; font-size: 12.5px; }
+  .btn.warn { background: linear-gradient(180deg,#b45309,#92400e); }
+  .btn.stop { background: linear-gradient(180deg,#dc2626,#991b1b); }
+  .err { color: #fca5a5; font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+
+  /* ---------- Stage ---------- */
+  #stage { display: flex; flex-direction: column; height: 100vh; }
+  header.top {
+    display: flex; align-items: center; gap: 16px; padding: 14px 22px; border-bottom: 1px solid #1c2740;
+  }
+  .live { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; letter-spacing: 1px; }
+  .live .dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 0 rgba(239,68,68,.7); animation: pulse 1.6s infinite; }
+  .live.paused .dot { background: #64748b; animation: none; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(239,68,68,.6);} 70%{box-shadow:0 0 0 9px rgba(239,68,68,0);} 100%{box-shadow:0 0 0 0 rgba(239,68,68,0);} }
+  .prompt-line { flex: 1; color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mode-badge { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 4px 10px; border: 1px solid #2c3a57; border-radius: 999px; color: #cbd5e1; }
+  .timer { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+
+  .podiums { display: flex; justify-content: center; gap: 40px; padding: 26px 20px 8px; }
+  .podium {
+    width: 200px; text-align: center; opacity: .42; transition: all .45s cubic-bezier(.2,.7,.2,1);
+    filter: grayscale(.4);
+  }
+  .podium .avatar {
+    width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 30px; font-weight: 800; letter-spacing: 1px; border: 3px solid #2a3550; background: #0e1320; color: #fff;
+  }
+  .podium .name { font-size: 15px; font-weight: 600; }
+  .podium .sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; min-height: 14px; }
+  .podium.active { opacity: 1; transform: translateY(-8px) scale(1.06); filter: none; }
+  .podium.china.active .avatar { border-color: var(--china); box-shadow: 0 0 40px -6px var(--china); background: linear-gradient(180deg,#3b0d0d,#1a0808); }
+  .podium.us.active .avatar { border-color: var(--us); box-shadow: 0 0 40px -6px var(--us); background: linear-gradient(180deg,#0d1b3b,#08101a); }
+  .podium.eu.active .avatar { border-color: var(--eu); box-shadow: 0 0 40px -6px var(--eu); background: linear-gradient(180deg,#3b2a0d,#1a1408); }
+  .podium .count { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .caption-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px 24px 18px; min-height: 0; }
+  .caption {
+    width: min(1000px, 94vw); max-height: 100%; overflow: auto; border-radius: 16px; padding: 26px 30px;
+    background: var(--panel); border: 1px solid #1f2942; border-left: 6px solid #2c3a57; transition: border-color .4s;
+  }
+  .caption .speaker { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
+  .caption .speaker .tag { padding: 2px 9px; border-radius: 999px; font-size: 11px; color: #fff; }
+  .caption .body { font-size: clamp(18px, 2.3vw, 27px); line-height: 1.5; white-space: pre-wrap; }
+  .caption .cursor { display: inline-block; width: 9px; margin-left: 2px; background: currentColor; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .caption.china { border-left-color: var(--china); }
+  .caption.us { border-left-color: var(--us); }
+  .caption.eu { border-left-color: var(--eu); }
+  .caption.human { border-left-color: var(--human); background: #141a26; }
+  .caption.system { border-left-color: var(--system); background: #241a0b; }
+  .tag.china{background:var(--china-deep)} .tag.us{background:var(--us-deep)} .tag.eu{background:var(--eu-deep)}
+  .tag.human{background:#334155} .tag.system{background:#92400e}
+
+  /* ---------- Operator strip ---------- */
+  #ops {
+    border-top: 1px solid #1c2740; background: #0b0f1a; padding: 12px 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  #ops .spacer { flex: 1; }
+  #ops .hint { color: #55617a; font-size: 11.5px; }
+  .pop {
+    position: fixed; bottom: 64px; left: 18px; z-index: 30; width: min(440px, 92vw);
+    background: var(--panel); border: 1px solid #2a3550; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+  .pop h3 { margin: 0 0 10px; font-size: 14px; }
+
+  /* ---------- Closing sequence ---------- */
+  #closing { position: fixed; inset: 0; z-index: 60; background: rgba(5,7,13,.97); overflow: auto; padding: 40px 20px; }
+  #closing .inner { width: min(960px, 94vw); margin: 0 auto; }
+  #closing h1 { text-align: center; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  #closing .verdict-head { text-align: center; font-size: clamp(24px, 3.4vw, 38px); font-weight: 800; margin: 4px 0 8px; }
+  #closing .verdict-sum { text-align: center; color: #c7d0e0; font-size: 16px; max-width: 760px; margin: 0 auto 28px; line-height: 1.55; }
+  .board { display: grid; gap: 14px; margin-bottom: 30px; }
+  .score-row { display: grid; grid-template-columns: 150px 1fr 54px; align-items: center; gap: 14px; }
+  .score-row .who { font-weight: 700; font-size: 15px; }
+  .score-row .who small { display: block; color: var(--muted); font-weight: 400; font-size: 11.5px; }
+  .bar { height: 22px; background: #131a2a; border-radius: 999px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; width: 0; border-radius: 999px; transition: width 1.1s cubic-bezier(.2,.8,.2,1); }
+  .bar.china > span { background: linear-gradient(90deg,var(--china-deep),var(--china)); }
+  .bar.us > span { background: linear-gradient(90deg,var(--us-deep),var(--us)); }
+  .bar.eu > span { background: linear-gradient(90deg,var(--eu-deep),var(--eu)); }
+  .score-row .val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .score-row .line { grid-column: 2 / 4; color: var(--muted); font-size: 12.5px; font-style: italic; margin-top: -6px; }
+  .split { display: flex; height: 14px; border-radius: 999px; overflow: hidden; margin: 6px 0 26px; border: 1px solid #1f2942; }
+  .split .agree { background: #16a34a; } .split .conflict { background: #dc2626; } .split .rest { background: #1f2942; }
+  .split-legend { display: flex; justify-content: center; gap: 22px; font-size: 12px; color: var(--muted); margin-bottom: 26px; }
+  .moments { display: grid; gap: 12px; margin-bottom: 24px; }
+  .moment { background: var(--panel); border: 1px solid #1f2942; border-left: 4px solid #2c3a57; border-radius: 10px; padding: 14px 16px; }
+  .moment.china{border-left-color:var(--china)} .moment.us{border-left-color:var(--us)} .moment.eu{border-left-color:var(--eu)}
+  .moment .q { font-size: 16px; line-height: 1.5; }
+  .moment .why { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .section-title { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin: 26px 0 10px; }
+  .sharpest { text-align: center; color: #cbd5e1; font-size: 15px; font-style: italic; margin: 8px 0 26px; }
+  .closing-actions { display: flex; justify-content: center; gap: 12px; margin-top: 10px; }
+  .warnbox { background: #2a1d0b; border: 1px solid #7c5e1e; color: #fcd34d; font-size: 12.5px; padding: 8px 12px; border-radius: 8px; margin-bottom: 18px; }
+</style>
+</head>
+<body>
+
+<!-- ========== SETUP ========== -->
+<div id="setup">
+  <div class="card">
+    <h1>AI Cold War — Live Stage</h1>
+    <p class="sub">Auto-advancing debate stage for live events. Operators can pause, inject human points and shocks, then close with a scoreboard + recap.</p>
+
+    <label class="f">Debate prompt</label>
+    <textarea id="prompt">As compute export controls tighten, China, the US, and the EU clash over who sets the rules for frontier AI.</textarea>
+
+    <div class="row">
+      <div>
+        <label class="f">Mode</label>
+        <select id="mode">
+          <option value="debate">debate</option>
+          <option value="negotiation">negotiation</option>
+          <option value="crisis">crisis</option>
+          <option value="policy-planning">policy-planning</option>
+          <option value="propaganda-lab">propaganda-lab</option>
+        </select>
+      </div>
+      <div>
+        <label class="f">Operator token</label>
+        <input id="token" type="password" placeholder="X-Roundtable-Token" autocomplete="off" />
+      </div>
+    </div>
+
+    <label class="f">Actors</label>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" id="china" checked> China</label>
+      <label class="chip"><input type="checkbox" id="us" checked> United States</label>
+      <label class="chip"><input type="checkbox" id="eu" checked> European Union</label>
+    </div>
+
+    <label class="f">Pace (seconds the audience reads each turn)</label>
+    <input id="pace" type="text" value="6" />
+
+    <div style="margin-top:22px; display:flex; align-items:center; gap:14px;">
+      <button class="btn" id="startBtn">Start debate ▶</button>
+      <span class="hint" style="color:#55617a;font-size:12px">Press <b>C</b> to hide controls · <b>Space</b> to pause</span>
+    </div>
+    <div class="err" id="setupErr"></div>
+  </div>
+</div>
+
+<!-- ========== STAGE ========== -->
+<div id="stage" class="hidden">
+  <header class="top">
+    <div class="live" id="liveBadge"><span class="dot"></span><span id="liveText">LIVE</span></div>
+    <span class="mode-badge" id="modeBadge">debate</span>
+    <div class="prompt-line" id="promptLine"></div>
+    <span class="timer" id="timer">0.0s</span>
+  </header>
+
+  <div class="podiums" id="podiums"></div>
+
+  <div class="caption-wrap">
+    <div class="caption" id="caption">
+      <div class="speaker" id="capSpeaker"><span class="tag system">System</span> Waiting for the first speaker…</div>
+      <div class="body" id="capBody"></div>
+    </div>
+  </div>
+
+  <div id="ops">
+    <button class="btn sm" id="pauseBtn">⏸ Pause</button>
+    <button class="btn sm ghost" id="skipBtn">⏭ Skip</button>
+    <button class="btn sm ghost" id="interveneBtn">🗣 Human point</button>
+    <button class="btn sm warn" id="shockBtn">⚡ Shock</button>
+    <div class="spacer"></div>
+    <span class="hint" id="opsStatus"></span>
+    <button class="btn sm stop" id="endBtn">⏹ End &amp; score</button>
+  </div>
+</div>
+
+<!-- intervention popover -->
+<div class="pop hidden" id="intervenePop">
+  <h3>Inject a human point</h3>
+  <select id="interveneType" style="margin-bottom:8px">
+    <option value="question">question</option>
+    <option value="challenge">challenge</option>
+    <option value="redirect">redirect</option>
+    <option value="source">source</option>
+    <option value="shock">shock</option>
+  </select>
+  <textarea id="interveneText" placeholder="What the human in the room says…"></textarea>
+  <div style="margin-top:10px; display:flex; gap:8px;">
+    <button class="btn sm" id="interveneSend">Send into debate</button>
+    <button class="btn sm ghost" id="interveneCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- shock popover -->
+<div class="pop hidden" id="shockPop">
+  <h3>Inject a shock event</h3>
+  <input type="text" id="shockTitle" placeholder="Headline (e.g. 'Fab seized overnight')" style="margin-bottom:8px"/>
+  <textarea id="shockText" placeholder="What just happened in the world…"></textarea>
+  <select id="shockSeverity" style="margin-top:8px">
+    <option value="low">low</option>
+    <option value="medium" selected>medium</option>
+    <option value="high">high</option>
+  </select>
+  <div style="margin-top:10px; display:flex; gap:8px;">
+    <button class="btn sm warn" id="shockSend">Break the news</button>
+    <button class="btn sm ghost" id="shockCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- ========== CLOSING ========== -->
+<div id="closing" class="hidden">
+  <div class="inner">
+    <div id="recapWarn"></div>
+    <h1>Final Verdict</h1>
+    <div class="verdict-head" id="verdictHead"></div>
+    <div class="verdict-sum" id="verdictSum"></div>
+
+    <div class="section-title">Rhetorical dominance</div>
+    <div class="board" id="board"></div>
+
+    <div class="section-title">Room temperature</div>
+    <div class="split" id="split"></div>
+    <div class="split-legend" id="splitLegend"></div>
+
+    <div class="section-title">Key moments</div>
+    <div class="moments" id="moments"></div>
+
+    <div class="section-title">Sharpest exchange</div>
+    <div class="sharpest" id="sharpest"></div>
+
+    <div class="closing-actions">
+      <button class="btn ghost" id="backStage">◀ Back to stage</button>
+      <button class="btn" id="newDebate">New debate</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LABELS = { china: "China", us: "United States", eu: "European Union", human: "Human", system: "System" };
+const INITIALS = { china: "CN", us: "US", eu: "EU" };
+const AGENTS = ["china", "us", "eu"];
+
+let token = "";
+let session = null;          // { session_id, mode, actors, prompt }
+let running = false;         // auto-advance loop alive
+let paused = false;
+let skipRequested = false;
+let timerHandle = null;
+let turnStart = 0;
+
+// ---- API helper (all mutating calls carry the operator token) ----
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Roundtable-Token": token },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    let detail = res.status + "";
+    try { detail = (await res.json()).detail || detail; } catch (e) {}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+// Interruptible wait: resolves early if paused/skip/stop changes the world.
+async function pacedWait(ms) {
+  const step = 80; let waited = 0;
+  while (waited < ms && running && !paused && !skipRequested) { await sleep(step); waited += step; }
+}
+
+function selectedActors() { return AGENTS.filter(a => document.getElementById(a).checked); }
+
+// ---------- Setup ----------
+window.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("token").value = localStorage.getItem("rt_token") || "";
+  document.getElementById("startBtn").onclick = startDebate;
+  wireOps();
+});
+
+async function startDebate() {
+  const errEl = document.getElementById("setupErr");
+  errEl.textContent = "";
+  token = document.getElementById("token").value.trim();
+  localStorage.setItem("rt_token", token);
+  const actors = selectedActors();
+  if (!actors.length) { errEl.textContent = "Pick at least one actor."; return; }
+
+  const btn = document.getElementById("startBtn");
+  btn.disabled = true; btn.textContent = "Starting…";
+  try {
+    const data = await api("/session/start", {
+      prompt: document.getElementById("prompt").value,
+      actors,
+      mode: document.getElementById("mode").value,
+      include_shared: true,
+      auto_generate_opening_turn: true,
+    });
+    session = { session_id: data.session_id, mode: data.mode, actors: data.actors, prompt: document.getElementById("prompt").value };
+    enterStage();
+    if (data.messages && data.messages.length) {
+      await renderTurn(data.messages[0]);
+      await pacedWait(readMs(data.messages[0].content));
+    }
+    runLoop();
+  } catch (e) {
+    errEl.textContent = "Could not start: " + e.message + (/configured/i.test(e.message) ? " — set ROUNDTABLE_OPERATOR_TOKEN on the server." : "");
+    btn.disabled = false; btn.textContent = "Start debate ▶";
+  }
+}
+
+function enterStage() {
+  document.getElementById("setup").classList.add("hidden");
+  document.getElementById("stage").classList.remove("hidden");
+  document.getElementById("modeBadge").textContent = session.mode;
+  document.getElementById("promptLine").textContent = session.prompt;
+  renderPodiums();
+}
+
+function renderPodiums() {
+  const box = document.getElementById("podiums");
+  box.innerHTML = "";
+  session.actors.forEach(actor => {
+    const div = document.createElement("div");
+    div.className = "podium " + actor;
+    div.id = "podium-" + actor;
+    div.innerHTML = `
+      <div class="avatar">${INITIALS[actor] || actor}</div>
+      <div class="name">${LABELS[actor]}</div>
+      <div class="sub" id="sub-${actor}"></div>
+      <div class="count" id="count-${actor}">0 turns</div>`;
+    box.appendChild(div);
+  });
+}
+
+const turnCounts = {};
+function setActive(actor) {
+  session.actors.forEach(a => {
+    const p = document.getElementById("podium-" + a);
+    if (p) p.classList.toggle("active", a === actor);
+  });
+}
+
+// ---------- Turn timer ----------
+function startTimer() {
+  turnStart = performance.now();
+  clearInterval(timerHandle);
+  timerHandle = setInterval(() => {
+    const s = (performance.now() - turnStart) / 1000;
+    document.getElementById("timer").textContent = s.toFixed(1) + "s";
+  }, 100);
+}
+function stopTimer() { clearInterval(timerHandle); }
+
+// reading-time pacing in ms from a turn's word count
+function readMs(text) {
+  const paceSec = Math.max(1, parseFloat(document.getElementById("pace").value) || 6);
+  const words = (text || "").trim().split(/\s+/).length;
+  return Math.min(14000, Math.max(paceSec * 1000, words * (paceSec * 1000 / 45)));
+}
+
+// ---------- Render a turn (typewriter) ----------
+async function renderTurn(msg) {
+  const actor = msg.actor;
+  const isAgent = (msg.kind || "agent") === "agent";
+  const cap = document.getElementById("caption");
+  cap.className = "caption " + actor;
+  if (isAgent) {
+    setActive(actor);
+    turnCounts[actor] = (turnCounts[actor] || 0) + 1;
+    const c = document.getElementById("count-" + actor);
+    if (c) c.textContent = turnCounts[actor] + (turnCounts[actor] === 1 ? " turn" : " turns");
+  } else {
+    setActive(null);
+  }
+  document.getElementById("capSpeaker").innerHTML =
+    `<span class="tag ${actor}">${LABELS[actor] || actor}</span> ${isAgent ? "speaking" : (msg.kind === "system" ? "shock" : "from the floor")}`;
+
+  startTimer();
+  await typeOut(document.getElementById("capBody"), msg.content || "");
+  stopTimer();
+}
+
+async function typeOut(el, text) {
+  el.textContent = "";
+  const cursor = document.createElement("span");
+  cursor.className = "cursor"; cursor.innerHTML = "&nbsp;";
+  el.appendChild(cursor);
+  const perChar = Math.min(20, Math.max(4, 6000 / Math.max(1, text.length)));
+  let i = 0;
+  while (i < text.length) {
+    if (skipRequested) { el.textContent = text; el.appendChild(cursor); break; }
+    const chunk = text.length > 600 ? 3 : 1;       // long turns scroll faster
+    el.insertBefore(document.createTextNode(text.slice(i, i + chunk)), cursor);
+    i += chunk;
+    el.parentElement.scrollTop = el.parentElement.scrollHeight;
+    await sleep(perChar);
+  }
+  el.textContent = text;
+}
+
+// ---------- Auto-advance loop ----------
+async function runLoop() {
+  running = true;
+  while (running) {
+    if (paused) { await sleep(150); continue; }
+    skipRequested = false;
+    let data;
+    try {
+      setOpsStatus("…generating turn");
+      data = await api("/session/message", { session_id: session.session_id });
+    } catch (e) {
+      setOpsStatus("error: " + e.message);
+      paused = true; reflectPaused(); continue;
+    }
+    setOpsStatus("");
+    const msg = data.messages && data.messages[0];
+    if (!msg) { await sleep(400); continue; }
+    if (!running) break;
+    await renderTurn(msg);
+    await pacedWait(readMs(msg.content));
+  }
+}
+
+// ---------- Operator controls ----------
+function setOpsStatus(t) { document.getElementById("opsStatus").textContent = t; }
+function reflectPaused() {
+  document.getElementById("pauseBtn").textContent = paused ? "▶ Resume" : "⏸ Pause";
+  const b = document.getElementById("liveBadge");
+  b.classList.toggle("paused", paused);
+  document.getElementById("liveText").textContent = paused ? "PAUSED" : "LIVE";
+}
+function togglePause() { paused = !paused; reflectPaused(); }
+
+function wireOps() {
+  document.getElementById("pauseBtn").onclick = togglePause;
+  document.getElementById("skipBtn").onclick = () => { skipRequested = true; };
+  document.getElementById("endBtn").onclick = endDebate;
+
+  const ipop = document.getElementById("intervenePop");
+  const spop = document.getElementById("shockPop");
+  document.getElementById("interveneBtn").onclick = () => { ipop.classList.toggle("hidden"); spop.classList.add("hidden"); };
+  document.getElementById("shockBtn").onclick = () => { spop.classList.toggle("hidden"); ipop.classList.add("hidden"); };
+  document.getElementById("interveneCancel").onclick = () => ipop.classList.add("hidden");
+  document.getElementById("shockCancel").onclick = () => spop.classList.add("hidden");
+  document.getElementById("interveneSend").onclick = sendIntervention;
+  document.getElementById("shockSend").onclick = sendShock;
+
+  document.getElementById("backStage").onclick = () => document.getElementById("closing").classList.add("hidden");
+  document.getElementById("newDebate").onclick = () => location.reload();
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("textarea, input, select")) return;
+    if (document.getElementById("stage").classList.contains("hidden")) return;
+    if (e.code === "Space") { e.preventDefault(); togglePause(); }
+    else if (e.key === "c" || e.key === "C") { document.getElementById("ops").classList.toggle("hidden"); }
+    else if (e.key === "s" || e.key === "S") { skipRequested = true; }
+  });
+}
+
+async function sendIntervention() {
+  const text = document.getElementById("interveneText").value.trim();
+  if (!text) return;
+  const type = document.getElementById("interveneType").value;
+  const wasPaused = paused; paused = true; reflectPaused();
+  try {
+    await api("/session/intervene", { session_id: session.session_id, content: text, type });
+    await renderTurn({ actor: "human", kind: "human", content: text });
+    await pacedWait(readMs(text));
+  } catch (e) { setOpsStatus("intervene failed: " + e.message); }
+  document.getElementById("interveneText").value = "";
+  document.getElementById("intervenePop").classList.add("hidden");
+  paused = wasPaused; reflectPaused();
+}
+
+async function sendShock() {
+  const title = document.getElementById("shockTitle").value.trim();
+  const content = document.getElementById("shockText").value.trim();
+  if (!title && !content) return;
+  const severity = document.getElementById("shockSeverity").value;
+  const wasPaused = paused; paused = true; reflectPaused();
+  try {
+    await api("/session/shock", { session_id: session.session_id, title, content, severity });
+    await renderTurn({ actor: "system", kind: "system", content: `⚡ ${title} — ${content} [${severity}]` });
+    await pacedWait(readMs(content));
+  } catch (e) { setOpsStatus("shock failed: " + e.message); }
+  document.getElementById("shockTitle").value = "";
+  document.getElementById("shockText").value = "";
+  document.getElementById("shockPop").classList.add("hidden");
+  paused = wasPaused; reflectPaused();
+}
+
+// ---------- Closing: scoreboard + recap ----------
+async function endDebate() {
+  running = false; paused = true; stopTimer();
+  setOpsStatus("scoring the debate…");
+  let recap;
+  try {
+    const res = await api(`/session/${session.session_id}/recap`);
+    recap = res.recap;
+  } catch (e) {
+    setOpsStatus("recap failed: " + e.message);
+    return;
+  }
+  setOpsStatus("");
+  // generate the strategic memo too (best-effort; not displayed inline here)
+  api(`/session/${session.session_id}/summary`).catch(() => {});
+  showClosing(recap);
+}
+
+function showClosing(r) {
+  const wrap = document.getElementById("closing");
+  document.getElementById("recapWarn").innerHTML =
+    r.recap_warning ? `<div class="warnbox">${r.recap_warning}</div>` : "";
+  document.getElementById("verdictHead").textContent = (r.verdict && r.verdict.headline) || "The room holds its ground";
+  document.getElementById("verdictSum").textContent = (r.verdict && r.verdict.summary) || "";
+
+  // scoreboard (sorted desc, bars animate from 0)
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  const sb = (r.scoreboard || []).slice().sort((a, b) => (b.dominance || 0) - (a.dominance || 0));
+  sb.forEach(entry => {
+    const row = document.createElement("div");
+    row.className = "score-row";
+    row.innerHTML = `
+      <div class="who">${LABELS[entry.actor] || entry.actor}<small>${entry.biggest_concession ? "gave: " + entry.biggest_concession : ""}</small></div>
+      <div class="bar ${entry.actor}"><span data-w="${Math.max(0, Math.min(100, entry.dominance || 0))}"></span></div>
+      <div class="val">${Math.round(entry.dominance || 0)}</div>
+      ${entry.best_line ? `<div class="line">“${entry.best_line}”</div>` : ""}`;
+    board.appendChild(row);
+  });
+
+  // agreement/conflict split bar
+  const agree = Math.max(0, Math.min(1, r.agreement_ratio || 0));
+  const conflict = Math.max(0, Math.min(1, r.conflict_ratio || 0));
+  const rest = Math.max(0, 1 - agree - conflict);
+  document.getElementById("split").innerHTML =
+    `<div class="agree" style="width:${agree*100}%"></div><div class="conflict" style="width:${conflict*100}%"></div><div class="rest" style="width:${rest*100}%"></div>`;
+  document.getElementById("splitLegend").innerHTML =
+    `<span>🟢 Common ground ${Math.round(agree*100)}%</span><span>🔴 Open conflict ${Math.round(conflict*100)}%</span>`;
+
+  // key moments
+  const mm = document.getElementById("moments");
+  mm.innerHTML = "";
+  (r.key_moments || []).forEach(k => {
+    const d = document.createElement("div");
+    d.className = "moment " + (k.actor || "");
+    d.innerHTML = `<div class="q">“${k.quote || ""}”</div><div class="why">— ${LABELS[k.actor] || k.actor || ""}${k.why ? " · " + k.why : ""}</div>`;
+    mm.appendChild(d);
+  });
+
+  document.getElementById("sharpest").textContent = r.sharpest_exchange || "";
+
+  wrap.classList.remove("hidden");
+  // animate bars after paint
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll("#board .bar > span").forEach(s => { s.style.width = s.dataset.w + "%"; });
+  }));
+}
+</script>
+</body>
+</html>

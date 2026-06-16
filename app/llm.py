@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from .config import ACTOR_MODELS, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL
+from .config import ACTOR_MODELS, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, RECAP_MODEL
 
 
 ACTOR_PROMPT_PROFILES = {
@@ -204,6 +204,75 @@ def generate_openrouter_propaganda_turn(actor: str, actor_label: str, prompt: st
         "X-Title": OPENROUTER_APP_NAME,
     }
     with httpx.Client(timeout=60.0) as client:
+        res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        data = res.json()
+    return _parse_json_object(data["choices"][0]["message"]["content"])
+
+
+ACTOR_LABELS_FOR_RECAP = {"china": "China", "us": "United States", "eu": "European Union"}
+
+
+def build_recap_messages(prompt: str, transcript: list[dict], actors: list[str], mode: str) -> list[dict[str, str]]:
+    labels = [ACTOR_LABELS_FOR_RECAP.get(a, a.capitalize()) for a in actors]
+    lines = []
+    for idx, msg in enumerate(transcript):
+        speaker = ACTOR_LABELS_FOR_RECAP.get(msg.get("actor", ""), msg.get("actor", "unknown"))
+        kind = msg.get("kind", "agent")
+        text = " ".join((msg.get("content", "") or "").split())[:600]
+        lines.append(f"[{idx}] {speaker} ({kind}): {text}")
+    transcript_block = "\n".join(lines) or "- No turns were recorded."
+
+    system = (
+        "You are a sharp geopolitical debate analyst writing the closing segment for a live AI Cold War roundtable "
+        "between strategic actors. Be incisive, specific, and fair. You judge rhetorical performance and strategic "
+        "positioning, not your own policy preferences. Quote the transcript verbatim; never invent quotes. "
+        "Return valid JSON only."
+    )
+
+    user = (
+        f"Debate prompt:\n{prompt}\n\n"
+        f"Mode: {mode}\n"
+        f"Participating actors: {', '.join(labels)}\n\n"
+        f"Full transcript (each line prefixed with its turn index):\n{transcript_block}\n\n"
+        "Return exactly one JSON object with these fields:\n"
+        "- verdict: object with string fields 'headline' (under 16 words) and 'summary' (2-3 sentences naming who came out ahead and why)\n"
+        "- scoreboard: array with one object per participating agent actor (china, us, eu), each with:\n"
+        "    - actor: one of 'china', 'us', 'eu'\n"
+        "    - dominance: integer 0-100 rating rhetorical and strategic dominance in this debate\n"
+        "    - biggest_concession: short phrase naming the ground this actor gave up (or 'held firm' if none)\n"
+        "    - best_line: a verbatim quote (<=160 chars) of this actor's strongest moment, copied from the transcript\n"
+        "- key_moments: array of 2-4 objects, each with 'actor', 'quote' (verbatim from transcript, <=200 chars), 'why' (one sentence), and 'turn_index' (integer matching the bracketed index)\n"
+        "- shifts: array (possibly empty) of objects with 'actor', 'from' (prior position), 'to' (new position)\n"
+        "- sharpest_exchange: one sentence describing the single most charged clash in the room\n"
+        "- agreement_ratio: number 0..1 estimating how much of the debate was convergence/common ground\n"
+        "- conflict_ratio: number 0..1 estimating how much was open conflict (agreement_ratio + conflict_ratio should be <= 1)\n\n"
+        "Rules:\n"
+        "- only include agent actors that actually spoke in the scoreboard\n"
+        "- every quote must be copied verbatim from a transcript line; do not paraphrase or fabricate\n"
+        "- no markdown fences, no extra keys, valid JSON only\n"
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def generate_openrouter_recap(prompt: str, transcript: list[dict], actors: list[str], mode: str) -> dict[str, Any]:
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not set")
+
+    payload: dict[str, Any] = {
+        "model": RECAP_MODEL,
+        "messages": build_recap_messages(prompt, transcript, actors, mode),
+        "temperature": 0.4,
+        "top_p": 0.9,
+        "response_format": {"type": "json_object"},
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_SITE_URL,
+        "X-Title": OPENROUTER_APP_NAME,
+    }
+    with httpx.Client(timeout=90.0) as client:
         res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
         res.raise_for_status()
         data = res.json()

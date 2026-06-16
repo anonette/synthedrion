@@ -25,8 +25,11 @@ OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "http://127.0.0.1:8000")
 ACTOR_MODELS = {
     "china": os.getenv("OPENROUTER_MODEL_CHINA", "deepseek/deepseek-chat-v3-0324"),
     "us": os.getenv("OPENROUTER_MODEL_US", "openai/gpt-4.1-mini"),
-    "eu": os.getenv("OPENROUTER_MODEL_EU", "mistralai/mistral-large-2411"),
+    "eu": os.getenv("OPENROUTER_MODEL_EU", "mistralai/ministral-14b-2512"),
 }
+
+# Model used for the end-of-debate recap and scoreboard. Defaults to the U.S. actor model.
+RECAP_MODEL = os.getenv("OPENROUTER_MODEL_RECAP", ACTOR_MODELS["us"])
 
 ACTOR_IMAGE_MODELS = {
     "china": {

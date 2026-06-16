@@ -11,11 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from .agent_logic import build_summary, build_wiki_proposals, generate_actor_propaganda_turn, generate_actor_turn, next_actor
+from .agent_logic import build_recap, build_summary, build_wiki_proposals, generate_actor_propaganda_turn, generate_actor_turn, next_actor
 from .audio import ensure_replay_audio_assets
 from .config import ACTOR_MODELS
 from .images import generate_actor_image, image_model_config
-from .llm import generate_openrouter_propaganda_turn, generate_openrouter_turn, openrouter_enabled
+from .llm import generate_openrouter_propaganda_turn, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
 from .auth import verify_token, require_roundtable_operator
 from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key
 from .scheduler import run_scheduled_session, run_test_session
@@ -261,6 +261,11 @@ def roundtable_page() -> FileResponse:
     return FileResponse(STATIC_ROOT / "roundtable.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
+@app.get("/stage")
+def stage_page() -> FileResponse:
+    return FileResponse(STATIC_ROOT / "stage.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+
+
 @app.get("/minimal-test")
 def minimal_test_page() -> FileResponse:
     return FileResponse(STATIC_ROOT / "minimal-test.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
@@ -437,6 +442,37 @@ def summarize_session(session_id: str) -> dict:
     _write_memo_markdown(state)
     
     return {"session_id": state.session_id, "summary": state.summary.model_dump()}
+
+
+@app.post("/session/{session_id}/recap", dependencies=[Depends(require_roundtable_operator)])
+def recap_session(session_id: str) -> dict:
+    """Generate the closing recap and scoreboard for a live debate.
+
+    Uses the per-actor LLM when OpenRouter is enabled, otherwise falls back to the
+    deterministic heuristic. Computed on demand from the in-memory transcript; not persisted.
+    """
+    state = SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    transcript = [m.model_dump() for m in state.transcript]
+
+    if openrouter_enabled():
+        try:
+            recap = generate_openrouter_recap(
+                prompt=state.prompt,
+                transcript=transcript,
+                actors=state.actors,
+                mode=state.mode,
+            )
+            recap.setdefault("generated_by", "llm")
+        except Exception as exc:
+            recap = build_recap(state.prompt, transcript, state.actors, state.mode)
+            recap["recap_warning"] = f"LLM recap failed, used heuristic fallback: {exc}"
+    else:
+        recap = build_recap(state.prompt, transcript, state.actors, state.mode)
+
+    return {"session_id": state.session_id, "recap": recap}
 
 
 @app.post("/session/{session_id}/wiki-proposals", dependencies=[Depends(require_roundtable_operator)])

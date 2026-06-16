@@ -365,6 +365,128 @@ def build_summary(prompt: str, transcript_texts: list[str], actors: list[str] | 
     }
 
 
+_NUMBERED_PREFIXES = tuple(f"{n}." for n in range(1, 10))
+
+# Heuristic convergence/conflict balance per mode, used when no LLM is available.
+_MODE_BALANCE = {
+    "debate": (0.25, 0.60),
+    "negotiation": (0.45, 0.40),
+    "crisis": (0.20, 0.65),
+    "policy-planning": (0.50, 0.35),
+    "propaganda-lab": (0.15, 0.70),
+}
+
+
+def _representative_quote(content: str, limit: int = 180) -> str:
+    """Pull a real, readable line from a turn (skips numbered headers and labels)."""
+    lines = [ln.strip() for ln in (content or "").splitlines() if ln.strip()]
+    for line in lines:
+        if line.startswith("#") or line.startswith(_NUMBERED_PREFIXES):
+            # For deterministic turns, keep the text after a "1. Immediate view:" style label.
+            if ":" in line:
+                tail = line.split(":", 1)[1].strip()
+                if len(tail) > 40:
+                    return _compact_text(tail, limit)
+            continue
+        if line.lower().endswith("position:"):
+            continue
+        if len(line) > 40:
+            return _compact_text(line, limit)
+    return _compact_text(lines[0], limit) if lines else ""
+
+
+def build_recap(
+    prompt: str,
+    transcript: list[dict],
+    actors: list[str] | None = None,
+    mode: SessionMode = "debate",
+) -> dict:
+    """Heuristic end-of-debate recap and scoreboard for the no-API-key path.
+
+    `transcript` is a list of message dicts (actor, content, kind). Mirrors the shape
+    returned by the LLM recap so the frontend can render either interchangeably.
+    """
+    actors = actors or ["china", "us", "eu"]
+
+    counts: dict[str, int] = {actor: 0 for actor in actors}
+    first_quote: dict[str, tuple[int, str]] = {}
+    best_quote: dict[str, tuple[int, str]] = {}
+
+    for idx, msg in enumerate(transcript):
+        actor = msg.get("actor", "")
+        if msg.get("kind", "agent") != "agent" or actor not in counts:
+            continue
+        counts[actor] += 1
+        quote = _representative_quote(msg.get("content", ""))
+        if not quote:
+            continue
+        if actor not in first_quote:
+            first_quote[actor] = (idx, quote)
+        if actor not in best_quote or len(quote) > len(best_quote[actor][1]):
+            best_quote[actor] = (idx, quote)
+
+    spoke = [actor for actor in actors if counts[actor] > 0]
+    max_count = max((counts[a] for a in spoke), default=0)
+
+    scoreboard = []
+    for actor in spoke:
+        share = counts[actor] / max_count if max_count else 0
+        dominance = max(5, min(100, round(40 + 60 * share)))
+        line = best_quote.get(actor, first_quote.get(actor, (None, "")))[1]
+        scoreboard.append(
+            {
+                "actor": actor,
+                "dominance": dominance,
+                "biggest_concession": "held firm",
+                "best_line": line,
+            }
+        )
+    scoreboard.sort(key=lambda entry: entry["dominance"], reverse=True)
+
+    key_moments = []
+    for actor in sorted(spoke, key=lambda a: len(best_quote.get(a, (0, ""))[1]), reverse=True)[:3]:
+        idx, quote = best_quote.get(actor, first_quote.get(actor, (0, "")))
+        if quote:
+            key_moments.append(
+                {
+                    "actor": actor,
+                    "quote": quote,
+                    "why": f"{ACTOR_LABELS.get(actor, actor)} pressed its strongest line of the exchange.",
+                    "turn_index": idx,
+                }
+            )
+
+    agreement_ratio, conflict_ratio = _MODE_BALANCE.get(mode, (0.3, 0.55))
+
+    leader = scoreboard[0]["actor"] if scoreboard else (spoke[0] if spoke else actors[0])
+    leader_label = ACTOR_LABELS.get(leader, leader.capitalize())
+    subject = _compact_text(prompt.split(".")[0].strip(), 80) or "the contested ground"
+    others = [ACTOR_LABELS.get(a, a.capitalize()) for a in spoke if a != leader]
+    against = " and ".join(others) if others else "the other actors"
+
+    verdict = {
+        "headline": f"{leader_label} carried the {mode}",
+        "summary": (
+            f"On “{subject}”, {leader_label} carried the room by volume and initiative, "
+            f"forcing {against} to respond on its framing. No actor conceded core ground, "
+            f"so the {mode} hardened positions more than it resolved them."
+        ),
+    }
+
+    return {
+        "verdict": verdict,
+        "scoreboard": scoreboard,
+        "key_moments": key_moments,
+        "shifts": [],
+        "sharpest_exchange": (
+            f"The sharpest clash pitted {leader_label}'s push against {against}."
+        ),
+        "agreement_ratio": agreement_ratio,
+        "conflict_ratio": conflict_ratio,
+        "generated_by": "heuristic",
+    }
+
+
 def build_wiki_proposals(actors: list[str], prompt: str) -> list[dict[str, str]]:
     proposals = []
     for actor in actors:
