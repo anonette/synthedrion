@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 
 ActorName = Literal["china", "us", "eu"]
-SessionMode = Literal["debate", "negotiation", "crisis", "policy-planning", "propaganda-lab"]
+SessionMode = Literal["debate", "negotiation", "crisis", "policy-planning", "propaganda-lab", "mirror-world"]
 InterventionType = Literal["question", "challenge", "redirect", "source", "shock"]
 SessionStatus = Literal["running", "completed"]
 
@@ -18,6 +18,7 @@ class SessionStartRequest(BaseModel):
     mode: SessionMode = "debate"
     include_shared: bool = True
     auto_generate_opening_turn: bool = False
+    seed_incident: bool = False  # mirror-world: prepend the latest threat-intel incident to the prompt
 
 
 class SessionMessageRequest(BaseModel):

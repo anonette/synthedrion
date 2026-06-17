@@ -11,11 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from .agent_logic import build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_propaganda_turn, generate_actor_turn, next_actor
+from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
 from .audio import ensure_replay_audio_assets
 from .config import ACTOR_MODELS
 from .images import generate_actor_image, image_model_config
-from .llm import generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
+from .llm import generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
+from .threat_intel import latest_incident, prompt_from_incident
 from .auth import verify_token, require_roundtable_operator
 from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key
 from .scheduler import run_scheduled_session, run_test_session
@@ -96,6 +97,17 @@ def _build_poster_dialogue_content(slogan: str, image_prompt: str, commentary: s
     return " ".join(part for part in [slogan_text, prompt_text, commentary_text] if part).strip()
 
 
+def _build_mirror_content(official_line: str, buried_reality: str, speculation: str) -> str:
+    parts = []
+    if official_line:
+        parts.append(_sentence(official_line))
+    if buried_reality:
+        parts.append("Buried reality: " + _sentence(buried_reality))
+    if speculation:
+        parts.append("Mirror: " + _sentence(speculation))
+    return "\n\n".join(parts).strip()
+
+
 def _build_replay_narration(msg: TranscriptMessage) -> str:
     """Build frontend-friendly narration text for replay audio."""
     metadata = msg.metadata or {}
@@ -104,6 +116,12 @@ def _build_replay_narration(msg: TranscriptMessage) -> str:
             metadata.get("slogan", ""),
             metadata.get("image_prompt", ""),
             metadata.get("commentary", ""),
+        ) or msg.content
+    if metadata.get("format") == "mirror-turn":
+        return _build_mirror_content(
+            metadata.get("official_line", ""),
+            metadata.get("buried_reality", ""),
+            metadata.get("speculation", ""),
         ) or msg.content
     return msg.content
 
@@ -161,6 +179,45 @@ def _generate_session_turn(state: SessionState) -> tuple[TranscriptMessage, str 
             propaganda["slogan"],
             propaganda["image_prompt"],
             propaganda["commentary"],
+        )
+    elif state.mode == "mirror-world":
+        if openrouter_enabled():
+            try:
+                mirror = generate_openrouter_mirror_turn(
+                    actor=actor,
+                    actor_label=actor_label,
+                    prompt=state.prompt,
+                    notes=state.context_notes.get(actor, []),
+                    recent_context=recent_context,
+                )
+            except Exception as exc:
+                mirror = generate_actor_mirror_turn(
+                    actor=actor,
+                    prompt=state.prompt,
+                    notes=state.context_notes.get(actor, []),
+                    turn_index=state.turn_index,
+                    recent_context=recent_context,
+                )
+                mirror["irony"] = f"[LLM mirror fallback for {actor}: {exc}] {mirror.get('irony', '')}"
+        else:
+            mirror = generate_actor_mirror_turn(
+                actor=actor,
+                prompt=state.prompt,
+                notes=state.context_notes.get(actor, []),
+                turn_index=state.turn_index,
+                recent_context=recent_context,
+            )
+        metadata = {
+            "format": "mirror-turn",
+            "official_line": mirror.get("official_line", ""),
+            "buried_reality": mirror.get("buried_reality", ""),
+            "speculation": mirror.get("speculation", ""),
+            "irony": mirror.get("irony", ""),
+        }
+        content = _build_mirror_content(
+            mirror.get("official_line", ""),
+            mirror.get("buried_reality", ""),
+            mirror.get("speculation", ""),
         )
     elif openrouter_enabled():
         try:
@@ -277,17 +334,25 @@ def start_session(request: SessionStartRequest) -> dict:
     loaded_pages: dict[str, list[str]] = {}
     context_notes: dict[str, list[str]] = {}
 
+    # mirror-world: prepend the latest threat-intel incident (the reality layer) to the prompt
+    prompt = request.prompt
+    if request.seed_incident:
+        incident = latest_incident()
+        if incident:
+            seeded = prompt_from_incident(incident)
+            prompt = f"{seeded}\n\n{request.prompt}".strip() if request.prompt.strip() else seeded
+
     for actor in request.actors:
         pages = collect_actor_pages(actor, include_shared=request.include_shared)
         loaded_pages[actor] = [relative_wiki_path(page) for page in pages]
         # query-aware, breadth-covering note selection (see wiki_loader.assemble_context_notes)
-        context_notes[actor] = assemble_context_notes(pages, request.prompt)
+        context_notes[actor] = assemble_context_notes(pages, prompt)
 
     state = SessionState(
         session_id=session_id,
         mode=request.mode,
         actors=request.actors,
-        prompt=request.prompt,
+        prompt=prompt,
         loaded_pages=loaded_pages,
         context_notes=context_notes,
     )
@@ -478,6 +543,43 @@ def pulse_session(session_id: str) -> dict:
         pulse = build_pulse(transcript, state.actors, state.mode)
 
     return {"session_id": state.session_id, "pulse": pulse}
+
+
+@app.post("/session/{session_id}/mirror-card", dependencies=[Depends(require_roundtable_operator)])
+def mirror_card_session(session_id: str, tone: str = "grounded-absurdist", visual: bool = False) -> dict:
+    """Closing artifact for a mirror-world session: the three-layer card (reality / official /
+    speculation) plus a satirical dispatch. LLM when enabled, heuristic fallback otherwise.
+    Pass visual=true to also generate one speculative poster via the image pipeline."""
+    state = SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    transcript = [m.model_dump() for m in state.transcript]
+
+    if openrouter_enabled():
+        try:
+            card = generate_openrouter_mirror_card(state.prompt, transcript, state.actors, tone=tone)
+            card.setdefault("tone", tone)
+            card.setdefault("generated_by", "llm")
+        except Exception as exc:
+            card = build_mirror_card(state.prompt, transcript, state.actors, tone=tone)
+            card["card_warning"] = f"LLM mirror-card failed, used heuristic: {exc}"
+    else:
+        card = build_mirror_card(state.prompt, transcript, state.actors, tone=tone)
+
+    if visual:
+        image_prompt = (
+            f"A darkly funny editorial illustration of this near-future scene: {card.get('speculation', '')}. "
+            f"Satirical, cinematic, politically legible, no text."
+        )
+        actor = state.actors[0] if state.actors else "us"
+        try:
+            card["visual"] = asyncio.run(generate_actor_image(actor, image_prompt))
+            card["visual"]["image_prompt"] = image_prompt
+        except Exception as exc:
+            card["visual"] = {"image_status": "error", "image_error": str(exc)}
+
+    return {"session_id": state.session_id, "mirror_card": card}
 
 
 @app.post("/session/{session_id}/recap", dependencies=[Depends(require_roundtable_operator)])

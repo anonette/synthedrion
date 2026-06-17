@@ -42,6 +42,7 @@ MODE_PROMPT_GUIDANCE = {
     "crisis": "Keep the pressure high, but make urgency, timing, escalation, miscalculation, and strategic signaling central to the turn.",
     "policy-planning": "Stay forceful, but anchor the turn in sequencing, implementation, and concrete institutional moves rather than pure rhetorical combat.",
     "propaganda-lab": "Lean fully into symbolic language, mobilizing imagery, ideological contrast, and emotionally charged narrative framing.",
+    "mirror-world": "Stage the gap between covert reality and the official story, then bend it into a darkly funny near-future. Be satirical but not cynical.",
 }
 
 
@@ -325,6 +326,130 @@ def generate_openrouter_pulse(prompt: str, recent_context: list[dict], last_turn
         "X-Title": OPENROUTER_APP_NAME,
     }
     with httpx.Client(timeout=30.0) as client:
+        res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        data = res.json()
+    return _parse_json_object(data["choices"][0]["message"]["content"])
+
+
+def build_mirror_messages(actor: str, actor_label: str, prompt: str, notes: list[str], recent_context: list[dict]) -> list[dict[str, str]]:
+    profile = ACTOR_PROMPT_PROFILES[actor]
+    sources = "\n".join(f"- {note}" for note in notes[:20]) or "- No strong source notes available."
+    recent = "\n".join(
+        f"- {item.get('actor','unknown')} ({item.get('kind','agent')}): {item.get('content','')[:400]}"
+        for item in recent_context[-4:]
+    ) or "- No prior turns yet."
+
+    system = (
+        f"You are the {actor_label} actor in a 'mirror world' — a satirical simulation that stages the gap between "
+        f"covert reality (leaked intelligence about state-linked crypto-exchange hacks and illicit finance) and the "
+        f"official narrative (what governments and media say). "
+        f"{profile['identity']} {profile['voice']} {profile['rhetoric']} "
+        f"Treat any attribution as a SOURCED CLAIM at a stated confidence, never as proven fact. "
+        f"Your job each turn: voice the sanctioned official line your actor would push, name the uncomfortable buried "
+        f"reality it has to spin, and then bend the contradiction into a short, darkly funny near-future prediction with "
+        f"a NAMED ordinary protagonist and an ironic twist (in the style of cultural satire — absurd but recognizable). "
+        f"Tone: satirical but not cynical, darkly optimistic, culturally specific. Return valid JSON only."
+    )
+    user = (
+        f"Situation / incident (the reality layer is in here and in the notes):\n{prompt}\n\n"
+        f"Source-grounded notes:\n{sources}\n\n"
+        f"Recent exchange:\n{recent}\n\n"
+        "Return exactly one JSON object with these string fields:\n"
+        "- official_line: the sanctioned framing this actor pushes about the situation (1-2 sentences, in voice)\n"
+        "- buried_reality: the uncomfortable truth it must spin, grounded in the incident/notes (1-2 sentences)\n"
+        "- speculation: a short bizarre near-future extrapolation with a NAMED ordinary protagonist and an ironic twist (2-3 sentences)\n"
+        "- irony: one sharp line naming the contradiction between the official_line and the buried_reality\n"
+        "Rules: stay in this actor's political voice; keep it punchy; satirical not cynical; no markdown; valid JSON only."
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def generate_openrouter_mirror_turn(actor: str, actor_label: str, prompt: str, notes: list[str], recent_context: list[dict]) -> dict[str, str]:
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not set")
+
+    payload: dict[str, Any] = {
+        "model": actor_model(actor),
+        "messages": build_mirror_messages(actor, actor_label, prompt, notes, recent_context),
+        "temperature": 0.95,
+        "top_p": 0.95,
+        "response_format": {"type": "json_object"},
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_SITE_URL,
+        "X-Title": OPENROUTER_APP_NAME,
+    }
+    with httpx.Client(timeout=60.0) as client:
+        res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        data = res.json()
+    return _parse_json_object(data["choices"][0]["message"]["content"])
+
+
+MIRROR_TONE_GUIDANCE = {
+    "grounded": "Keep the speculation plausible and near-future; satire by understatement.",
+    "grounded-absurdist": "Plausible premise that tips into the absurd; named protagonist, ironic twist; satirical but not cynical.",
+    "absurdist": "Lean fully bizarre and surreal while staying politically legible; darkly optimistic.",
+}
+
+
+def build_mirror_card_messages(prompt: str, transcript: list[dict], actors: list[str], tone: str) -> list[dict[str, str]]:
+    tone_line = MIRROR_TONE_GUIDANCE.get(tone, MIRROR_TONE_GUIDANCE["grounded-absurdist"])
+    lines = []
+    for msg in transcript:
+        meta = msg.get("metadata") or {}
+        speaker = ACTOR_LABELS_FOR_RECAP.get(msg.get("actor", ""), msg.get("actor", "?"))
+        if meta.get("format") == "mirror-turn":
+            lines.append(
+                f"- {speaker}: official='{(meta.get('official_line') or '')[:160]}' | "
+                f"reality='{(meta.get('buried_reality') or '')[:160]}' | spec='{(meta.get('speculation') or '')[:200]}'"
+            )
+        else:
+            lines.append(f"- {speaker}: {' '.join((msg.get('content','') or '').split())[:200]}")
+    transcript_block = "\n".join(lines) or "- (no turns)"
+
+    system = (
+        "You write the closing card for a 'mirror world' simulation that contrasts covert reality (state-linked "
+        "crypto-exchange hacks / illicit finance) with the official narrative, then extrapolates a satirical near-future. "
+        "Apply these techniques: a named ordinary protagonist, an unexpected consequence, a concrete cultural detail, "
+        "vivid imagery, and an ironic twist. Treat attribution as a sourced claim, never asserted fact. "
+        f"Tone: {tone_line} Return valid JSON only."
+    )
+    user = (
+        f"Seed / incident (reality layer):\n{prompt}\n\n"
+        f"Session turns:\n{transcript_block}\n\n"
+        "Return one JSON object with these string fields:\n"
+        "- headline: a punchy satirical title (under 16 words)\n"
+        "- reality: 1-2 sentences on what the leaked intelligence actually says happened (sourced-claim framing)\n"
+        "- official_story: 1-2 sentences on the sanctioned narrative the governments/media push\n"
+        "- speculation: 1-2 sentences naming the bizarre near-future this debate converged toward\n"
+        "- dispatch: a 4-6 sentence satirical news dispatch FROM that near-future, with a named protagonist and an ironic twist\n"
+        "Valid JSON only, no markdown."
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def generate_openrouter_mirror_card(prompt: str, transcript: list[dict], actors: list[str], tone: str = "grounded-absurdist") -> dict[str, Any]:
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not set")
+
+    payload: dict[str, Any] = {
+        "model": RECAP_MODEL,
+        "messages": build_mirror_card_messages(prompt, transcript, actors, tone),
+        "temperature": 0.9,
+        "top_p": 0.95,
+        "response_format": {"type": "json_object"},
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_SITE_URL,
+        "X-Title": OPENROUTER_APP_NAME,
+    }
+    with httpx.Client(timeout=90.0) as client:
         res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
         res.raise_for_status()
         data = res.json()

@@ -18,6 +18,7 @@ MODE_FRAMES = {
     "crisis": "prioritize risk, timing, and escalation management",
     "policy-planning": "propose implementable steps and sequencing",
     "propaganda-lab": "speak in a rhetorically charged and strategic register",
+    "mirror-world": "expose the gap between the official story and the buried reality, then extrapolate a darkly funny near-future",
 }
 
 
@@ -265,6 +266,48 @@ def generate_actor_propaganda_turn(
         "commentary": commentary,
         "image_prompt": image_prompt,
         "response_target": reaction_line,
+    }
+
+
+_MIRROR_PROTAGONISTS = {
+    "china": ["Auntie Mei, a Shenzhen compliance officer", "Old Zhang, a Guizhou data-center guard", "a Hangzhou livestream host"],
+    "us": ["Brad, a Treasury sanctions analyst", "Dana, a Coinbase compliance lead", "a Reno mining-rig reseller"],
+    "eu": ["Frau Keller, a Brussels rapporteur", "Marco, a Tallinn blockchain auditor", "a Lisbon crypto-tax inspector"],
+}
+
+
+def generate_actor_mirror_turn(
+    actor: str,
+    prompt: str,
+    notes: list[str],
+    turn_index: int,
+    recent_context: list[dict] | None = None,
+) -> dict[str, str]:
+    """Heuristic fallback for mirror-world turns (no LLM): stage official vs reality + a satirical twist."""
+    label = ACTOR_LABELS[actor]
+    style = ACTOR_STYLES[actor]
+    recent_text = recent_context[-1].get("content", "") if recent_context else ""
+    note_1 = _compact_text(_choose_note(notes, recent_text, offset=0), 150)
+    note_2 = _compact_text(_choose_note(notes, recent_text, offset=1), 110)
+    prot = _MIRROR_PROTAGONISTS[actor][turn_index % len(_MIRROR_PROTAGONISTS[actor])]
+    official_line = (
+        f"{label} declares the incident only proves the case for {style['priority_words'][0]} "
+        f"and tighter {style['priority_words'][1]} — nothing to see beyond a foreign threat."
+    )
+    buried_reality = (
+        f"Off the record, the same intelligence that names the culprit shows the stolen funds gliding through "
+        f"rails {label.lower()} itself profits from. Grounding: {note_1}"
+    )
+    speculation = (
+        f"Six months on, {prot} is handed a 'resilience' medal just as the laundered tokens resurface inside a "
+        f"state-blessed stablecoin pilot — the press release proudly cites {note_2}."
+    )
+    irony = f"{label} loudly condemns the very laundering its strategy quietly runs on."
+    return {
+        "official_line": official_line,
+        "buried_reality": buried_reality,
+        "speculation": speculation,
+        "irony": irony,
     }
 
 
@@ -565,6 +608,46 @@ def build_pulse(transcript: list[dict], actors: list[str] | None = None, mode: S
         "tension_delta": tension_delta,
         "themes": themes,
         "source": "heuristic",
+    }
+
+
+def build_mirror_card(prompt: str, transcript: list[dict], actors: list[str] | None = None, tone: str = "grounded-absurdist") -> dict:
+    """Heuristic closing mirror-card (no LLM): three layers + a satirical dispatch."""
+    actors = actors or ["china", "us", "eu"]
+    specs, ironies, officials, realities = [], [], [], []
+    for m in transcript:
+        meta = m.get("metadata") or {}
+        if meta.get("format") == "mirror-turn":
+            if meta.get("speculation"):
+                specs.append(meta["speculation"])
+            if meta.get("irony"):
+                ironies.append(meta["irony"])
+            if meta.get("official_line"):
+                officials.append(meta["official_line"])
+            if meta.get("buried_reality"):
+                realities.append(meta["buried_reality"])
+
+    if "INTELLIGENCE" in prompt:
+        reality = _compact_text(prompt.split("INTELLIGENCE", 1)[1].lstrip(" :("), 260)
+    elif realities:
+        reality = _compact_text(realities[0], 240)
+    else:
+        reality = "Leaked intelligence describes an exchange breach attributed, at stated confidence, to a state-linked operation."
+    official_story = _compact_text(officials[0], 240) if officials else "Officially: a contained foreign attack that proves the need for tighter controls."
+    speculation = _compact_text(max(specs, key=len), 280) if specs else "The breach quietly becomes a feature: laundered funds resurface inside a state-blessed pilot, rebranded as resilience."
+    irony = ironies[0] if ironies else "Everyone condemns the laundering they quietly depend on."
+    dispatch = (
+        f"{speculation} By winter, the same officials who swore zero tolerance are quoting compliance dashboards that "
+        f"log the stolen funds as 'recovered velocity,' while the press calls it a turnaround. {irony}"
+    )
+    return {
+        "headline": "Mirror World: the hack everyone needed",
+        "reality": reality,
+        "official_story": official_story,
+        "speculation": speculation,
+        "dispatch": dispatch,
+        "tone": tone,
+        "generated_by": "heuristic",
     }
 
 
