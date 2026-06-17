@@ -90,3 +90,54 @@ def extract_notes(path: Path) -> list[str]:
 
 def relative_wiki_path(path: Path) -> str:
     return str(path.relative_to(WIKI_ROOT.parent)).replace("\\", "/")
+
+
+_NOTE_STOPWORDS = {
+    "this", "that", "with", "from", "into", "their", "they", "page", "agent", "actor",
+    "should", "which", "while", "because", "these", "those", "there", "than", "then",
+    "also", "such", "more", "most", "when", "what", "over", "about", "would", "could",
+    "have", "this", "your", "will", "both", "each", "other", "shared", "policy",
+}
+
+
+def _note_tokens(text: str) -> set[str]:
+    return {t for t in re.findall(r"[a-z]{4,}", (text or "").lower()) if t not in _NOTE_STOPWORDS}
+
+
+def assemble_context_notes(pages: list[Path], prompt: str, total: int = 60) -> list[str]:
+    """Build the per-actor grounding notes for a session.
+
+    Two goals at once:
+    - relevance: notes are scored by keyword overlap with the session prompt, so a
+      debate about rare earths surfaces the minerals pages and a debate about compute
+      surfaces the chip pages.
+    - breadth: round-robin across every loaded page (best note from each page first,
+      then the second-best, ...) so no single early page can monopolize the budget and
+      every page — including newly linked ones — contributes.
+
+    The final list is sorted most-relevant-first, so downstream slices take the notes
+    that matter for the question being debated.
+    """
+    query = _note_tokens(prompt)
+
+    def score(note: str) -> int:
+        return len(_note_tokens(note) & query)
+
+    per_page: list[list[str]] = []
+    for page in pages:
+        notes = extract_notes(page)
+        notes.sort(key=score, reverse=True)  # best note within the page leads
+        per_page.append(notes)
+
+    selected: list[str] = []
+    rank = 0
+    while len(selected) < total and any(rank < len(notes) for notes in per_page):
+        for notes in per_page:
+            if rank < len(notes):
+                selected.append(notes[rank])
+                if len(selected) >= total:
+                    break
+        rank += 1
+
+    selected.sort(key=score, reverse=True)  # most prompt-relevant first (stable keeps breadth order on ties)
+    return selected[:total]

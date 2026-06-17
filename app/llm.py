@@ -69,7 +69,7 @@ def _parse_json_object(text: str) -> dict[str, str]:
 def build_actor_messages(actor: str, actor_label: str, prompt: str, notes: list[str], recent_context: list[dict], mode: str) -> list[dict[str, str]]:
     profile = ACTOR_PROMPT_PROFILES[actor]
     mode_guidance = MODE_PROMPT_GUIDANCE.get(mode, "")
-    sources = "\n".join(f"- {note}" for note in notes[:14]) or "- No strong source notes available."
+    sources = "\n".join(f"- {note}" for note in notes[:28]) or "- No strong source notes available."
     recent = "\n".join(
         f"- {item.get('actor','unknown')} ({item.get('kind','agent')}): {item.get('content','')[:500]}"
         for item in recent_context[-4:]

@@ -32,7 +32,7 @@ from .models import (
 )
 from sqlalchemy.orm import Session as DBSession
 from .session_store import SESSIONS
-from .wiki_loader import collect_actor_pages, extract_notes, relative_wiki_path
+from .wiki_loader import assemble_context_notes, collect_actor_pages, extract_notes, relative_wiki_path
 
 
 app = FastAPI(title="AI Cold War Local Runtime", version="0.2.0")
@@ -280,10 +280,8 @@ def start_session(request: SessionStartRequest) -> dict:
     for actor in request.actors:
         pages = collect_actor_pages(actor, include_shared=request.include_shared)
         loaded_pages[actor] = [relative_wiki_path(page) for page in pages]
-        notes: list[str] = []
-        for page in pages:
-            notes.extend(extract_notes(page))
-        context_notes[actor] = notes[:40]
+        # query-aware, breadth-covering note selection (see wiki_loader.assemble_context_notes)
+        context_notes[actor] = assemble_context_notes(pages, request.prompt)
 
     state = SessionState(
         session_id=session_id,

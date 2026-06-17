@@ -7,7 +7,7 @@ from typing import Optional
 
 from .models import SessionStartRequest, SessionMessageRequest
 from .agent_logic import build_summary, build_wiki_proposals, generate_actor_turn, next_actor
-from .wiki_loader import collect_actor_pages, extract_notes, relative_wiki_path
+from .wiki_loader import assemble_context_notes, collect_actor_pages, extract_notes, relative_wiki_path
 from .llm import generate_openrouter_turn, openrouter_enabled
 from .models import SessionState, TranscriptMessage, SessionSummary, MemoOption, WikiProposal
 from .database import clear_featured_weekly, get_db, save_session_to_db
@@ -118,10 +118,7 @@ async def run_scheduled_session(
     for actor in session_state.actors:
         pages = collect_actor_pages(actor, include_shared=True)
         session_state.loaded_pages[actor] = [relative_wiki_path(page) for page in pages]
-        notes = []
-        for page in pages:
-            notes.extend(extract_notes(page))
-        session_state.context_notes[actor] = notes[:40]
+        session_state.context_notes[actor] = assemble_context_notes(pages, session_state.prompt)
     
     # Run session
     start_time = datetime.utcnow()
