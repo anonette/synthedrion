@@ -12,10 +12,10 @@ def image_model_config(actor: str) -> dict[str, str]:
     return ACTOR_IMAGE_MODELS[actor]
 
 
-async def generate_actor_image(actor: str, image_prompt: str) -> dict[str, str]:
+async def generate_actor_image(actor: str, image_prompt: str, model_override: str | None = None) -> dict[str, str]:
     config = image_model_config(actor)
-    provider = config["provider"]
-    model = config["model"]
+    provider = "openrouter" if model_override else config["provider"]
+    model = model_override or config["model"]
 
     try:
         if provider == "openrouter" and OPENROUTER_API_KEY:

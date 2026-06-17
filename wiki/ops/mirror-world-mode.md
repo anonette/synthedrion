@@ -45,7 +45,7 @@ LLM path: `generate_openrouter_mirror_turn` (`app/llm.py`); heuristic fallback: 
 - `perex` — short sensational standfirst/lead blurb
 - `reality` / `official_story` / `speculation` — the three layers, side by side
 - `dispatch` — a 4-6 sentence satirical news dispatch from the near-future
-- `visual` (when `visual=true`) — a generated **yellow-journalism tabloid front page** via the image pipeline
+- `visual` (when `visual=true`) — a generated **yellow-journalism tabloid front page** via the image pipeline, rendered by a GPT-image-class model (`MIRROR_VISUAL_MODEL`, default `openai/gpt-5.4-image-2`) because it renders legible headline text far better than photoreal diffusion; override per call with `&image_model=...`
 
 ### Tone dial
 

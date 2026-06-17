@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
 from .audio import ensure_replay_audio_assets
-from .config import ACTOR_MODELS
+from .config import ACTOR_MODELS, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
 from .llm import generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
 from .threat_intel import latest_incident, prompt_from_incident
@@ -546,7 +546,7 @@ def pulse_session(session_id: str) -> dict:
 
 
 @app.post("/session/{session_id}/mirror-card", dependencies=[Depends(require_roundtable_operator)])
-def mirror_card_session(session_id: str, tone: str = "grounded-absurdist", visual: bool = False) -> dict:
+def mirror_card_session(session_id: str, tone: str = "grounded-absurdist", visual: bool = False, image_model: str | None = None) -> dict:
     """Closing artifact for a mirror-world session: the three-layer card (reality / official /
     speculation) plus a satirical dispatch. LLM when enabled, heuristic fallback otherwise.
     Pass visual=true to also generate one speculative poster via the image pipeline."""
@@ -577,8 +577,9 @@ def mirror_card_session(session_id: str, tone: str = "grounded-absurdist", visua
             f"yellowed crinkled newsprint, ink smudges, halftone dots, exclamation marks, over-the-top and darkly comic."
         )
         actor = state.actors[0] if state.actors else "us"
+        model = image_model or MIRROR_VISUAL_MODEL  # text-heavy front page → GPT-image by default
         try:
-            card["visual"] = asyncio.run(generate_actor_image(actor, image_prompt))
+            card["visual"] = asyncio.run(generate_actor_image(actor, image_prompt, model_override=model))
             card["visual"]["image_prompt"] = image_prompt
         except Exception as exc:
             card["visual"] = {"image_status": "error", "image_error": str(exc)}

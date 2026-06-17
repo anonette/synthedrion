@@ -52,6 +52,10 @@ ACTOR_IMAGE_MODELS = {
     },
 }
 
+# Image model for the mirror-world tabloid front page. Newspapers are text-heavy, so a
+# GPT-image-class model that renders legible headlines beats photoreal diffusion here.
+MIRROR_VISUAL_MODEL = os.getenv("MIRROR_VISUAL_MODEL", ACTOR_IMAGE_MODELS["us"]["model"])
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY", "")
 SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY", "")
