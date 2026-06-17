@@ -19,6 +19,8 @@ def target_bucket(path: Path) -> str:
     raw_parts = set(path.parts)
     if "focus-issues" in raw_parts:
         return "Focused weekly issue"
+    if "threat-intel" in raw_parts:
+        return "Threat-intel incidents (mirror-world reality layer)"
     if "china-ai-policy" in raw_parts or "reg-documents" in raw_parts:
         return "China / policy-state material"
     if "us-ai-policy" in raw_parts:
@@ -38,6 +40,8 @@ def bucket_hint(path: Path) -> str:
     raw_parts = set(path.parts)
     if "focus-issues" in raw_parts:
         return "Special weekly focus issue. Review how this theme should influence shared pages and any actor-specific pages it cuts across."
+    if "threat-intel" in raw_parts:
+        return "Mirror-world reality layer. Seed a mirror-world session from this incident; optionally synthesize into a cyber/crypto-geopolitics wiki page."
     if "reg-documents" in raw_parts:
         return "Likely update actor policy pages and governance/instruments pages."
     if "articles" in raw_parts:

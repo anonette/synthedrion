@@ -1,0 +1,38 @@
+{
+  "_note": "Illustrative SAMPLE data for developing the mirror-world feed. Not real incidents. Replace with the friend's live feed via THREAT_INTEL_BASE_URL.",
+  "incidents": [
+    {
+      "id": "ti-2026-0612-altpex",
+      "timestamp": "2026-06-12T03:14:00Z",
+      "attribution": { "state": "DPRK", "group": "Lazarus", "confidence": "high" },
+      "target": "AltPex Exchange",
+      "amount_usd": 187000000,
+      "asset": "ETH / USDT",
+      "vector": "social engineering of a custody operator",
+      "summary": "A mid-tier exchange reported the unauthorized movement of roughly $187M after an operator was tricked into approving a malicious transaction; analysts link the laundering pattern to DPRK-affiliated activity.",
+      "references": ["https://example.org/reports/altpex-2026"]
+    },
+    {
+      "id": "ti-2026-0531-volga",
+      "timestamp": "2026-05-31T22:40:00Z",
+      "attribution": { "state": "Russia", "group": "unattributed criminal proxy", "confidence": "medium" },
+      "target": "VolgaPay",
+      "amount_usd": 64000000,
+      "asset": "BTC",
+      "vector": "bridge contract exploit",
+      "summary": "A cross-chain bridge associated with VolgaPay lost about $64M through a contract flaw; on-chain tracing showed funds routed through mixers commonly used by Russia-based operators.",
+      "references": ["https://example.org/reports/volga-bridge"]
+    },
+    {
+      "id": "ti-2026-0608-kavir",
+      "timestamp": "2026-06-08T11:05:00Z",
+      "attribution": { "state": "Iran", "group": "state-linked", "confidence": "low" },
+      "target": "Kavir Digital",
+      "amount_usd": 23500000,
+      "asset": "stablecoins",
+      "vector": "compromised API key",
+      "summary": "A regional exchange reported ~$23.5M drained via leaked API credentials; attribution to Iran-linked actors is tentative and contested.",
+      "references": ["https://example.org/reports/kavir-api"]
+    }
+  ]
+}

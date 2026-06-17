@@ -29,6 +29,11 @@ sessions/*/
 !sessions/ingest-manifest.md
 !sessions/ingest-manifest-state.json
 
+# Generated ingest runtime state
+sessions/threat-intel-state.json
+sessions/news-ingest-state.json
+sessions/news-ingest-report.md
+
 # Audio artifacts if generated elsewhere
 *.mp3
 
