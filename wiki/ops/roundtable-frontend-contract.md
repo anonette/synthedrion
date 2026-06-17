@@ -28,6 +28,7 @@ Protected mutating endpoints:
 - `POST /session/{session_id}/wiki-proposals`
 - `POST /session/{session_id}/pulse`
 - `POST /session/{session_id}/recap`
+- `POST /session/{session_id}/mirror-card`
 
 Protected routes require:
 
@@ -167,6 +168,43 @@ Suggested frontend use: per-actor momentum bars from accumulated words spoken (c
 ```
 
 Suggested frontend use: an animated scoreboard (per-actor `dominance` bars, sorted), the `verdict` headline and summary, an agreement-vs-conflict split bar from `agreement_ratio`/`conflict_ratio`, `key_moments` as quote cards, and the `sharpest_exchange` line. Pair with `POST /session/{session_id}/summary` for the longer strategic memo.
+
+## Mirror-World Contract
+
+`mirror-world` is a standalone session mode (like `propaganda-lab`) that stages a three-layer clash: covert reality (a threat-intel incident) vs the official narrative vs a bizarre speculative extrapolation, in a satirical-but-not-cynical register. Surface `mirror-world` in the mode selector (it takes the retired `crisis` slot).
+
+**Start it seeded from an incident:** `POST /session/start` with `"mode": "mirror-world"` and `"seed_incident": true` — the backend prepends the latest ingested threat-intel incident (the reality layer) to the prompt. (`seed_incident` defaults to false and is ignored by other modes.)
+
+**Per-turn:** mirror-world turns carry structured metadata to render as three stacked panels rather than a plain bubble:
+
+```json
+{
+  "actor": "china",
+  "kind": "agent",
+  "metadata": {
+    "format": "mirror-turn",
+    "official_line": "the sanctioned framing this actor pushes",
+    "buried_reality": "the uncomfortable truth it must spin",
+    "speculation": "a bizarre near-future with a named protagonist + ironic twist",
+    "irony": "one line naming the contradiction"
+  }
+}
+```
+
+Suggested render: a three-row card — **Official** / **Buried reality** / **Mirror** — with the `irony` line as a caption. The plain `content` field already stacks these for transcript/audio fallback.
+
+**Closing artifact:** `POST /session/{session_id}/mirror-card?tone=grounded-absurdist&visual=false` returns:
+
+```json
+{ "mirror_card": {
+    "headline": "...", "reality": "...", "official_story": "...",
+    "speculation": "...", "dispatch": "a 4-6 sentence satirical news dispatch from the near-future",
+    "tone": "grounded-absurdist", "generated_by": "llm",
+    "visual": { "image_url": "...", "image_status": "generated" }  // only when visual=true
+} }
+```
+
+`tone` ∈ `grounded` | `grounded-absurdist` | `absurdist` (the speculation dial). Render as a shareable three-layer card (reality / official / speculation) with the `dispatch` as the body and the optional `visual` as the hero image. Treat attribution as a **sourced claim**, never asserted fact.
 
 ## Propaganda Lab Contract
 
