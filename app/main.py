@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import os
 import asyncio
+import base64
+import json
+import logging
+import re
 from datetime import datetime
 from uuid import uuid4
 from pathlib import Path
+
+import httpx
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -65,6 +71,62 @@ SESSIONS_DIR = Path(__file__).resolve().parent.parent / "sessions"
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/session-assets", StaticFiles(directory=SESSIONS_DIR), name="session-assets")
+
+log = logging.getLogger("aicoldwar")
+if not log.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    log.addHandler(_handler)
+    log.setLevel(logging.INFO)
+    log.propagate = False
+
+
+def _append_image_log(session_id: str, entry: dict) -> None:
+    log_path = SESSIONS_DIR / session_id / "images" / "manifest.jsonl"
+    record = {"time": datetime.utcnow().isoformat(), **entry}
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record) + "\n")
+
+
+def _persist_image(session_id: str, image_data: dict, name: str) -> dict:
+    """Decode/download a generated image to sessions/<id>/images/ and return it with a served URL.
+
+    Image models return base64 data URLs (or remote URLs for some providers); without this the
+    picture only lives in the HTTP response. Files land under /session-assets/<id>/images/.
+    """
+    url = (image_data or {}).get("image_url", "")
+    if not url:
+        return image_data
+    images_dir = SESSIONS_DIR / session_id / "images"
+    try:
+        images_dir.mkdir(parents=True, exist_ok=True)
+        if url.startswith("data:image"):
+            match = re.match(r"data:image/([\w.+-]+);base64,(.+)", url, re.S)
+            if not match:
+                raise ValueError("unparseable image data URL")
+            ext = match.group(1).split("+")[0]
+            raw = base64.b64decode(match.group(2))
+        else:
+            with httpx.Client(timeout=60.0, follow_redirects=True) as client:
+                res = client.get(url)
+                res.raise_for_status()
+                raw = res.content
+            ext = "png"
+        ext = "jpg" if ext == "jpeg" else ext
+        filename = f"{name}.{ext}"
+        (images_dir / filename).write_bytes(raw)
+        served = f"/session-assets/{session_id}/images/{filename}"
+        _append_image_log(session_id, {
+            "name": name, "file": served, "bytes": len(raw),
+            "provider": image_data.get("image_provider"), "model": image_data.get("image_model"),
+            "status": image_data.get("image_status"),
+        })
+        log.info("saved image %s -> %s (%d KB, %s/%s)", name, served, len(raw) // 1024,
+                 image_data.get("image_provider"), image_data.get("image_model"))
+        return {**image_data, "image_file": served, "image_bytes": len(raw)}
+    except Exception as exc:
+        log.warning("failed to save image %s: %s", name, exc)
+        return {**image_data, "image_save_error": str(exc)}
 
 
 def _persist_session_state(state: SessionState) -> None:
@@ -161,6 +223,7 @@ def _generate_session_turn(state: SessionState) -> tuple[TranscriptMessage, str 
             )
 
         image_data = asyncio.run(generate_actor_image(actor, propaganda["image_prompt"]))
+        image_data = _persist_image(state.session_id, image_data, f"poster-t{state.turn_index:02d}-{actor}")
         metadata = {
             "format": "poster-dialogue",
             "artifact_type": propaganda.get("artifact_type", "poster"),
@@ -579,8 +642,9 @@ def mirror_card_session(session_id: str, tone: str = "grounded-absurdist", visua
         actor = state.actors[0] if state.actors else "us"
         model = image_model or MIRROR_VISUAL_MODEL  # text-heavy front page → GPT-image by default
         try:
-            card["visual"] = asyncio.run(generate_actor_image(actor, image_prompt, model_override=model))
-            card["visual"]["image_prompt"] = image_prompt
+            visual = asyncio.run(generate_actor_image(actor, image_prompt, model_override=model))
+            visual["image_prompt"] = image_prompt
+            card["visual"] = _persist_image(state.session_id, visual, "mirror-card")
         except Exception as exc:
             card["visual"] = {"image_status": "error", "image_error": str(exc)}
 

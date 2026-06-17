@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import base64
+import logging
 from urllib.parse import quote
 
 import httpx
 
 from .config import ACTOR_IMAGE_MODELS, OPENAI_API_KEY, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, SILICONFLOW_API_KEY, TOGETHER_API_KEY
+
+
+log = logging.getLogger("aicoldwar.images")
 
 
 def image_model_config(actor: str) -> dict[str, str]:
@@ -16,19 +20,26 @@ async def generate_actor_image(actor: str, image_prompt: str, model_override: st
     config = image_model_config(actor)
     provider = "openrouter" if model_override else config["provider"]
     model = model_override or config["model"]
+    log.info("image request: actor=%s provider=%s model=%s", actor, provider, model)
 
     try:
+        result = None
         if provider == "openrouter" and OPENROUTER_API_KEY:
-            return await _generate_openrouter_image(model, image_prompt)
-        if provider == "openai" and OPENAI_API_KEY:
-            return await _generate_openai_image(model, image_prompt)
-        if provider == "siliconflow" and SILICONFLOW_API_KEY:
-            return await _generate_siliconflow_image(model, image_prompt)
-        if provider == "together" and TOGETHER_API_KEY:
-            return await _generate_together_image(model, image_prompt)
+            result = await _generate_openrouter_image(model, image_prompt)
+        elif provider == "openai" and OPENAI_API_KEY:
+            result = await _generate_openai_image(model, image_prompt)
+        elif provider == "siliconflow" and SILICONFLOW_API_KEY:
+            result = await _generate_siliconflow_image(model, image_prompt)
+        elif provider == "together" and TOGETHER_API_KEY:
+            result = await _generate_together_image(model, image_prompt)
+        if result is not None:
+            log.info("image ok: provider=%s model=%s status=%s", result.get("image_provider"), model, result.get("image_status"))
+            return result
     except Exception as exc:
+        log.warning("image provider %s/%s failed, using pollinations fallback: %s", provider, model, exc)
         return _pollinations_fallback(config["fallback_model"], image_prompt, f"{provider} failed: {exc}")
 
+    log.warning("image provider %s not configured, using pollinations fallback", provider)
     return _pollinations_fallback(config["fallback_model"], image_prompt, f"{provider} key not configured")
 
 
