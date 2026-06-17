@@ -283,7 +283,7 @@ Optional model overrides:
 ```powershell
 $env:OPENROUTER_MODEL_CHINA="deepseek/deepseek-chat-v3-0324"
 $env:OPENROUTER_MODEL_US="openai/gpt-4.1-mini"
-$env:OPENROUTER_MODEL_EU="mistralai/mistral-large-2411"
+$env:OPENROUTER_MODEL_EU="mistralai/ministral-14b-2512"
 ```
 
 Default routing is already:
