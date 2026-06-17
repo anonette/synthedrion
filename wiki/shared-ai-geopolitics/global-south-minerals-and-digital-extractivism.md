@@ -1,8 +1,8 @@
 # Global South Minerals and Digital Extractivism
 
-> Sources: AU "Africa's Green Minerals Strategy," 2024-12; Okolo (Just Tech/SSRC), 2026; Aniagoh "Reclaiming Value at the Source"; UNU-INWEH water/justice report; Viskocil (Johns Hopkins) "Minerals, AI & the Americas," 2025; Commonwealth "Africa's Critical Minerals" No.193
-> Raw: `../../raw/minerals/africa-green-strategy.md`; `../../raw/minerals/strategic-geopolitical-competition-and-africa-8217-s-ai-future.md`; `../../raw/minerals/africa-ai-and-critical-minerals-reclaimi-1.md`; `../../raw/minerals/unu-inweh-critical-minerals-water-insecurity-and-injustice.md`; `../../raw/minerals/viskocil-thesis-2024.md`; `../../raw/minerals/tht-193-updf.md`
-> Updated: 2026-06-16
+> Sources: AU "Africa's Green Minerals Strategy," 2024-12; Okolo (Just Tech/SSRC), 2026; Aniagoh "Reclaiming Value at the Source"; UNU-INWEH water/justice report; Viskocil (Johns Hopkins) "Minerals, AI & the Americas," 2025; Commonwealth "Africa's Critical Minerals" No.193; IISS Online Analysis (Asano), 2026-06
+> Raw: `../../raw/minerals/africa-green-strategy.md`; `../../raw/minerals/strategic-geopolitical-competition-and-africa-8217-s-ai-future.md`; `../../raw/minerals/africa-ai-and-critical-minerals-reclaimi-1.md`; `../../raw/minerals/unu-inweh-critical-minerals-water-insecurity-and-injustice.md`; `../../raw/minerals/viskocil-thesis-2024.md`; `../../raw/minerals/tht-193-updf.md`; `../../raw/minerals/2026-06-iiss-asean-critical-minerals-industrial-upgrade-dilemma.md`
+> Updated: 2026-06-17
 
 ## Overview
 
@@ -28,9 +28,15 @@ Externalities concentrate in extraction zones. Lithium can consume up to 1.9 mil
 
 China offers infrastructure, power, and refining-linked offtake (the Digital Silk Road funds about ten times more African power capacity than the United States) but its refining model actively disincentivizes local beneficiation. The United States and EU offer "win-win" rhetoric, minerals clubs (the Minerals Security Partnership, the proposed Americas Act), and due-diligence regimes — but the EU's target of processing 40% of its critical minerals in-Europe reads to producers as green protectionism. The Gulf is a fast-rising third pole: the UAE is the fourth-largest foreign investor in Africa, with a $1.9 billion DRC mines deal and a $1 billion Ghana AI-hub agreement. China invested about $214 billion in Latin America from 2005 to 2023 and controls roughly 95% of rare-earth refining.
 
+## ASEAN and the Downstreaming Dilemma
+
+Southeast Asia sharpens the value-addition story into a paradox. Indonesia's raw-ore export ban made it over 60% of global nickel output, the model the rest of the South cites — but roughly 75% of Indonesian nickel capacity is Chinese-owned (Reuters, 2025), so downstreaming raised value capture while entrenching dependence on Chinese capital and processing technology. That is the "industrial-upgrade dilemma": moving up the chain and reducing dependence pull in opposite directions. The Philippines remains a major upstream nickel supplier, and ASEAN is trying to answer collectively through a "cooperate, not compete" strategy formalized in the ASEAN Minerals Cooperation Action Plan (AMCAP) IV, 2026–2030.
+
+External powers are competing to de-risk on ASEAN's terrain. The United States is pursuing "Pax Silica" critical-minerals diplomacy — a 2026 Critical Minerals Ministerial, a US–Indonesia trade deal (2026), and MoUs with Malaysia and Thailand (2025) — while Japan expands its Asia Zero Emission Community and a World Bank–Japan critical-minerals partnership (2026), and the ADB and new regional financing tools push diversification. Yet analysts note ASEAN's reliance on Beijing for midstream capacity persists despite these moves, which makes the region a live test of whether value-addition can be decoupled from Chinese control.
+
 ## Relevance for Actor Knowledge Bases
 
-For a China agent, the South is where refining dominance, infrastructure bundling, and a non-moralizing "South-South" pitch buy durable influence. For a U.S. agent, friend-shoring and hemispheric strategy compete against entrenched Chinese positions, undercut by its own permitting paralysis. For an EU agent, responsible-sourcing leadership collides with its image as a green-protectionist gatekeeper. Global South actors hold genuine pricing leverage if they coordinate, and play "active non-alignment" to extract maximum value from all three poles.
+For a China agent, the South is where refining dominance, infrastructure bundling, and a non-moralizing "South-South" pitch buy durable influence — and Indonesia shows that even a host state's downstreaming win can deepen reliance on Chinese capital. For a U.S. agent, friend-shoring and hemispheric strategy compete against entrenched Chinese positions, undercut by its own permitting paralysis. For an EU agent, responsible-sourcing leadership collides with its image as a green-protectionist gatekeeper. Global South actors hold genuine pricing leverage if they coordinate, and play "active non-alignment" to extract maximum value from all three poles.
 
 ## See Also
 
