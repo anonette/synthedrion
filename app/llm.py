@@ -392,7 +392,7 @@ def generate_openrouter_mirror_turn(actor: str, actor_label: str, prompt: str, n
 MIRROR_TONE_GUIDANCE = {
     "grounded": "Keep the speculation plausible and near-future; satire by understatement.",
     "grounded-absurdist": "Plausible premise that tips into the absurd; named protagonist, ironic twist; satirical but not cynical.",
-    "absurdist": "Lean fully bizarre and surreal while staying politically legible; darkly optimistic.",
+    "absurdist": "Go fully bizarre, surreal, and laugh-out-loud funny while staying politically legible; tabloid-sensational, darkly optimistic, gleefully over the top.",
 }
 
 
@@ -422,7 +422,8 @@ def build_mirror_card_messages(prompt: str, transcript: list[dict], actors: list
         f"Seed / incident (reality layer):\n{prompt}\n\n"
         f"Session turns:\n{transcript_block}\n\n"
         "Return one JSON object with these string fields:\n"
-        "- headline: a punchy satirical title (under 16 words)\n"
+        "- headline: a screaming tabloid-style title (under 16 words, ALL-CAPS energy)\n"
+        "- perex: a short sensational standfirst/lead blurb under the headline (1-2 punchy sentences, yellow-journalism voice)\n"
         "- reality: 1-2 sentences on what the leaked intelligence actually says happened (sourced-claim framing)\n"
         "- official_story: 1-2 sentences on the sanctioned narrative the governments/media push\n"
         "- speculation: 1-2 sentences naming the bizarre near-future this debate converged toward\n"

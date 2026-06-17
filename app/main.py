@@ -569,8 +569,12 @@ def mirror_card_session(session_id: str, tone: str = "grounded-absurdist", visua
 
     if visual:
         image_prompt = (
-            f"A darkly funny editorial illustration of this near-future scene: {card.get('speculation', '')}. "
-            f"Satirical, cinematic, politically legible, no text."
+            f"Front page of a sensational vintage YELLOW-JOURNALISM tabloid newspaper. "
+            f"Giant screaming all-caps banner headline: \"{card.get('headline', '')}\". "
+            f"A lurid grainy halftone photo dramatizing this near-future scene: {card.get('speculation', '')}. "
+            f"Sub-headline / standfirst in smaller type: \"{card.get('perex', '')}\". "
+            f"Cluttered early-1900s muckraker layout, multiple columns, 'EXCLUSIVE' and 'SHOCKING' starbursts, "
+            f"yellowed crinkled newsprint, ink smudges, halftone dots, exclamation marks, over-the-top and darkly comic."
         )
         actor = state.actors[0] if state.actors else "us"
         try:

@@ -641,7 +641,8 @@ def build_mirror_card(prompt: str, transcript: list[dict], actors: list[str] | N
         f"log the stolen funds as 'recovered velocity,' while the press calls it a turnaround. {irony}"
     )
     return {
-        "headline": "Mirror World: the hack everyone needed",
+        "headline": "MIRROR WORLD: THE HACK EVERYONE SECRETLY NEEDED",
+        "perex": "EXCLUSIVE: officials baffled, an AI takes the blame, and somehow the taxpayers foot the bill — again.",
         "reality": reality,
         "official_story": official_story,
         "speculation": speculation,
