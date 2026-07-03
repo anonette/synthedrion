@@ -80,3 +80,16 @@ ALLOWED_PATH_PREFIXES = {
         WIKI_ROOT / "ai-governance",
     ],
 }
+
+# --- Halcyon: the summonable peace-builder ---------------------------------
+# Halcyon is NOT a round-robin actor. It is injected on demand ("summoned") and
+# runs on the free CERIT proxy (OpenAI-compatible /v1), separate from OpenRouter,
+# so China/US/EU behaviour is untouched. It draws its "cool news" from the
+# positive-stories ledger the Halcyon crawler fills.
+HALCYON_MODEL = os.getenv("HALCYON_MODEL", "mistral-medium-3.5")
+HALCYON_BASE_URL = os.getenv("HALCYON_BASE_URL", "https://agenthymia-llm.dyn.cloud.e-infra.cz/v1")
+HALCYON_API_KEY = os.getenv("HALCYON_API_KEY", "agh_denisa_a129ce")
+HALCYON_LEDGER_PATH = os.getenv(
+    "HALCYON_LEDGER_PATH",
+    str(PROJECT_ROOT / "halcyon" / "positive-stories.md"),
+)

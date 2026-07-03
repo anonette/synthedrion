@@ -6,7 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-ActorName = Literal["china", "us", "eu"]
+ActorName = Literal["china", "us", "eu", "halcyon"]
 SessionMode = Literal["debate", "negotiation", "crisis", "policy-planning", "propaganda-lab", "mirror-world"]
 InterventionType = Literal["question", "challenge", "redirect", "source", "shock"]
 SessionStatus = Literal["running", "completed"]

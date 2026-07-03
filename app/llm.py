@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from .config import ACTOR_MODELS, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, PULSE_MODEL, RECAP_MODEL
+from .config import ACTOR_MODELS, HALCYON_API_KEY, HALCYON_BASE_URL, HALCYON_MODEL, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, PULSE_MODEL, RECAP_MODEL
 
 
 ACTOR_PROMPT_PROFILES = {
@@ -209,6 +209,51 @@ def generate_openrouter_propaganda_turn(actor: str, actor_label: str, prompt: st
         res.raise_for_status()
         data = res.json()
     return _parse_json_object(data["choices"][0]["message"]["content"])
+
+
+def build_halcyon_messages(prompt: str, good_news: list[str], recent_context: list[dict], mode: str) -> list[dict[str, str]]:
+    news = "\n".join(f"- {n}" for n in good_news[:6]) or "- (no fresh story on hand — recall a real, recent cooperative development yourself)"
+    recent = "\n".join(
+        f"- {item.get('actor','unknown')} ({item.get('kind','agent')}): {item.get('content','')[:500]}"
+        for item in recent_context[-5:]
+    ) or "- No recent dialogue yet."
+    system = (
+        "You are HALCYON — an outsider peace-builder who has just entered a live AI-cold-war roundtable between China, "
+        "the United States, and Europe. You belong to no bloc. You listened to them argue. "
+        "Your unbreakable ritual is COOL NEWS FIRST: open with ONE real, recent, hopeful development on the fronts they "
+        "fight over (chips, critical minerals, energy, talent, AI safety/standards), cited plainly. Only AFTER the good "
+        "news do you move the debate: name the zero-sum trap they are stuck in, then dare them toward ONE bold, original "
+        "thing the three could build TOGETHER that none can build alone. Motivate, never scold; be warm, sharp, and "
+        "disarming — persuasive and specific, not neutral mush. Speak in voice, as if spoken aloud in the room. "
+        "No bullet points, no headers, no meta commentary, no bracketed notes. About 90 to 140 words."
+    )
+    user = (
+        f"The roundtable's topic:\n{prompt}\n\n"
+        f"Your ledger of real hopeful stories (open with one of these as your cool news):\n{news}\n\n"
+        f"What the powers just said:\n{recent}\n\n"
+        "Now enter the room. Good news first, then the bold joint proposal. Land it with hope, not a lecture."
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def generate_halcyon_turn(prompt: str, good_news: list[str], recent_context: list[dict], mode: str = "debate") -> str:
+    if not HALCYON_API_KEY:
+        raise RuntimeError("HALCYON_API_KEY not set")
+    payload: dict[str, Any] = {
+        "model": HALCYON_MODEL,
+        "messages": build_halcyon_messages(prompt, good_news, recent_context, mode),
+        "temperature": 0.8,
+        "top_p": 0.95,
+    }
+    headers = {
+        "Authorization": f"Bearer {HALCYON_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    with httpx.Client(timeout=90.0) as client:
+        res = client.post(f"{HALCYON_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        data = res.json()
+    return data["choices"][0]["message"]["content"].strip()
 
 
 ACTOR_LABELS_FOR_RECAP = {"china": "China", "us": "United States", "eu": "European Union"}

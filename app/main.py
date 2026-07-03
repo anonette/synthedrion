@@ -19,9 +19,9 @@ from fastapi.staticfiles import StaticFiles
 
 from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
 from .audio import ensure_replay_audio_assets
-from .config import ACTOR_MODELS, MIRROR_VISUAL_MODEL
+from .config import ACTOR_MODELS, HALCYON_LEDGER_PATH, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
-from .llm import generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
+from .llm import generate_halcyon_turn, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
 from .threat_intel import latest_incident, prompt_from_incident
 from .auth import verify_token, require_roundtable_operator
 from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key
@@ -489,6 +489,72 @@ def shock(request: ShockRequest) -> dict:
     state.prompt = f"{state.prompt}\n{shock_text}"
     _persist_session_state(state)
     return {"session_id": state.session_id, "accepted": True, "status": state.status}
+
+
+def _halcyon_good_news(n: int = 5) -> list[str]:
+    """Pull the most recent hopeful stories from the Halcyon crawler's ledger."""
+    try:
+        text = Path(HALCYON_LEDGER_PATH).read_text(encoding="utf-8")
+    except Exception:
+        return []
+    lines = text.splitlines()
+    stories: list[str] = []
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if s.startswith("- **"):
+            title = s[2:].replace("**", "").replace("_", "").strip()
+            why = ""
+            for j in range(i + 1, min(i + 5, len(lines))):
+                w = lines[j].strip()
+                if w.lower().startswith("- why hopeful:"):
+                    why = w.split(":", 1)[1].strip()
+                    break
+            stories.append(title + (f" — {why}" if why else ""))
+    return stories[-n:]
+
+
+@app.post("/session/{session_id}/summon-halcyon", dependencies=[Depends(require_roundtable_operator)])
+def summon_halcyon(session_id: str) -> dict:
+    """Inject one Halcyon peace-builder turn on demand. Halcyon is NOT a
+    round-robin actor, so this does not advance the china/us/eu order — it just
+    appends a hope-first intervention that speaks after the current exchange."""
+    state = SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+    recent_context = [m.model_dump() for m in state.transcript[-4:]]
+    good_news = _halcyon_good_news()
+    try:
+        content = generate_halcyon_turn(
+            prompt=state.prompt,
+            good_news=good_news,
+            recent_context=recent_context,
+            mode=state.mode,
+        )
+        source = "cerit"
+    except Exception as exc:  # never 500 the room — degrade gracefully
+        lead = good_news[-1] if good_news else "rivals have cooperated before, and can again"
+        content = (
+            f"Before we go further — some good news. {lead}. That alone is proof another path exists. "
+            "So rather than race to control this alone, what could the three of you build together that none of you "
+            "can build apart? Name it, and I will hold you to it."
+        )
+        source = f"fallback ({exc})"
+    msg = TranscriptMessage(
+        actor="halcyon",
+        content=content,
+        kind="agent",
+        metadata={"format": "halcyon", "summoned": True, "source": source},
+    )
+    state.transcript.append(msg)
+    state.turn_index += 1
+    _persist_session_state(state)
+    return {
+        "session_id": state.session_id,
+        "turn_index": state.turn_index,
+        "messages": [msg.model_dump()],
+        "next_actor": state.actors[state.next_actor_index] if state.actors else None,
+        "status": state.status,
+    }
 
 
 def _write_memo_markdown(state: SessionState) -> None:

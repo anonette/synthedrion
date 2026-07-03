@@ -9,6 +9,7 @@
     --china: #ef4444; --china-deep: #7f1d1d;
     --us: #3b82f6; --us-deep: #1e3a8a;
     --eu: #f59e0b; --eu-deep: #78350f;
+    --halcyon: #5eb2e9; --halcyon-deep: #0c4a6e;
     --human: #94a3b8; --system: #f59e0b;
     --bg: #0a0d14; --panel: #121724; --ink: #e8edf6; --muted: #8a94a6;
   }
@@ -103,6 +104,7 @@
   .caption.human { border-left-color: var(--human); background: #141a26; }
   .caption.system { border-left-color: var(--system); background: #241a0b; }
   .tag.china{background:var(--china-deep)} .tag.us{background:var(--us-deep)} .tag.eu{background:var(--eu-deep)}
+  .tag.halcyon{background:var(--halcyon-deep)} .caption.halcyon{border-left-color:var(--halcyon)}
   .tag.human{background:#334155} .tag.system{background:#92400e}
 
   /* ---------- Operator strip ---------- */
@@ -256,6 +258,7 @@
     <button class="btn sm ghost" id="skipBtn">⏭ Skip</button>
     <button class="btn sm ghost" id="interveneBtn">🗣 Human point</button>
     <button class="btn sm warn" id="shockBtn">⚡ Shock</button>
+    <button class="btn sm" id="halcyonBtn" style="background:linear-gradient(180deg,#0ea5e9,#0369a1)">🕊 Summon Halcyon</button>
     <div class="spacer"></div>
     <span class="hint" id="opsStatus"></span>
     <button class="btn sm stop" id="endBtn">⏹ End &amp; score</button>
@@ -324,8 +327,8 @@
 </div>
 
 <script>
-const LABELS = { china: "China", us: "United States", eu: "European Union", human: "Human", system: "System" };
-const INITIALS = { china: "CN", us: "US", eu: "EU" };
+const LABELS = { china: "China", us: "United States", eu: "European Union", halcyon: "Halcyon", human: "Human", system: "System" };
+const INITIALS = { china: "CN", us: "US", eu: "EU", halcyon: "🕊" };
 const AGENTS = ["china", "us", "eu"];
 
 let token = "";
@@ -610,6 +613,7 @@ function wireOps() {
   document.getElementById("shockCancel").onclick = () => spop.classList.add("hidden");
   document.getElementById("interveneSend").onclick = sendIntervention;
   document.getElementById("shockSend").onclick = sendShock;
+  document.getElementById("halcyonBtn").onclick = summonHalcyon;
 
   document.getElementById("backStage").onclick = () => document.getElementById("closing").classList.add("hidden");
   document.getElementById("newDebate").onclick = () => location.reload();
@@ -639,6 +643,19 @@ async function sendIntervention() {
   } catch (e) { setOpsStatus("intervene failed: " + e.message); }
   document.getElementById("interveneText").value = "";
   document.getElementById("intervenePop").classList.add("hidden");
+  paused = wasPaused; reflectPaused();
+}
+
+async function summonHalcyon() {
+  const btn = document.getElementById("halcyonBtn");
+  const wasPaused = paused; paused = true; reflectPaused();
+  btn.disabled = true; btn.textContent = "🕊 Halcyon is entering…";
+  try {
+    const data = await api(`/session/${session.session_id}/summon-halcyon`);
+    const msg = data.messages && data.messages[0];
+    if (msg) { await renderTurn(msg); await pacedWait(readMs(msg.content)); }
+  } catch (e) { setOpsStatus("summon failed: " + e.message); }
+  btn.disabled = false; btn.textContent = "🕊 Summon Halcyon";
   paused = wasPaused; reflectPaused();
 }
 
