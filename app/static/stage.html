@@ -79,7 +79,16 @@
   .podium .avatar {
     width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font-size: 30px; font-weight: 800; letter-spacing: 1px; border: 3px solid #2a3550; background: #0e1320; color: #fff;
+    position: relative; overflow: hidden;
   }
+  /* ---------- Talking-heads (optional brutal-satire module) ---------- */
+  .podium .avatar .head {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+    opacity: 0; transition: opacity .4s; pointer-events: none;
+  }
+  body.heads-on .podium .avatar .head { opacity: .82; }
+  body.heads-on .podium.active .avatar .head { opacity: 1; }
+  body.heads-on .podium .avatar .initials { opacity: 0; }
   .podium .name { font-size: 15px; font-weight: 600; }
   .podium .sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; min-height: 14px; }
   .podium.active { opacity: 1; transform: translateY(-8px) scale(1.06); filter: none; }
@@ -106,6 +115,8 @@
   .tag.china{background:var(--china-deep)} .tag.us{background:var(--us-deep)} .tag.eu{background:var(--eu-deep)}
   .tag.halcyon{background:var(--halcyon-deep)} .caption.halcyon{border-left-color:var(--halcyon)}
   .tag.human{background:#334155} .tag.system{background:#92400e}
+  .caption.satire .body { font-style: italic; font-weight: 600; font-size: clamp(22px, 3vw, 34px); }
+  .satire-badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; background: #7c2d12; color: #fde68a; letter-spacing: .6px; }
 
   /* ---------- Operator strip ---------- */
   #ops {
@@ -209,12 +220,47 @@
       <label class="chip"><input type="checkbox" id="eu" checked> European Union</label>
     </div>
 
-    <label class="f">Pace (seconds the audience reads each turn)</label>
-    <input id="pace" type="text" value="6" />
+    <div class="grid2" style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+      <div>
+        <label class="f">Pace (seconds the audience reads each turn)</label>
+        <input id="pace" type="text" value="6" />
+      </div>
+      <div>
+        <label class="f">Satire voice (talking heads speak the quip)</label>
+        <select id="voiceMode">
+          <option value="edge">Free — Microsoft neural voice ($0)</option>
+          <option value="openai">OpenAI — richer voices (paid)</option>
+          <option value="browser">Free — browser voice ($0, robotic)</option>
+          <option value="off">Off — text only</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <label class="f">Satire style — <span id="driftLabel" style="color:#e2e8f0">Balanced</span></label>
+      <input id="satireDrift" type="range" min="0" max="100" value="60" style="width:100%;" />
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:#55617a; margin-top:2px;">
+        <span>Faithful &amp; savage — same point</span>
+        <span>Balanced</span>
+        <span>Silly signature rant 🎤</span>
+      </div>
+    </div>
+
+    <label class="chip" id="satireModeChip" style="margin-top:14px; display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid #7c2d12; border-radius:10px; background:#1a0f0a;">
+      <input type="checkbox" id="satireFromStart"> 🎭 <b>Satirical mode</b> — talking heads + satire from the first turn
+    </label>
 
     <div style="margin-top:22px; display:flex; align-items:center; gap:14px;">
       <button class="btn" id="startBtn">Start debate ▶</button>
       <span class="hint" style="color:#55617a;font-size:12px">Press <b>C</b> controls · <b>A</b> analytics · <b>Space</b> pause</span>
+    </div>
+
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #1c2740;">
+      <label class="f">…or satirize a <b>past debate</b> — replays a stored debate through the talking heads, no new generation</label>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+        <select id="pastSession" style="min-width:340px; max-width:70%"><option value="">loading…</option></select>
+        <button class="btn" id="replayBtn" style="background:linear-gradient(180deg,#b45309,#7c2d12)">🎭 Satirize it ▶</button>
+      </div>
     </div>
     <div class="err" id="setupErr"></div>
   </div>
@@ -259,6 +305,8 @@
     <button class="btn sm ghost" id="interveneBtn">🗣 Human point</button>
     <button class="btn sm warn" id="shockBtn">⚡ Shock</button>
     <button class="btn sm" id="halcyonBtn" style="background:linear-gradient(180deg,#0ea5e9,#0369a1)">🕊 Summon Halcyon</button>
+    <button class="btn sm ghost" id="satireBtn" title="Talking heads deliver brutally satirical one-liners (Xi / Trump / von der Leyen)">🎭 Brutal satire: off</button>
+    <button class="btn sm ghost" id="saveTakeBtn" title="Save this satirical performance (text + audio) for replay in Lovable">💾 Save take</button>
     <div class="spacer"></div>
     <span class="hint" id="opsStatus"></span>
     <button class="btn sm stop" id="endBtn">⏹ End &amp; score</button>
@@ -329,6 +377,13 @@
 <script>
 const LABELS = { china: "China", us: "United States", eu: "European Union", halcyon: "Halcyon", human: "Human", system: "System" };
 const INITIALS = { china: "CN", us: "US", eu: "EU", halcyon: "🕊" };
+const HEAD_ACTORS = ["china", "us", "eu", "halcyon"];   // have talking-head avatars under /heads/
+let satireHeadsOn = false;                              // the "special module": off until connected
+let replayMode = false;                                 // true while satirizing a stored debate (no live generation)
+let voiceMode = "edge";                                 // "edge" (free MS), "openai" (paid), "browser" (free robotic), "off"
+let satireDrift = 0.6;                                  // 0=faithful+savage … 1=absurd — the satire-style knob
+let satireTake = [];                                    // accumulates this run's satirical lines for saving/replay
+const satireAudio = new Audio();                        // reused element for server-synthesized satire audio (edge/openai)
 const AGENTS = ["china", "us", "eu"];
 
 let token = "";
@@ -354,11 +409,30 @@ async function api(path, body) {
   return res.json();
 }
 
+// GET helper for public read endpoints (recent sessions, replay data) — no token needed.
+async function getJSON(path) {
+  const res = await fetch(path, { headers: { "ngrok-skip-browser-warning": "true" } });
+  if (!res.ok) {
+    let detail = res.status + "";
+    try { detail = (await res.json()).detail || detail; } catch (e) {}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // Interruptible wait: resolves early if paused/skip/stop changes the world.
-async function pacedWait(ms) {
-  const step = 80; let waited = 0;
-  while (waited < ms && running && !paused && !skipRequested) { await sleep(step); waited += step; }
+async function pacedWait(ms, waitVoice = false) {
+  const step = 80, hardCap = 20000; let waited = 0;
+  while (running && !paused && !skipRequested) {
+    const voiceBusy = waitVoice && (
+      (satireAudio.src && !satireAudio.paused && !satireAudio.ended) ||
+      (window.speechSynthesis && window.speechSynthesis.speaking)
+    );
+    if (waited >= ms && !voiceBusy) break;   // reading time elapsed AND the voice has finished
+    if (waited >= hardCap) break;            // safety cap so a stuck clip can't freeze the loop
+    await sleep(step); waited += step;
+  }
 }
 
 function selectedActors() { return AGENTS.filter(a => document.getElementById(a).checked); }
@@ -366,20 +440,86 @@ function selectedActors() { return AGENTS.filter(a => document.getElementById(a)
 // ---------- Setup ----------
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("token").value = localStorage.getItem("rt_token") || "";
+  // Convenience: auto-fill the operator token when opened directly on localhost.
+  // The endpoint 403s over the ngrok tunnel, so nothing is exposed publicly there.
+  (async () => {
+    const el = document.getElementById("token");
+    if (el.value) { token = el.value; return; }
+    try {
+      const r = await getJSON("/operator-token");
+      if (r && r.token) { el.value = r.token; token = r.token; localStorage.setItem("rt_token", r.token); }
+    } catch (e) { /* tunnel/production — paste it manually or use a past-debate satire */ }
+  })();
+  document.getElementById("voiceMode").value = localStorage.getItem("rt_voice") || "edge";
+  const driftEl = document.getElementById("satireDrift");
+  driftEl.value = localStorage.getItem("rt_drift") || "60";
+  updateDriftLabel();
+  driftEl.oninput = updateDriftLabel;
+  document.getElementById("satireFromStart").checked = localStorage.getItem("rt_satire_start") === "1";
   document.getElementById("startBtn").onclick = startDebate;
+  document.getElementById("replayBtn").onclick = replayAsSatire;
+  populatePastDebates();
   wireOps();
 });
+
+function driftText(v) {
+  if (v < 20) return "Faithful & savage";
+  if (v < 40) return "Grounded";
+  if (v < 67) return "Balanced";
+  if (v < 85) return "Signature rant";
+  return "Full unhinged rant 🎤";
+}
+function updateDriftLabel() {
+  const v = parseInt(document.getElementById("satireDrift").value, 10);
+  document.getElementById("driftLabel").textContent = `${driftText(v)} (${v})`;
+}
+
+// Read + remember the satire voice + style choices made on the setup screen,
+// and turn satire on from the first turn if "Satirical mode" is checked.
+function captureVoiceMode() {
+  const sel = document.getElementById("voiceMode");
+  voiceMode = sel ? sel.value : "edge";
+  localStorage.setItem("rt_voice", voiceMode);
+  const dv = document.getElementById("satireDrift");
+  if (dv) { satireDrift = (parseInt(dv.value, 10) || 60) / 100; localStorage.setItem("rt_drift", dv.value); }
+  const fromStart = document.getElementById("satireFromStart");
+  if (fromStart) {
+    localStorage.setItem("rt_satire_start", fromStart.checked ? "1" : "0");
+    applySatire(fromStart.checked);   // enable talking heads + satire before the opening turn renders
+  }
+}
+
+// Fill the "past debate" picker from the public recent-sessions list.
+async function populatePastDebates() {
+  const sel = document.getElementById("pastSession");
+  if (!sel) return;
+  try {
+    const r = await getJSON("/sessions/recent?limit=25");
+    const opts = (r.sessions || [])
+      .filter(s => (s.turn_count || 0) >= 2)
+      .map(s => {
+        const p = (s.prompt || "").replace(/\s+/g, " ").slice(0, 46);
+        return `<option value="${s.session_id}">${s.turn_count}t · ${s.mode} · ${p}…</option>`;
+      });
+    sel.innerHTML = opts.length ? opts.join("") : `<option value="">(no past debates found)</option>`;
+  } catch (e) {
+    sel.innerHTML = `<option value="">(couldn't load: ${e.message})</option>`;
+  }
+}
 
 async function startDebate() {
   const errEl = document.getElementById("setupErr");
   errEl.textContent = "";
   token = document.getElementById("token").value.trim();
   localStorage.setItem("rt_token", token);
+  captureVoiceMode();
   const actors = selectedActors();
   if (!actors.length) { errEl.textContent = "Pick at least one actor."; return; }
 
   const btn = document.getElementById("startBtn");
   btn.disabled = true; btn.textContent = "Starting…";
+  errEl.style.color = "#94a3b8";
+  errEl.textContent = "⏳ Generating the opening turn — the models take ~10–20s, hang tight…";
   try {
     const data = await api("/session/start", {
       prompt: document.getElementById("prompt").value,
@@ -391,23 +531,91 @@ async function startDebate() {
     session = { session_id: data.session_id, mode: data.mode, actors: data.actors, prompt: document.getElementById("prompt").value };
     enterStage();
     if (data.messages && data.messages.length) {
-      await renderTurn(data.messages[0]);
-      await pacedWait(readMs(data.messages[0].content));
+      const shown0 = await renderTurn(data.messages[0]);
+      await pacedWait(readMs(shown0), true);
     }
     runLoop();
   } catch (e) {
-    errEl.textContent = "Could not start: " + e.message + (/configured/i.test(e.message) ? " — set ROUNDTABLE_OPERATOR_TOKEN on the server." : "");
+    errEl.style.color = "#f87171";
+    if (/token|operator|401/i.test(e.message)) {
+      errEl.innerHTML = "🔑 <b>Operator token required.</b> Paste your <code>X-Roundtable-Token</code> in the field above and Start again "
+        + "(it'll be remembered). No token handy? Use <b>“Satirize a past debate”</b> below — it needs no token.";
+      const tf = document.getElementById("token");
+      tf.style.borderColor = "#f59e0b"; tf.focus();
+    } else {
+      errEl.textContent = "Could not start: " + e.message;
+    }
     btn.disabled = false; btn.textContent = "Start debate ▶";
   }
 }
 
+// Satirize a stored debate: load its transcript and play it through the talking
+// heads with satire forced on — no new turns are generated.
+async function replayAsSatire() {
+  const errEl = document.getElementById("setupErr");
+  errEl.textContent = "";
+  const id = document.getElementById("pastSession").value;
+  if (!id) { errEl.textContent = "Pick a past debate to satirize."; return; }
+  captureVoiceMode();
+  const btn = document.getElementById("replayBtn");
+  btn.disabled = true; btn.textContent = "Loading…";
+  let data;
+  try {
+    data = await getJSON(`/api/replay/${id}`);
+  } catch (e) {
+    errEl.textContent = "Could not load debate: " + e.message;
+    btn.disabled = false; btn.textContent = "🎭 Satirize it ▶";
+    return;
+  }
+  const s = data.session || {};
+  session = {
+    session_id: s.session_id || id,
+    mode: s.mode || "debate",
+    actors: (s.actors && s.actors.length) ? s.actors : ["china", "us", "eu"],
+    prompt: s.prompt || "",
+  };
+  replayMode = true;
+  if (!satireHeadsOn) toggleSatire();          // force the module on
+  enterStage();
+  document.getElementById("liveText").textContent = "SATIRE REPLAY";
+
+  running = true; paused = false; reflectPaused();
+  const events = (data.events || []).filter(ev => (ev.content || "").trim());
+  for (const ev of events) {
+    if (!running) break;
+    while (paused && running) { await sleep(150); }
+    skipRequested = false;
+    const shown = await renderTurn({ actor: ev.actor, kind: ev.kind, content: ev.content });
+    if (!running) break;
+    await pacedWait(readMs(shown), true);
+  }
+  running = false;
+  setActive(null); stopVoice();
+  setOpsStatus("satire replay complete");
+}
+
 function enterStage() {
+  satireTake = [];   // fresh take for this run
   document.getElementById("setup").classList.add("hidden");
   document.getElementById("stage").classList.remove("hidden");
   document.getElementById("modeBadge").textContent = session.mode;
   document.getElementById("promptLine").textContent = session.prompt;
   renderPodiums();
   resetAnalytics();
+}
+
+async function saveSatireTake() {
+  if (!session || !session.session_id) { setOpsStatus("start a debate first"); return; }
+  if (!satireTake.length) { setOpsStatus("no satirical lines captured yet — turn satire on"); return; }
+  setOpsStatus("💾 saving take + rendering audio…");
+  try {
+    const r = await api(`/session/${session.session_id}/satire-take`, {
+      take: satireTake, prompt: session.prompt, mode: session.mode,
+    });
+    setOpsStatus(`✅ saved ${r.count} lines — replay: ${r.replay_url}`);
+  } catch (e) {
+    setOpsStatus("save failed: " + e.message);
+  }
 }
 
 function renderPodiums() {
@@ -417,8 +625,11 @@ function renderPodiums() {
     const div = document.createElement("div");
     div.className = "podium " + actor;
     div.id = "podium-" + actor;
+    const head = HEAD_ACTORS.includes(actor)
+      ? `<video class="head" id="head-${actor}" src="/heads/${actor}.webm" poster="/heads/${actor}.png" muted loop playsinline preload="metadata"></video>`
+      : "";
     div.innerHTML = `
-      <div class="avatar">${INITIALS[actor] || actor}</div>
+      <div class="avatar"><span class="initials">${INITIALS[actor] || actor}</span>${head}</div>
       <div class="name">${LABELS[actor]}</div>
       <div class="sub" id="sub-${actor}"></div>
       <div class="count" id="count-${actor}">0 turns</div>
@@ -491,6 +702,7 @@ function renderThemes(themes) {
 }
 
 async function callPulse() {
+  if (replayMode) return;   // stored debates aren't live in memory; skip the pulse endpoint
   const myseq = ++pulseSeq;
   try {
     const res = await api(`/session/${session.session_id}/pulse`);
@@ -500,9 +712,15 @@ async function callPulse() {
 
 const turnCounts = {};
 function setActive(actor) {
+  if (!session || !session.actors) return;   // may be called before a session exists (satire toggled pre-start)
   session.actors.forEach(a => {
     const p = document.getElementById("podium-" + a);
     if (p) p.classList.toggle("active", a === actor);
+    const v = document.getElementById("head-" + a);
+    if (v) {
+      if (satireHeadsOn && a === actor) { v.play().catch(() => {}); }
+      else { try { v.pause(); } catch (e) {} }
+    }
   });
 }
 
@@ -524,16 +742,85 @@ function readMs(text) {
   return Math.min(14000, Math.max(paceSec * 1000, words * (paceSec * 1000 / 45)));
 }
 
+// ---------- Satire voice ($0 browser speech / paid OpenAI) ----------
+let _voices = [];
+function _loadVoices() { _voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
+if (window.speechSynthesis) { _loadVoices(); window.speechSynthesis.onvoiceschanged = _loadVoices; }
+
+// Per-actor browser-voice hints — language + pitch/rate to separate the caricatures.
+// Cast to match the caricatures: Xi = man/Chinese, Trump = funny man, Ursula = woman/German.
+// Browser TTS can't force gender, so we bias with pitch (low=male, high=female) + accent language.
+const BROWSER_VOICE = {
+  china:   { langs: ["zh-CN", "zh"], pitch: 0.6, rate: 0.9,  gender: "male" },    // Xi — deep man, Chinese
+  us:      { langs: ["en-US", "en"], pitch: 0.6, rate: 1.18, gender: "male" },    // Trump — aggressive, mean man
+  eu:      { langs: ["de-DE", "de"], pitch: 1.25, rate: 0.98, gender: "female" }, // Ursula — woman, German
+  halcyon: { langs: ["en-GB", "en-US", "en"], pitch: 1.2, rate: 1.0 },
+};
+// Common OS voice-name keywords, used to bias gender when a language has both.
+const VOICE_NAME_HINTS = {
+  male:   ["male", "david", "mark", "guy", "christopher", "eric", "roger", "kangkang", "yunjian", "yunyang", "stefan", "conrad", "george", "ryan"],
+  female: ["female", "zira", "jenny", "aria", "katja", "hedda", "huihui", "xiaoxiao", "amala", "elke", "susan", "linda", "hazel", "sonia"],
+};
+function pickVoice(langs, gender) {
+  for (const l of langs) {
+    const inLang = _voices.filter(v => (v.lang || "").toLowerCase().startsWith(l.toLowerCase()));
+    if (!inLang.length) continue;
+    if (gender && VOICE_NAME_HINTS[gender]) {
+      const hinted = inLang.find(v => VOICE_NAME_HINTS[gender].some(h => (v.name || "").toLowerCase().includes(h)));
+      if (hinted) return hinted;
+    }
+    return inLang[0];
+  }
+  return null;
+}
+function speakBrowser(actor, text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const cfg = BROWSER_VOICE[actor] || BROWSER_VOICE.us;
+  const u = new SpeechSynthesisUtterance(text);
+  const v = pickVoice(cfg.langs, cfg.gender);
+  if (v) u.voice = v;
+  u.pitch = cfg.pitch; u.rate = cfg.rate;
+  window.speechSynthesis.speak(u);
+}
+function playAudioClip(b64, mime) {
+  try { satireAudio.src = `data:${mime || "audio/mpeg"};base64,${b64}`; satireAudio.play().catch(() => {}); }
+  catch (e) {}
+}
+function stopVoice() {
+  try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+  try { satireAudio.pause(); } catch (e) {}
+}
+
 // ---------- Render a turn (typewriter) ----------
 async function renderTurn(msg) {
   const actor = msg.actor;
   const isAgent = (msg.kind || "agent") === "agent";
   const cap = document.getElementById("caption");
-  cap.className = "caption " + actor;
+
+  // Brutal-satire module: rewrite the earnest turn into a savage caricature quip
+  // (Xi / Trump / von der Leyen / Halcyon) via the CERIT endpoint. Original text
+  // still drives analytics; only what's spoken on stage changes.
+  let shown = msg.content || "";
+  let satire = false;
+  let voiceClip = null;   // {b64, mime} when OpenAI audio came back
+  if (satireHeadsOn && isAgent && HEAD_ACTORS.includes(actor)) {
+    setOpsStatus("…satirizing");
+    try {
+      const serverVoice = (voiceMode === "edge" || voiceMode === "openai");   // synthesized server-side
+      const r = await api("/satire", { actor, text: msg.content || "", speak: serverVoice, voice: voiceMode, drift: satireDrift });
+      if (r && r.satire) { shown = r.satire; satire = true; }
+      if (serverVoice && r && r.audio_b64) voiceClip = { b64: r.audio_b64, mime: r.audio_mime };
+      if (satire) satireTake.push({ actor, satire: shown, original: msg.content || "", drift: satireDrift, voice: voiceMode });
+    } catch (e) { /* keep original text if CERIT is unreachable */ }
+    setOpsStatus("");
+  }
+
+  cap.className = "caption " + actor + (satire ? " satire" : "");
   if (isAgent) {
     setActive(actor);
     turnCounts[actor] = (turnCounts[actor] || 0) + 1;
-    // instant heuristic layer: airtime momentum updates immediately
+    // instant heuristic layer: airtime momentum updates immediately (uses the real turn)
     airtime[actor] = (airtime[actor] || 0) + (msg.content || "").trim().split(/\s+/).length;
     updateMomentum();
     // enrich a beat later with the async LLM pulse (move / tension / themes)
@@ -542,11 +829,21 @@ async function renderTurn(msg) {
     setActive(null);
   }
   document.getElementById("capSpeaker").innerHTML =
-    `<span class="tag ${actor}">${LABELS[actor] || actor}</span> ${isAgent ? "speaking" : (msg.kind === "system" ? "shock" : "from the floor")}`;
+    `<span class="tag ${actor}">${LABELS[actor] || actor}</span> ${isAgent ? "speaking" : (msg.kind === "system" ? "shock" : "from the floor")}`
+    + (satire ? ` <span class="satire-badge">SATIRE</span>` : "");
+
+  // Speak the satire line as it appears. Server clip (edge/openai) if we got one;
+  // browser voice for "browser" mode, or as a fallback when server audio failed.
+  stopVoice();
+  if (satire && voiceMode !== "off") {
+    if (voiceClip) playAudioClip(voiceClip.b64, voiceClip.mime);
+    else speakBrowser(actor, shown);
+  }
 
   startTimer();
-  await typeOut(document.getElementById("capBody"), msg.content || "");
+  await typeOut(document.getElementById("capBody"), shown);
   stopTimer();
+  return shown;
 }
 
 async function typeOut(el, text) {
@@ -585,8 +882,8 @@ async function runLoop() {
     const msg = data.messages && data.messages[0];
     if (!msg) { await sleep(400); continue; }
     if (!running) break;
-    await renderTurn(msg);
-    await pacedWait(readMs(msg.content));
+    const shown = await renderTurn(msg);
+    await pacedWait(readMs(shown), true);
   }
 }
 
@@ -599,6 +896,19 @@ function reflectPaused() {
   document.getElementById("liveText").textContent = paused ? "PAUSED" : "LIVE";
 }
 function togglePause() { paused = !paused; reflectPaused(); }
+
+// The "special module I can sometimes connect": flip the talking heads + satire on/off.
+function applySatire(on) {
+  satireHeadsOn = on;
+  document.body.classList.toggle("heads-on", satireHeadsOn);
+  const b = document.getElementById("satireBtn");
+  b.textContent = "🎭 Brutal satire: " + (satireHeadsOn ? "ON" : "off");
+  b.classList.toggle("ghost", !satireHeadsOn);
+  // reflect the current speaker's video state immediately
+  const active = document.querySelector(".podium.active");
+  setActive(active ? active.id.replace("podium-", "") : null);
+}
+function toggleSatire() { applySatire(!satireHeadsOn); }
 
 function wireOps() {
   document.getElementById("pauseBtn").onclick = togglePause;
@@ -614,6 +924,8 @@ function wireOps() {
   document.getElementById("interveneSend").onclick = sendIntervention;
   document.getElementById("shockSend").onclick = sendShock;
   document.getElementById("halcyonBtn").onclick = summonHalcyon;
+  document.getElementById("satireBtn").onclick = toggleSatire;
+  document.getElementById("saveTakeBtn").onclick = saveSatireTake;
 
   document.getElementById("backStage").onclick = () => document.getElementById("closing").classList.add("hidden");
   document.getElementById("newDebate").onclick = () => location.reload();
@@ -678,7 +990,7 @@ async function sendShock() {
 
 // ---------- Closing: scoreboard + recap ----------
 async function endDebate() {
-  running = false; paused = true; stopTimer();
+  running = false; paused = true; stopTimer(); stopVoice();
   setOpsStatus("scoring the debate…");
   let recap;
   try {
