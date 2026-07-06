@@ -143,3 +143,26 @@ Build a **"Satirical Roundtable"** section:
 >    round(100 * their line count / total), label the actor with the most lines as "ran the room", and quote
 >    each actor's last `satire` line as their best jab. Headline: "🎭 Satirical performance — {top} ran the room".
 > 5. Add Replay and Back-to-archive buttons. Actor colours: China #dc2626, US #2563eb, EU #d97706, Halcyon #38bdf8.
+
+## Recommended deploy: embedded static bundle (unlisted, always-on, no public repo)
+Rather than serve over the ngrok tunnel, **embed the bundle inside the Lovable project** so
+it's always-on and laptop-independent, without publishing anything to public GitHub:
+1. Run `powershell -File scripts/pack-satire.ps1` → produces `exports/satire-archive.zip`.
+2. Unzip its contents into Lovable's **`public/satire-archive/`** folder.
+3. Lovable then serves it at `/satire-archive/…` — no API, no tokens, no tunnel.
+
+### Paste-in prompt (embedded / static-bundle mode)
+> Build a **"Satirical Roundtable"** page that reads static files under **`/satire-archive/`** (no API, no auth).
+> 1. Fetch `/satire-archive/index.json`; render each item in `takes[]` as a card (`prompt`, `preview`).
+> 2. On card click, fetch `/satire-archive/{replay_file}`; play `turns` in order — for each turn show the
+>    talking-head video at `/satire-archive/` + `head_video_url` as a looping, muted, autoplay, playsinline
+>    `<video>` (dim the other heads), show `caricature` + `label`, type out `satire`, and play
+>    `/satire-archive/` + `audio_url` in an `<audio>`. **Advance on the audio `ended` event** (fallback 6s).
+> 3. Prepend `/satire-archive/` to every relative `*_url` (`portrait_url` is null — use the video).
+> 4. End scoreboard from `turns`: dominance = round(100 * lines/total), most lines "ran the room", quote each
+>    actor's last `satire`. Headline: "🎭 Satirical performance — {top} ran the room".
+> 5. Replay + Back-to-archive. Colours: China #dc2626, US #2563eb, EU #d97706, Halcyon #38bdf8.
+
+### Turn shape (both modes)
+`{ actor, label, caricature, satire, original, drift, voice, head_video_url, portrait_url, audio_url }`
+Caricatures: Xi Jinping (`china`), Donald Trump (`us`), Ursula von der Leyen (`eu`), Halcyon (`halcyon`).
