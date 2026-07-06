@@ -45,5 +45,6 @@ node_modules/
 dist/
 build/
 
-# Generated satire snapshot bundle (regenerate via scripts/snapshot-satire.mjs)
+# Generated satire snapshot bundle — LOCAL ONLY, never committed
+# (regenerate with `node scripts/snapshot-satire.mjs`)
 public/satire-archive/

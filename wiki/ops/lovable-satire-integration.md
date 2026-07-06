@@ -70,12 +70,22 @@ For a chosen `session_id`, fetch `/api/satire-replay/{id}`, then play `turns` in
 1. Show the current actor's `head_video_url` as a looping, muted `<video>` (autoplay, playsinline); dim the others.
 2. Show `caricature` / `label` and type out `satire` as the caption.
 3. Play `audio_url` in an `<audio>` element. **Advance to the next turn on the audio `ended` event** (fallback: a ~6s timer if audio is missing).
-4. Loop until the last turn; then show a "replay / pick another" control.
+4. Loop until the last turn; then show the **satirical scoreboard** (below) plus a "replay / pick another" control.
 
 Notes
 - Videos are generic speaking loops (not lip-synced) — just loop while the actor speaks.
 - `original` is the earnest source turn (optional — show as a "what they really said" reveal).
-- If `audio_url` is null for a turn (TTS failed at save time), fall back to the browser SpeechSynthesis API or just the timer.
+- Audio is **pre-rendered at save time** with the caricature voices (Chinese-accented Xi, aggressive whiny baby-man Trump, German-accented Ursula), so you get stable mp3 URLs — no TTS on the client. If `audio_url` is null for a turn, fall back to the browser SpeechSynthesis API or a ~6s timer.
+
+## Satirical scoreboard (end of a performance)
+Computed **client-side from `turns`** — no endpoint needed. This mirrors the stage's
+"End & score" for a satirical run:
+- **Dominance** per actor = `round(100 * (their line count) / total lines)`.
+- **"Ran the room"** = the actor with the most lines.
+- **Best jab** per actor = their last (or longest) `satire` line — quote it.
+- Headline: e.g. `"🎭 Satirical performance — {topLabel} ran the room"`; subline: `"{N} savage lines delivered."`
+Render as a simple leaderboard (bar per actor + their quoted best line). Optionally
+tint each row with the actor colour (China red, US blue, EU amber, Halcyon sky).
 
 ## How takes get created
 An operator runs a debate on the stage UI (`/stage`), turns on 🎭 satire, and
@@ -107,3 +117,29 @@ All `head_video_url` / `portrait_url` / `audio_url` in the JSON are rewritten to
 **Offline Lovable mode:** point the page at the archive root instead of the API —
 `GET index.json`, then `GET {replay_file}`, and use the (relative) asset URLs as-is.
 The rendering recipe above is identical; only the base changes (static folder vs API).
+
+## Frontend TODO for Lovable
+Build a **"Satirical Roundtable"** section:
+- [ ] **Archive grid** — `GET /api/satire-takes`, one card per take (`prompt`, `preview`, `count`).
+- [ ] **Player** — on card click, `GET /api/satire-replay/{id}`, play `turns` in order:
+      talking-head `<video>` (loop while speaking, dim others) + typed `satire` caption +
+      `<audio src=audio_url>`, advancing on the audio `ended` event.
+- [ ] **Prepend the API base** (`https://aicoldwar.ngrok.app`) to every `*_url`, and send
+      `ngrok-skip-browser-warning: true` on all requests.
+- [ ] **Scoreboard** at the end (computed from `turns`, formula above).
+- [ ] **Controls**: replay, back to archive, and (optional) an "original vs satire" toggle using `original`.
+- [ ] (Optional) **Offline mode**: read from a hosted copy of `public/satire-archive/` instead of the API.
+
+## Paste-in prompt for Lovable's AI
+> Add a **"Satirical Roundtable"** page that reads from `https://aicoldwar.ngrok.app`
+> (send header `ngrok-skip-browser-warning: true` on every request; all endpoints are public, no auth).
+> 1. On load, `GET /api/satire-takes` and render each take as a card showing `prompt` and `preview`.
+> 2. On card click, `GET /api/satire-replay/{session_id}` and play its `turns` in order: for each turn show the
+>    actor's `head_video_url` as a looping, muted, autoplay, playsinline `<video>` (dim the other actors),
+>    display `caricature` + `label`, type out the `satire` text, and play `audio_url` in an `<audio>`.
+>    **Advance to the next turn on the audio `ended` event** (fallback: 6s timer if `audio_url` is null).
+> 3. Prepend `https://aicoldwar.ngrok.app` to every `*_url`.
+> 4. After the last turn, show a **satirical scoreboard** computed from `turns`: dominance per actor =
+>    round(100 * their line count / total), label the actor with the most lines as "ran the room", and quote
+>    each actor's last `satire` line as their best jab. Headline: "🎭 Satirical performance — {top} ran the room".
+> 5. Add Replay and Back-to-archive buttons. Actor colours: China #dc2626, US #2563eb, EU #d97706, Halcyon #38bdf8.

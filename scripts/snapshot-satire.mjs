@@ -18,6 +18,9 @@ import { join, dirname } from 'node:path';
 const BASE = (process.env.ROUNDTABLE_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const OUT = process.env.SATIRE_ARCHIVE_DIR || join(process.cwd(), 'public', 'satire-archive');
 const HEADERS = { 'ngrok-skip-browser-warning': 'true' };
+// Lean by default: skip the multi-MB portrait PNGs (the head video is the visual).
+// Set SATIRE_INCLUDE_PORTRAITS=1 to bundle portraits too.
+const INCLUDE_PORTRAITS = process.env.SATIRE_INCLUDE_PORTRAITS === '1';
 
 async function getJSON(path) {
   const res = await fetch(BASE + path, { headers: HEADERS });
@@ -49,6 +52,7 @@ async function main() {
     const rep = await getJSON(`/api/satire-replay/${t.session_id}`);
     for (const turn of rep.turns) {
       for (const key of ['head_video_url', 'portrait_url', 'audio_url']) {
+        if (key === 'portrait_url' && !INCLUDE_PORTRAITS) { turn[key] = null; continue; } // lean: drop portraits
         const u = turn[key];
         if (u && !fetched.has(u)) {
           fetched.add(u);
