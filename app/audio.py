@@ -1,5 +1,6 @@
 """Audio generation for session replay."""
 
+import asyncio
 import os
 import subprocess
 import tempfile
@@ -50,7 +51,7 @@ SATIRE_VOICES = {
     },
     "us": {  # Trump — whiny high-pitched man-baby, cranked to aggressive/manic (comedy + rage)
         "openai": {"voice": "onyx", "instructions": "Speak as an AGGRESSIVE, MEAN, whiny American man-baby strongman: shrill, petulant, snarling and hostile, ranting at high pitch — a furious over-the-top comic caricature."},
-        "edge-tts": {"voice": "en-US-GuyNeural", "rate": "+24%", "pitch": "+42Hz", "volume": "+60%"},
+        "edge-tts": {"voice": "en-US-GuyNeural", "rate": "+4%", "pitch": "+42Hz", "volume": "+55%"},
     },
     "eu": {  # Ursula von der Leyen — a woman, German accent, funny
         "openai": {"voice": "coral", "instructions": "Speak as a prim European bureaucrat WOMAN with a German accent, over-formal and unintentionally comic, faintly exasperated."},
@@ -143,9 +144,14 @@ async def generate_tts_edge(text: str, voice_config: dict) -> bytes:
 
     communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=volume)
     audio = bytearray()
-    async for chunk in communicate.stream():
-        if chunk.get("type") == "audio" and chunk.get("data"):
-            audio.extend(chunk["data"])
+
+    async def _collect():
+        async for chunk in communicate.stream():
+            if chunk.get("type") == "audio" and chunk.get("data"):
+                audio.extend(chunk["data"])
+
+    # Cap synthesis so a stalled Microsoft edge-tts connection can't hang the request forever.
+    await asyncio.wait_for(_collect(), timeout=20)
     if not audio:
         raise RuntimeError("edge-tts produced no audio")
     return bytes(audio)

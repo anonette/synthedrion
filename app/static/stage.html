@@ -395,18 +395,32 @@ let timerHandle = null;
 let turnStart = 0;
 
 // ---- API helper (all mutating calls carry the operator token) ----
-async function api(path, body) {
-  const res = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Roundtable-Token": token },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    let detail = res.status + "";
-    try { detail = (await res.json()).detail || detail; } catch (e) {}
-    throw new Error(detail);
+async function api(path, body, timeoutMs = 90000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);   // never hang a turn forever
+  try {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Roundtable-Token": token,
+        "ngrok-skip-browser-warning": "true",   // required so tunnel POSTs skip the ngrok interstitial
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      let detail = res.status + "";
+      try { detail = (await res.json()).detail || detail; } catch (e) {}
+      throw new Error(detail);
+    }
+    return await res.json();
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error("timed out after " + Math.round(timeoutMs / 1000) + "s");
+    throw e;
+  } finally {
+    clearTimeout(timer);
   }
-  return res.json();
 }
 
 // GET helper for public read endpoints (recent sessions, replay data) — no token needed.
@@ -493,15 +507,20 @@ function captureVoiceMode() {
 async function populatePastDebates() {
   const sel = document.getElementById("pastSession");
   if (!sel) return;
+  // Show ONLY real debates — drop test/verification/mirror-world runs and short stubs.
+  const JUNK = /\bverif|verification|realign|external test|mirror-world|reality layer|sourced claim|scheduled sync|\btest\b|\bdebug\b/i;
   try {
-    const r = await getJSON("/sessions/recent?limit=25");
+    const r = await getJSON("/sessions/recent?limit=60");
     const opts = (r.sessions || [])
-      .filter(s => (s.turn_count || 0) >= 2)
+      .filter(s => (s.mode || "debate") === "debate")            // only debate mode
+      .filter(s => (s.turn_count || 0) >= 6)                     // a substantial debate, not a short stub
+      .filter(s => !/test|debug|demo/i.test(s.session_id || "")) // drop test/demo session ids
+      .filter(s => !JUNK.test(s.prompt || ""))                   // drop verification/mirror prompts
       .map(s => {
-        const p = (s.prompt || "").replace(/\s+/g, " ").slice(0, 46);
-        return `<option value="${s.session_id}">${s.turn_count}t · ${s.mode} · ${p}…</option>`;
+        const p = (s.prompt || "").replace(/\s+/g, " ").slice(0, 64);
+        return `<option value="${s.session_id}">${s.turn_count} turns · ${p}…</option>`;
       });
-    sel.innerHTML = opts.length ? opts.join("") : `<option value="">(no past debates found)</option>`;
+    sel.innerHTML = opts.length ? opts.join("") : `<option value="">(no saved debates yet)</option>`;
   } catch (e) {
     sel.innerHTML = `<option value="">(couldn't load: ${e.message})</option>`;
   }
@@ -808,7 +827,7 @@ async function renderTurn(msg) {
     setOpsStatus("…satirizing");
     try {
       const serverVoice = (voiceMode === "edge" || voiceMode === "openai");   // synthesized server-side
-      const r = await api("/satire", { actor, text: msg.content || "", speak: serverVoice, voice: voiceMode, drift: satireDrift });
+      const r = await api("/satire", { actor, text: msg.content || "", speak: serverVoice, voice: voiceMode, drift: satireDrift }, 30000);
       if (r && r.satire) { shown = r.satire; satire = true; }
       if (serverVoice && r && r.audio_b64) voiceClip = { b64: r.audio_b64, mime: r.audio_mime };
       if (satire) satireTake.push({ actor, satire: shown, original: msg.content || "", drift: satireDrift, voice: voiceMode });
@@ -870,17 +889,25 @@ async function runLoop() {
   while (running) {
     if (paused) { await sleep(150); continue; }
     skipRequested = false;
-    let data;
-    try {
-      setOpsStatus("…generating turn");
-      data = await api("/session/message", { session_id: session.session_id });
-    } catch (e) {
-      setOpsStatus("error: " + e.message);
-      paused = true; reflectPaused(); continue;
+
+    // Fetch the next turn with retries so a transient upstream hiccup (OpenRouter
+    // slow/failing, or a tunnel blip) self-heals instead of freezing the debate.
+    let data = null;
+    for (let attempt = 1; attempt <= 4 && running && !paused; attempt++) {
+      try {
+        setOpsStatus(attempt === 1 ? "…generating turn" : `…retrying turn (${attempt})`);
+        data = await api("/session/message", { session_id: session.session_id });
+        break;
+      } catch (e) {
+        setOpsStatus(`⚠ turn failed (${e.message}) — retrying… · ⏸ Pause to stop`);
+        await sleep(Math.min(6000, 1500 * attempt));   // back off, then loop retries
+      }
     }
+    if (!data) continue;   // still failing — keep trying (unless the user paused)
     setOpsStatus("");
     const msg = data.messages && data.messages[0];
-    if (!msg) { await sleep(400); continue; }
+    // Skip a blank/refused turn instead of stalling on an empty caption.
+    if (!msg || !(msg.content || "").trim()) { await sleep(400); continue; }
     if (!running) break;
     const shown = await renderTurn(msg);
     await pacedWait(readMs(shown), true);
@@ -991,19 +1018,48 @@ async function sendShock() {
 // ---------- Closing: scoreboard + recap ----------
 async function endDebate() {
   running = false; paused = true; stopTimer(); stopVoice();
+  // A "Satirize a past debate" replay isn't a live in-memory session, so the LLM
+  // recap endpoint (in-memory + operator-token) can't score it — show a wrap instead.
+  if (replayMode) { showClosingSimple(); return; }
   setOpsStatus("scoring the debate…");
-  let recap;
   try {
     const res = await api(`/session/${session.session_id}/recap`);
-    recap = res.recap;
+    setOpsStatus("");
+    api(`/session/${session.session_id}/summary`).catch(() => {});   // best-effort memo
+    showClosing(res.recap);
   } catch (e) {
-    setOpsStatus("recap failed: " + e.message);
-    return;
+    setOpsStatus("");
+    showClosingSimple("live scoring unavailable — " + e.message);   // never leave the button dead
   }
-  setOpsStatus("");
-  // generate the strategic memo too (best-effort; not displayed inline here)
-  api(`/session/${session.session_id}/summary`).catch(() => {});
-  showClosing(recap);
+}
+
+// Closing when there's no LLM recap (replay, or recap failed): build a satirical
+// scoreboard from the captured lines so End & score always shows a real result.
+function showClosingSimple(note) {
+  const take = satireTake || [];
+  const byActor = {};
+  take.forEach(t => { (byActor[t.actor] = byActor[t.actor] || []).push(t.satire); });
+  const total = take.length || 1;
+  const scoreboard = Object.keys(byActor).map(a => ({
+    actor: a,
+    dominance: Math.round(100 * byActor[a].length / total),
+    best_line: byActor[a][byActor[a].length - 1],   // their most recent zinger
+  })).sort((x, y) => y.dominance - x.dominance);
+  const top = scoreboard[0];
+  showClosing({
+    verdict: {
+      headline: take.length
+        ? (replayMode ? "🎭 Satirical performance — that's a wrap" : "🎭 Debate ended")
+        : "🎬 Ended",
+      summary: take.length
+        ? `${take.length} savage line${take.length === 1 ? "" : "s"} delivered`
+          + (top ? ` — ${LABELS[top.actor] || top.actor} ran the room.` : ".")
+          + "  Hit 💾 Save take to keep this performance."
+        : "No satirical lines were captured this run." + (note ? `  (${note})` : ""),
+    },
+    scoreboard,
+    key_moments: take.slice(-3).map(t => ({ actor: t.actor, quote: t.satire, why: "satirical jab" })),
+  });
 }
 
 function showClosing(r) {
