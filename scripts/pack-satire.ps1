@@ -21,7 +21,20 @@ try {
     New-Item -ItemType Directory -Force -Path (Join-Path $root "exports") | Out-Null
     $dst = Join-Path $root "exports\satire-archive.zip"
     if (Test-Path $dst) { Remove-Item $dst -Force }
-    Compress-Archive -Path "$src\*" -DestinationPath $dst -CompressionLevel Optimal
+
+    # Build the zip with FORWARD-SLASH entry names. PowerShell 5.1 Compress-Archive
+    # stores backslashes, which Linux hosts (Lovable) extract as literal filenames
+    # like "heads\us.webm" instead of a heads/ folder — breaking the bundle.
+    Add-Type -AssemblyName System.IO.Compression | Out-Null
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [System.IO.Compression.ZipFile]::Open($dst, [System.IO.Compression.ZipArchiveMode]::Create)
+    try {
+        Get-ChildItem -Path $src -Recurse -File | ForEach-Object {
+            $rel = $_.FullName.Substring($src.Length + 1).Replace('\', '/')
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $rel, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+        }
+    }
+    finally { $zip.Dispose() }
 
     $mb = [math]::Round((Get-Item $dst).Length / 1MB, 1)
     $takes = ((Get-Content (Join-Path $src "index.json") -Raw | ConvertFrom-Json).total)
