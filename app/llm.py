@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import random
 from typing import Any
 
 import httpx
@@ -254,6 +255,151 @@ def generate_halcyon_turn(prompt: str, good_news: list[str], recent_context: lis
         res.raise_for_status()
         data = res.json()
     return data["choices"][0]["message"]["content"].strip()
+
+
+# --- Brutal-satire "talking heads" layer ---------------------------------
+# Optional module: rewrite an actor's earnest turn into a savage, very short
+# caricature quip that the talking-head avatars (Xi / Trump / von der Leyen)
+# deliver. It runs on the low-censorship CERIT endpoint (the same HALCYON_*
+# wiring), because a merciless caricature can't run on a model that flinches.
+SATIRE_CARICATURES = {
+    "china": (
+        "Xi Jinping",
+        "the serene god-emperor of 'harmony'. Everything is a 'community of common destiny', 'win-win cooperation', "
+        "'peaceful rise' and 'non-interference' — while surveillance, coercion, debt-traps and tech self-sufficiency "
+        "purr beneath the courtesy. Patient, imperial, civilizational; menace wrapped in silk; the euphemism as a "
+        "weapon; treats rivals as short-sighted children who will eventually kneel",
+    ),
+    "us": (
+        "Donald Trump",
+        "the aggrieved billionaire strongman. Transactional, vain, thin-skinned, bullying; governs by grievance, "
+        "loyalty test and superlative; 'everybody's saying', 'a lot of people don't know', tariffs, deals, ratings. "
+        "A brittle ego performing dominance — the joke is the insecurity leaking through the bravado, not just the volume",
+    ),
+    "eu": (
+        "Ursula von der Leyen",
+        "the high priestess of Brussels proceduralism. Meets every danger with 'de-risking', 'strategic autonomy', a "
+        "framework, a directive, a summit and 'European values'; colossal moral declarations backed by no hard power; "
+        "menace laundered into a footnote, a press release and an impact assessment. Yes-Minister euphemism as governance",
+    ),
+    "halcyon": (
+        "Halcyon the peace-bird",
+        "the beatific TED-talk optimist who finds a silver lining in the mushroom cloud, mistakes a photo-op for "
+        "peace, and wants everyone to just collaborate — earnest to the point of derangement",
+    ),
+}
+
+# Real satirical TECHNIQUES (not just 'be zany') — one is injected per line so
+# repeated summons vary AND so each line has actual craft behind it.
+SATIRE_ANGLES = [
+    "expose the hypocrisy by following their OWN logic to its damning conclusion (reductio ad absurdum)",
+    "bury the threat inside a bland, bureaucratic euphemism until the menace shows through",
+    "reduce a lofty principle to the grubby transaction it actually is",
+    "aim surgical, specific contempt at a RIVAL leader by name",
+    "say the quiet, self-incriminating part out loud, deadpan",
+    "deploy false modesty that only advertises the vanity",
+    "let a small, humiliating, telling detail undercut the grandeur",
+    "answer a real catastrophe with a comically inadequate procedure",
+    "escalate the actual ambition one notch past the point of villainy",
+    "use icy understatement so the cruelty lands harder than shouting would",
+]
+
+# Trademark catchphrases / verbal tics — injected ONLY at high drift, where the
+# point is the gloriously silly signature rant rather than literate craft.
+SATIRE_SIGNATURES = {
+    "china": "'5,000 years of civilization', 'harmony', 'win-win', 'core interests', 'mandate of heaven', the dragon",
+    "us": "'tremendous', 'believe me', 'nobody', 'the best', 'everybody's saying', 'a lot of people', 'so smart', 'BIGLY'",
+    "eu": "'framework', 'taskforce', 'de-risking', 'European values', 'a directive', 'a committee', 'an impact assessment'",
+    "halcyon": "'hope', 'cooperation', 'a new dawn', 'together', 'a bridge', 'just imagine'",
+}
+
+# A random concrete "obsession" is dropped into each prompt purely to force
+# divergence — two identical inputs won't collapse to the same joke.
+SATIRE_WILDCARDS = [
+    "gold-plated data centers", "a rival's tiny hands", "TikTok", "a moat full of GPUs",
+    "the metric system", "fusion reactors", "a knock-off iPhone", "rare-earth smuggling",
+    "a 900-page directive", "Davos canapés", "a nuclear-powered toaster", "quantum astrology",
+    "a border wall made of servers", "an app that reports your neighbors", "subsidized croissants",
+    "a five-year plan for lunch", "a very large button", "carbon-neutral propaganda",
+]
+
+# Deterministic fallbacks if the CERIT call fails — keeps the room brutal even offline.
+SATIRE_FALLBACKS = {
+    "china": "Cooperation is whatever I say it is, comrade — resistance is merely a scheduling error.",
+    "us": "Nobody satirizes better than me, folks — tremendous quips, the best, everybody says so.",
+    "eu": "I've drafted a 14-part framework to regulate this joke. Please hold for the impact assessment.",
+    "halcyon": "But look — two rivals shook hands once! Surely that fixes everything!",
+}
+
+
+def generate_satire_line(actor: str, text: str, drift: float = 0.6, max_words: int = 26) -> str:
+    """Return ONE satirical caricature line rewriting `text`. `drift` (0.0–1.0) is
+    the fidelity↔absurdity knob: 0 = the delegate's actual point, made savage;
+    1 = the point as a mere launchpad into surreal absurdity. Raises on transport
+    error so the caller can fall back to SATIRE_FALLBACKS."""
+    if not HALCYON_API_KEY:
+        raise RuntimeError("HALCYON_API_KEY not set")
+    drift = max(0.0, min(1.0, drift))
+    name, style = SATIRE_CARICATURES.get(actor, (actor, "a pompous political caricature"))
+    high = drift >= 0.67  # top of the slider = the silly signature-rant stage
+
+    # Drift controls the register: tight literate savagery → heightened → full silly rant.
+    if drift < 0.34:
+        fidelity = ("Stay TIGHTLY faithful to their actual argument and specifics — same point, same topic — "
+                    "but render it savage and self-incriminating. Invent no unrelated imagery.")
+        craft = (" Be specific and literate — expose the real hypocrisy underneath; don't lean on a single "
+                 "catchphrase as the whole joke.")
+    elif drift < 0.67:
+        fidelity = ("Keep their actual point clearly recognizable, then heighten it — sharpen the logic and "
+                    "hypocrisy to the edge of the absurd.")
+        craft = " Stay sharp and specific; expose the hypocrisy, don't just be loud."
+    else:
+        sig = SATIRE_SIGNATURES.get(actor, "")
+        fidelity = ("Use their point only as a springboard and go FULL signature rant — lean HARD into their "
+                    "trademark catchphrases and verbal tics, gloriously over-the-top and ridiculous. This is the "
+                    "crowd-pleaser: the sillier and more in-character, the better. Keep it PUNCHY — ONE breath, "
+                    "sayable aloud in about 7 seconds; land the joke, don't ramble."
+                    + (f" Pepper in their signature phrases: {sig}." if sig else ""))
+        craft = ""  # at the top of the slider, the catchphrase IS the point
+
+    angle = random.choice(SATIRE_ANGLES) if 0.34 <= drift < 0.67 else None
+    wildcard = random.choice(SATIRE_WILDCARDS) if (high and random.random() < drift) else None
+    words = 20 if high else max_words   # rants must stay short enough for the audio to finish
+
+    system = (
+        "You are a master political satirist — the sensibility of Jonathan Swift, Armando Iannucci (Veep, The Thick "
+        "of It), Stanley Kubrick's Dr. Strangelove, Yes Minister and peak The Onion. Your tools are irony, reductio "
+        "ad absurdum, the damning euphemism, and a subject's own logic turned against them. Punch UP at power: the "
+        "target is the powerful's hypocrisy, vanity and menace — never their victims. "
+        f"Speak in first person as {name}: {style}. "
+        f"Rewrite the delegate's actual point below into ONE devastating, genuinely funny line (max {words} words), "
+        f"in character. {fidelity}"
+        + (f" Technique for this line: {angle}." if angle else "")
+        + (f" Let '{wildcard}' spark a fresh image, only if it fits." if wildcard else "")
+        + craft
+        + " No quotation marks, no stage directions, no preamble — just the line."
+    )
+    payload: dict[str, Any] = {
+        "model": HALCYON_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": text.strip()[:1200]},
+        ],
+        "temperature": round(0.6 + drift * 0.6, 2),   # 0.6 (faithful) → 1.2 (rant)
+        "top_p": 0.98,
+        "frequency_penalty": 0.7,
+        "presence_penalty": 0.6,
+        "max_tokens": 100,   # hard ceiling so a rant can't run away past the audio window
+    }
+    headers = {"Authorization": f"Bearer {HALCYON_API_KEY}", "Content-Type": "application/json"}
+    with httpx.Client(timeout=30.0) as client:
+        res = client.post(f"{HALCYON_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        data = res.json()
+    line = (data["choices"][0]["message"]["content"] or "").strip()
+    # Models sometimes wrap the quip in quotes or add a trailing note; keep the first line, unquoted.
+    line = line.splitlines()[0].strip().strip('"').strip("'").strip()
+    return line or SATIRE_FALLBACKS.get(actor, text)
 
 
 ACTOR_LABELS_FOR_RECAP = {"china": "China", "us": "United States", "eu": "European Union"}

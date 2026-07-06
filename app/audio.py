@@ -39,6 +39,39 @@ ACTOR_VOICES = {
 
 OPENAI_AUDIO_MODEL = os.getenv("OPENAI_TTS_MODEL", "gpt-4o-mini-tts")
 
+# Voices for the brutal-satire talking heads — deliberately caricatured (gender +
+# accent + comedic tone). Kept SEPARATE from ACTOR_VOICES so the serious replay
+# narration is unaffected. Trick for accents on free edge-tts: a locale voice
+# (zh-CN / de-DE) reading English speaks it with that native accent.
+SATIRE_VOICES = {
+    "china": {  # Xi — a man, heavy Chinese accent
+        "openai": {"voice": "ash", "instructions": "Speak as a stern authoritarian man with a HEAVY Chinese accent, calm cold menace, slow and deliberate."},
+        "edge-tts": {"voice": "zh-CN-YunjianNeural", "rate": "-8%", "pitch": "-12Hz"},
+    },
+    "us": {  # Trump — whiny high-pitched man-baby, cranked to aggressive/manic (comedy + rage)
+        "openai": {"voice": "onyx", "instructions": "Speak as an AGGRESSIVE, MEAN, whiny American man-baby strongman: shrill, petulant, snarling and hostile, ranting at high pitch — a furious over-the-top comic caricature."},
+        "edge-tts": {"voice": "en-US-GuyNeural", "rate": "+24%", "pitch": "+42Hz", "volume": "+60%"},
+    },
+    "eu": {  # Ursula von der Leyen — a woman, German accent, funny
+        "openai": {"voice": "coral", "instructions": "Speak as a prim European bureaucrat WOMAN with a German accent, over-formal and unintentionally comic, faintly exasperated."},
+        "edge-tts": {"voice": "de-DE-KatjaNeural", "rate": "+0%", "pitch": "+8Hz"},
+    },
+    "halcyon": {  # earnest peace-bird — warm, hopeful
+        "openai": {"voice": "shimmer", "instructions": "Speak as a warm, relentlessly hopeful peacemaker — gentle and earnest."},
+        "edge-tts": {"voice": "en-US-AriaNeural", "rate": "+3%", "pitch": "+0Hz"},
+    },
+}
+
+
+async def generate_satire_audio(text: str, actor: str, provider: str | None = None) -> bytes:
+    """TTS for the satire talking heads using the caricatured SATIRE_VOICES map.
+    `provider` = "edge" (free, default) | "openai" (paid)."""
+    tts_service = (provider or "edge").lower()
+    cfg = SATIRE_VOICES.get(actor) or SATIRE_VOICES["us"]
+    if tts_service == "openai" and os.getenv("OPENAI_API_KEY"):
+        return await generate_tts_openai(text, cfg["openai"])
+    return await generate_tts_edge(text, cfg["edge-tts"])
+
 
 async def generate_tts_elevenlabs(text: str, voice_config: dict) -> bytes:
     """Generate TTS using ElevenLabs API."""
@@ -94,42 +127,43 @@ async def generate_tts_openai(text: str, voice_config: dict) -> bytes:
 
 
 async def generate_tts_edge(text: str, voice_config: dict) -> bytes:
-    """Generate TTS using Edge TTS (free, local)."""
+    """Generate TTS using Edge TTS (free Microsoft neural voices, no API key).
+
+    Streams the mp3 into memory — avoids a temp file (the old `/tmp/...` path did
+    not exist on Windows and always failed there)."""
     try:
         import edge_tts
     except ImportError:
         raise ImportError("edge-tts not installed. Run: pip install edge-tts")
-    
+
     voice = voice_config.get("voice", "en-US-JennyNeural")
     rate = voice_config.get("rate", "+0%")
-    
-    communicate = edge_tts.Communicate(text, voice, rate=rate)
-    
-    # Generate audio to temp file
-    temp_path = Path(f"/tmp/tts_{os.urandom(8).hex()}.mp3")
-    await communicate.save(str(temp_path))
-    
-    # Read and return audio data
-    with open(temp_path, "rb") as f:
-        audio_data = f.read()
-    
-    # Clean up temp file
-    temp_path.unlink()
-    
-    return audio_data
+    pitch = voice_config.get("pitch", "+0Hz")
+    volume = voice_config.get("volume", "+0%")
+
+    communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=volume)
+    audio = bytearray()
+    async for chunk in communicate.stream():
+        if chunk.get("type") == "audio" and chunk.get("data"):
+            audio.extend(chunk["data"])
+    if not audio:
+        raise RuntimeError("edge-tts produced no audio")
+    return bytes(audio)
 
 
-async def generate_actor_audio(text: str, actor: str) -> bytes:
-    """Generate audio for a specific actor."""
-    tts_service = os.getenv("TTS_SERVICE", "openai").lower()
-    
+async def generate_actor_audio(text: str, actor: str, provider: str | None = None) -> bytes:
+    """Generate audio for a specific actor. `provider` ("openai" | "elevenlabs" |
+    "edge") overrides the TTS_SERVICE env var for a single call — the satire voice
+    switch uses this so the caller picks free (edge) vs paid (openai) per request."""
+    tts_service = (provider or os.getenv("TTS_SERVICE", "openai")).lower()
+
     voice_config = ACTOR_VOICES.get(actor, ACTOR_VOICES["human"])
-    
+
     if tts_service == "openai" and os.getenv("OPENAI_API_KEY"):
         return await generate_tts_openai(text, voice_config["openai"])
     if tts_service == "elevenlabs" and os.getenv("ELEVENLABS_API_KEY"):
         return await generate_tts_elevenlabs(text, voice_config["elevenlabs"])
-    # Default to free edge-tts
+    # Default / explicit: free edge-tts
     return await generate_tts_edge(text, voice_config["edge-tts"])
 
 

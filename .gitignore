@@ -44,3 +44,6 @@ sessions/news-ingest-report.md
 node_modules/
 dist/
 build/
+
+# Generated satire snapshot bundle (regenerate via scripts/snapshot-satire.mjs)
+public/satire-archive/

@@ -12,16 +12,16 @@ from pathlib import Path
 
 import httpx
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
-from .audio import ensure_replay_audio_assets
+from .audio import ensure_replay_audio_assets, generate_satire_audio
 from .config import ACTOR_MODELS, HALCYON_LEDGER_PATH, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
-from .llm import generate_halcyon_turn, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, openrouter_enabled
+from .llm import SATIRE_FALLBACKS, generate_halcyon_turn, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, generate_satire_line, openrouter_enabled
 from .threat_intel import latest_incident, prompt_from_incident
 from .auth import verify_token, require_roundtable_operator
 from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key
@@ -71,6 +71,11 @@ SESSIONS_DIR = Path(__file__).resolve().parent.parent / "sessions"
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/session-assets", StaticFiles(directory=SESSIONS_DIR), name="session-assets")
+
+# Talking-heads avatars (Xi/Trump/von der Leyen/Halcyon) for the optional satire module.
+HEADS_DIR = STATIC_ROOT / "heads"
+if HEADS_DIR.is_dir():
+    app.mount("/heads", StaticFiles(directory=HEADS_DIR), name="heads")
 
 log = logging.getLogger("aicoldwar")
 if not log.handlers:
@@ -491,8 +496,12 @@ def shock(request: ShockRequest) -> dict:
     return {"session_id": state.session_id, "accepted": True, "status": state.status}
 
 
-def _halcyon_good_news(n: int = 5) -> list[str]:
-    """Pull the most recent hopeful stories from the Halcyon crawler's ledger."""
+def _halcyon_good_news(n: int = 5, used: int = 0) -> list[str]:
+    """Pull the most recent hopeful stories from the Halcyon crawler's ledger.
+
+    `used` = how many times Halcyon has already spoken in this session; the
+    newest-first list is rotated by that count so repeated summons within one
+    session lead with a different story instead of the same freshest item."""
     try:
         text = Path(HALCYON_LEDGER_PATH).read_text(encoding="utf-8")
     except Exception:
@@ -510,7 +519,209 @@ def _halcyon_good_news(n: int = 5) -> list[str]:
                     why = w.split(":", 1)[1].strip()
                     break
             stories.append(title + (f" — {why}" if why else ""))
-    return stories[-n:]
+    if not stories:
+        return []
+    fresh = stories[::-1]  # newest first
+    offset = used % len(fresh)
+    rotated = fresh[offset:] + fresh[:offset]
+    return rotated[:n]
+
+
+@app.get("/operator-token")
+def operator_token_local(request: Request) -> dict:
+    """Auto-fill the operator token for the LOCAL stage UI only. Hard-refuses in
+    production AND refuses any request that arrived through a proxy/tunnel (ngrok
+    sets X-Forwarded-* headers), so the token is NEVER exposed over the public
+    tunnel — only to a browser hitting 127.0.0.1 directly on this machine."""
+    if os.getenv("PRODUCTION", "false").lower() == "true":
+        raise HTTPException(status_code=404, detail="not available")
+    if request.headers.get("x-forwarded-for") or request.headers.get("x-forwarded-host") or request.headers.get("x-forwarded-proto"):
+        raise HTTPException(status_code=403, detail="local access only")
+    client_host = request.client.host if request.client else ""
+    if client_host not in ("127.0.0.1", "::1", "localhost"):
+        raise HTTPException(status_code=403, detail="local access only")
+    return {"token": os.getenv("ROUNDTABLE_OPERATOR_TOKEN", "")}
+
+
+@app.post("/satire")
+async def satirize(payload: dict) -> dict:
+    """Optional 'talking heads' module: rewrite one actor's turn text into a
+    brutally satirical caricature quip (Xi / Trump / von der Leyen / Halcyon),
+    generated on the low-censorship CERIT endpoint. Read-only transform — it does
+    not touch session state — so it stays unauthenticated like /health. Never
+    500s the room: falls back to a canned savage line if CERIT is unreachable.
+
+    If `speak` is true, also synthesize the quip in the actor's caricature voice
+    and return it inline as base64 (provider chosen by TTS_SERVICE — OpenAI, or
+    the free edge-tts). Audio failures degrade to text-only, never blocking."""
+    actor = (payload.get("actor") or "").strip().lower()
+    text = (payload.get("text") or "").strip()
+    speak = bool(payload.get("speak"))
+    voice_provider = (payload.get("voice") or "").strip().lower() or None  # "edge" | "openai" | "elevenlabs"
+    try:
+        drift = float(payload.get("drift", 0.6))   # 0=faithful+savage, 1=absurd
+    except (TypeError, ValueError):
+        drift = 0.6
+    if not actor or not text:
+        raise HTTPException(status_code=400, detail="actor and text are required")
+    try:
+        line = generate_satire_line(actor, text, drift=drift)
+        source = "cerit"
+    except Exception as exc:  # noqa: BLE001 — degrade gracefully, keep the show going
+        line = SATIRE_FALLBACKS.get(actor, text)
+        source = f"fallback ({exc})"
+        log.warning("satire fallback for %s: %s", actor, exc)
+    result = {"actor": actor, "satire": line, "source": source}
+    if speak:
+        try:
+            audio_bytes = await generate_satire_audio(line, actor, provider=voice_provider)
+            result["audio_b64"] = base64.b64encode(audio_bytes).decode("ascii")
+            result["audio_mime"] = "audio/mpeg"
+        except Exception as exc:  # noqa: BLE001 — voice is optional; keep the text
+            result["audio_error"] = str(exc)
+            log.warning("satire TTS failed for %s: %s", actor, exc)
+    return result
+
+
+@app.post("/speak")
+async def speak(payload: dict) -> dict:
+    """Synthesize arbitrary text in a caricature voice (no rewriting). Used to
+    re-voice a SAVED satirical take on replay, so the stored jokes stay identical
+    while the audio is regenerated. Never 500s — returns audio_error on failure."""
+    actor = (payload.get("actor") or "").strip().lower()
+    text = (payload.get("text") or "").strip()
+    voice_provider = (payload.get("voice") or "edge").strip().lower()
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
+    try:
+        audio_bytes = await generate_satire_audio(text, actor, provider=voice_provider)
+        return {"audio_b64": base64.b64encode(audio_bytes).decode("ascii"), "audio_mime": "audio/mpeg"}
+    except Exception as exc:  # noqa: BLE001
+        log.warning("/speak TTS failed for %s: %s", actor, exc)
+        return {"audio_error": str(exc)}
+
+
+SATIRE_ACTOR_LABELS = {"china": "China", "us": "United States", "eu": "European Union", "halcyon": "Halcyon"}
+SATIRE_CARICATURE_NAMES = {"china": "Xi Jinping", "us": "Donald Trump", "eu": "Ursula von der Leyen", "halcyon": "Halcyon"}
+SATIRE_HEAD_ACTORS = {"china", "us", "eu", "halcyon"}
+
+
+def _safe_session_id(session_id: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", session_id or ""):
+        raise HTTPException(status_code=400, detail="invalid session id")
+    return session_id
+
+
+def _satire_take_path(session_id: str) -> Path:
+    d = SESSIONS_DIR / _safe_session_id(session_id)
+    d.mkdir(parents=True, exist_ok=True)
+    return d / "satire-take.json"
+
+
+def _head_urls(actor: str) -> tuple[str | None, str | None]:
+    if actor in SATIRE_HEAD_ACTORS:
+        return f"/heads/{actor}.webm", f"/heads/{actor}.png"
+    return None, None
+
+
+@app.post("/session/{session_id}/satire-take")
+async def save_satire_take(session_id: str, payload: dict) -> dict:
+    """Persist an ordered satirical take AND render a stable per-turn audio file for
+    each line, so the whole performance can be replayed later — including by an
+    external frontend (Lovable) that just fetches JSON + plays <audio src>."""
+    sid = _safe_session_id(session_id)
+    take = payload.get("take")
+    if not isinstance(take, list) or not take:
+        raise HTTPException(status_code=400, detail="take (non-empty list) is required")
+
+    audio_dir = SESSIONS_DIR / sid / "satire-audio"
+    audio_dir.mkdir(parents=True, exist_ok=True)
+
+    turns = []
+    for i, e in enumerate(take[:200]):
+        actor = (e.get("actor") or "").strip().lower()
+        satire = (e.get("satire") or "").strip()
+        voice = (e.get("voice") or "edge").strip().lower()
+        head_video, portrait = _head_urls(actor)
+        audio_url = None
+        if satire:
+            # Persist audio so Lovable gets a stable URL. browser/off still render
+            # with free edge-tts so the archived take always has sound.
+            provider = "openai" if voice == "openai" else "edge"
+            try:
+                audio_bytes = await generate_satire_audio(satire, actor, provider=provider)
+                (audio_dir / f"turn-{i}.mp3").write_bytes(audio_bytes)
+                audio_url = f"/session-assets/{sid}/satire-audio/turn-{i}.mp3"
+            except Exception as exc:  # noqa: BLE001 — keep the text even if TTS fails
+                log.warning("take audio %d failed for %s: %s", i, actor, exc)
+        turns.append({
+            "actor": actor,
+            "label": SATIRE_ACTOR_LABELS.get(actor, actor),
+            "caricature": SATIRE_CARICATURE_NAMES.get(actor, actor),
+            "satire": satire,
+            "original": (e.get("original") or "")[:2000],
+            "drift": e.get("drift", 0.6),
+            "voice": voice,
+            "head_video_url": head_video,
+            "portrait_url": portrait,
+            "audio_url": audio_url,
+        })
+
+    data = {
+        "session_id": sid,
+        "prompt": (payload.get("prompt") or "")[:2000],
+        "mode": payload.get("mode") or "",
+        "count": len(turns),
+        "turns": turns,
+    }
+    _satire_take_path(sid).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    log.info("saved satirical take for %s (%d lines, audio in %s)", sid, len(turns), audio_dir)
+    return {"saved": True, "session_id": sid, "count": len(turns), "replay_url": f"/api/satire-replay/{sid}"}
+
+
+@app.get("/api/satire-replay/{session_id}")
+def get_satire_replay(session_id: str) -> dict:
+    """Lovable-shaped replay of a saved satirical take: prompt + ordered turns,
+    each with the caricature line, talking-head video/portrait URL, and audio URL.
+    404 if the session has no saved take. URLs are relative to this API's base."""
+    p = _satire_take_path(session_id)
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="no saved satirical take for this session")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+@app.get("/api/satire-takes")
+def list_satire_takes(limit: int = 50) -> dict:
+    """List all saved satirical takes (newest first) for a Lovable archive/gallery."""
+    items = []
+    if SESSIONS_DIR.is_dir():
+        for d in SESSIONS_DIR.iterdir():
+            f = d / "satire-take.json"
+            if d.is_dir() and f.exists():
+                try:
+                    data = json.loads(f.read_text(encoding="utf-8"))
+                    turns = data.get("turns", [])
+                    items.append({
+                        "session_id": data.get("session_id", d.name),
+                        "prompt": data.get("prompt", ""),
+                        "mode": data.get("mode", ""),
+                        "count": data.get("count", len(turns)),
+                        "preview": (turns[0].get("satire") if turns else ""),
+                        "replay_url": f"/api/satire-replay/{data.get('session_id', d.name)}",
+                        "_mtime": f.stat().st_mtime,
+                    })
+                except Exception:  # noqa: BLE001 — skip unreadable takes
+                    pass
+    items.sort(key=lambda x: x["_mtime"], reverse=True)
+    for it in items:
+        it.pop("_mtime", None)
+    return {"takes": items[:limit], "total": len(items)}
+
+
+# Alias kept for symmetry with the save endpoint.
+@app.get("/session/{session_id}/satire-take")
+def get_satire_take(session_id: str) -> dict:
+    return get_satire_replay(session_id)
 
 
 @app.post("/session/{session_id}/summon-halcyon", dependencies=[Depends(require_roundtable_operator)])
@@ -522,7 +733,8 @@ def summon_halcyon(session_id: str) -> dict:
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     recent_context = [m.model_dump() for m in state.transcript[-4:]]
-    good_news = _halcyon_good_news()
+    used = sum(1 for m in state.transcript if m.actor == "halcyon")
+    good_news = _halcyon_good_news(used=used)
     try:
         content = generate_halcyon_turn(
             prompt=state.prompt,
@@ -532,7 +744,7 @@ def summon_halcyon(session_id: str) -> dict:
         )
         source = "cerit"
     except Exception as exc:  # never 500 the room — degrade gracefully
-        lead = good_news[-1] if good_news else "rivals have cooperated before, and can again"
+        lead = good_news[0] if good_news else "rivals have cooperated before, and can again"
         content = (
             f"Before we go further — some good news. {lead}. That alone is proof another path exists. "
             "So rather than race to control this alone, what could the three of you build together that none of you "
