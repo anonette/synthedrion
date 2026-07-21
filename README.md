@@ -1,244 +1,95 @@
 # AI Cold War 2026
 
-This repository currently contains:
+A local FastAPI runtime that simulates a geopolitical "AI Cold War" roundtable between three blocs — **China**, the **US**, and the **EU** — who argue, negotiate, and generate propaganda based on a hand-curated markdown knowledge base. A handful of guest characters (a peace-builder, satirical caricature avatars, a crypto-native analyst) can interject on top of the core debate. The backend serves a Lovable frontend, both live over the API and via a static JSON snapshot fallback.
 
-- `raw/`: source material
-- `wiki/`: actor and shared knowledge bases
-- `app/`: a minimal local runtime for testing live actor sessions
+Docs at `http://127.0.0.1:8000/docs` once running; a bare-bones test UI at `/test`.
 
-## Project Structure
+## The cast
 
-- `app/` - backend runtime, orchestration, image generation, audio generation
-- `wiki/` - the live knowledge base that agents actually read
-- `raw/` - source documents waiting to be synthesized into the wiki
-- `scripts/` - utility scripts for ingest, snapshots, and imports
-- `public/roundtable-archive/` - frontend snapshot fallback JSON
-- `sessions/` - local generated memos, replay audio, and ingest manifests
-- `lovable-frontend-package/` - scaffold for eventual frontend-side static asset packaging
+| Actor | Type | Role |
+|---|---|---|
+| **China** | core, always on | Sovereignty, non-interference, developmental legitimacy, long-horizon industrial policy |
+| **United States** | core, always on | Frontier competition, alliance power, market scale; prosecutorial, impatient with euphemism |
+| **European Union** | core, always on | Brussels institutionalism, strategic autonomy; disciplines louder powers through regulation |
+| **Halcyon** | guest, via `/intervene` | An outsider peace-builder belonging to no bloc — opens with real hopeful news, then dares the other three toward something built together |
+| **The Satire Heads** | guest, "Brutal Satire" toggle | Xi / Trump / von der Leyen caricature avatars rewriting each real turn as a savage one-liner, delivered as talking-head video avatars |
+| **James** (the Machiavellian Crypto-Native Analyst) | guest, on demand | A contrarian counter-take naming a specific mechanism (liquidity, exit liquidity, MEV) — no canned fallback; a failed call surfaces as a real error |
 
-See also:
+China/US/EU each run on their own model via OpenRouter (`ACTOR_MODELS` in `app/config.py`: DeepSeek, GPT-4.1-mini, Ministral). Halcyon runs on a separate CERIT-hosted endpoint with its own fallback model. Live roster data (including current archetypes/triggers) is served at `GET /roster`.
 
-- `CONTRIBUTING.md`
+## Modes
 
-## How The System Works
+- **`debate`** — the default: alternating argument/rebuttal between actors, grounded in wiki source notes.
+- **`propaganda-lab`** — actors produce structured propaganda artifacts (slogan, image prompt, artifact type — poster, meme, campaign ad, infographic...) instead of prose. `app/images.py` renders an actual image per turn (per-actor image model, Pollinations URL as fallback). Rides along as `message.metadata` / replay `event.metadata` for the frontend to render as poster cards.
+- **`mirror-world`** — a real DPRK crypto-incident (from `app/threat_intel.py`'s ingested feed) is prepended as the "buried reality" layer underneath the actors' official lines, contrasting stated position against ground truth.
 
-This project has four main layers:
+## Repository layout
 
-1. `raw/`
-- source material collected from articles, PDFs, policy documents, news ingest, and manual uploads
+- `app/` — the FastAPI runtime: session orchestration, LLM prompting, image/audio generation, threat-intel ingest, auth, DB persistence (see `app/main.py` for the full route table)
+- `wiki/` — the markdown knowledge base agents actually read at runtime (see below — **this is the only layer that changes agent behavior**)
+- `raw/` — source documents (articles, reg-documents, RAND papers, news ingest) waiting to be synthesized into `wiki/`; agents never read this directly
+- `scripts/` — ingest, manifest-building, Drive download, and frontend-snapshot utilities
+- `public/roundtable-archive/` — static JSON fallback for the main roundtable frontend (mirrors the live API shape)
+- `public/satire-archive/` — static fallback/pack for the satire talking-heads module
+- `sessions/` — generated manifests, ingest reports, and per-session local artifacts
+- `halcyon/positive-stories.md` — Halcyon's ledger of hopeful news items, crawled and appended over time; served live at `GET /halcyon/good-news`
+- `docs/sample_incidents.json` — sample threat-intel incident data for local testing without a live feed
+- `lovable-frontend-package/` — scaffold for packaging frontend-side static assets
+- `sessions.db` — local SQLite DB (see Persistence, below); gitignored
 
-2. `wiki/`
-- the actual knowledge base the agents read at runtime
-- this is the layer that changes agent behavior
+## The central data-flow rule
 
-3. `app/`
-- the simulation runtime
-- loads actor-specific and shared wiki pages
-- generates live sessions, weekly sessions, propaganda sessions, replay, images, and audio
+Three layers feed agent behavior, and the boundary between them is the thing most likely to trip you up:
 
-4. `public/roundtable-archive/`
-- static snapshot fallback for the frontend
-- used when the live backend is unavailable
+- `raw/` — source documents. **Agents never read `raw/` at runtime.**
+- `wiki/` — the markdown knowledge base agents actually load. **This is the only layer that changes behavior.**
+- `app/` — the runtime that loads wiki pages and generates turns.
 
-The important rule is:
+Dropping files into `raw/` does nothing until the relevant `wiki/` pages are edited to incorporate them. The workflow is: collect into `raw/` → build a manifest (`scripts/build_ingest_manifest.py` → `sessions/ingest-manifest.md`) → hand-synthesize into `wiki/` → start a new session.
 
-- adding files to `raw/` does not automatically change the agents
-- updating `wiki/` does
+### How the wiki is loaded
 
-So the real flow is:
+At session start, each actor loads its **hub page** (`ACTOR_HUBS` in `app/config.py`) plus the shared hub, then follows markdown links breadth-first. Link-following is sandboxed: a page only loads if it's under that actor's `ALLOWED_PATH_PREFIXES` (its own policy folder + `shared-ai-geopolitics` + `geopolitics` + `ai-governance`). `extract_notes()` then scrapes prose/bullet lines into short "source notes" (capped at 40/actor) — the grounding context fed to the model. **Adding a wiki page only affects an actor if it's reachable by a link from that actor's hub and inside its allowed prefixes.**
 
-1. collect sources into `raw/`
-2. synthesize them into the relevant `wiki/` pages
-3. start a new round
-4. optionally refresh frontend snapshots
+## Turn generation: LLM path vs. deterministic fallback
 
-## The End-To-End Workflow
+Every turn has two code paths, selected by `openrouter_enabled()` (true iff `OPENROUTER_API_KEY` is set):
 
-### 1. Add Source Material
+- **LLM path** — `app/llm.py` builds per-actor system/user prompts and calls OpenRouter with a per-actor model. If the call throws, it falls back to the deterministic path with the error inlined.
+- **Deterministic path** — `app/agent_logic.py` produces extractive, heuristic turns from the source notes with no network call. This is the default when no API key is present, and is useful for testing the flow offline.
 
-Put new files into one of:
+`app/main.py::_generate_session_turn` is the single funnel all of the above flows through.
 
-- `raw/articles/`
-- `raw/reg-documents/`
-- `raw/rand/`
-- `raw/focus-issues/<weekly-theme>/`
+## Persistence — two stores, not equivalent
 
-You can also use:
+- **In-memory** `SESSIONS` dict (`app/session_store.py`) — the live working copy. All mutating endpoints (`/session/message`, `/intervene`, `/shock`, `/summary`, `/wiki-proposals`) read from here, so **they only work for sessions still in memory; restarting the backend loses them.**
+- **Database** (`app/database.py`, SQLAlchemy, `sessions.db` by default) — every mutation also persists here. `/api/replay/{id}`, `/weekly/*`, and `/sessions/recent` read from the DB (replay falls back to memory). `init_db()` runs additive `ALTER TABLE` migrations on startup.
 
-```powershell
-python scripts/run_news_ingest.py --days 3 --max-per-query 5 --build-manifest
-```
+Weekly sessions are ordinary sessions tagged `session_type="weekly"` with `week_key`/`week_start`/`is_featured_weekly`/`title`/`theme`. Only one can be featured at a time.
 
-Or with a weekly focus:
+## Auth — two independent schemes
 
-```powershell
-python scripts/run_news_ingest.py --days 3 --focus "petrodollars AI geopolitics Gulf sovereign wealth compute" --build-manifest
-```
+- `require_roundtable_operator` — guards live mutating session endpoints (`/session/start`, `/session/message`, `/intervene`, `/shock`, per-session `/summary`, `/wiki-proposals`, `/summon-halcyon`, `/summon-james`, etc). Requires header `X-Roundtable-Token` to equal `ROUNDTABLE_OPERATOR_TOKEN`. Always enforced once the env var is set; returns 500 if unset.
+- `verify_token` — Bearer-token guard on `/health/detailed`, `/session/scheduled*`, `/session/test`. **No-op in development** (returns a stub unless `PRODUCTION=true`), then checks against `API_TOKEN`.
 
-### 2. Build The Ingest Manifest
+Public/read endpoints (`/health`, `/weekly/*`, `/sessions/recent`, `/session/{id}`, `/api/replay/{id}`, `/roster`, `/halcyon/good-news`, `/james/takes`) are unauthenticated. CORS allows all origins unless `PRODUCTION=true`.
 
-Run:
+## Frontend contract
 
-```powershell
-python scripts/build_ingest_manifest.py
-```
+Data is intentionally split across four read shapes, mirrored by both the live API and the snapshot JSON files in `public/roundtable-archive/`:
 
-Useful variants:
+| Endpoint | Snapshot file | Use |
+|---|---|---|
+| `GET /weekly/current` | `current.json` | featured weekly hero |
+| `GET /weekly/archive` | `archive.json` | curated weekly archive |
+| `GET /sessions/recent` | `recent.json` | ad-hoc live sessions |
+| `GET /api/replay/{id}` | `replay/{id}.json` | full transcript + audio + summary + propaganda metadata |
 
-```powershell
-python scripts/build_ingest_manifest.py --days 3
-python scripts/build_ingest_manifest.py --since 2026-05-20
-python scripts/build_ingest_manifest.py --reset-state
-```
+`scripts/snapshot-roundtable.mjs` regenerates these from a running backend. Replay audio is generated lazily in `/api/replay` via `app/audio.py` (per-actor TTS voices; OpenAI / ElevenLabs / edge-tts).
 
-This writes:
+The satire module has its own snapshot path: `scripts/snapshot-satire.mjs` + `scripts/pack-satire.ps1` / `publish-satire.ps1` build and publish `public/satire-archive/`.
 
-- `sessions/ingest-manifest.md`
-
-If a weekly focus issue exists, it is promoted to the top of the manifest under:
-
-- `## Weekly Focus Priority`
-
-### 3. Update The Wiki Knowledge Base
-
-After you have raw files and a manifest, the next step is to update the `wiki/` so the agents actually change.
-
-### 4. Start A New Simulation Round
-
-Once the wiki is updated, start a new round:
-
-- live session
-- propaganda-lab session
-- scheduled weekly session
-
-Because the runtime reads the wiki at session start, the new behavior takes effect in the next round automatically.
-
-### 5. Refresh Frontend Snapshots
-
-If you want Lovable or other frontend fallback data updated:
-
-```powershell
-node scripts/snapshot-roundtable.mjs
-```
-
-This writes:
-
-- `public/roundtable-archive/current.json`
-- `public/roundtable-archive/archive.json`
-- `public/roundtable-archive/recent.json`
-- `public/roundtable-archive/replay/<session_id>.json`
-
-## Prompts To Use
-
-### Add New Sources To The Wiki
-
-```text
-Ingest these new raw files into the knowledge base.
-Update the relevant actor and shared wiki pages.
-Then start a fresh round so the new material is reflected in agent behavior.
-```
-
-### Add New Sources With Explicit File List
-
-```text
-Ingest these new raw files into the knowledge base.
-Update the relevant actor and shared wiki pages.
-Then start a fresh round so the new material is reflected in agent behavior.
-
-Files:
-- raw/articles/...
-- raw/reg-documents/...
-- raw/rand/...
-```
-
-### Prioritize A Weekly Issue
-
-```text
-Ingest the files from sessions/ingest-manifest.md, especially the focus issue folder under raw/focus-issues/, into the knowledge base and make that weekly issue influence the next round.
-```
-
-### Update One Actor Specifically
-
-```text
-Update the [China / U.S. / EU] agent behavior based on these sources.
-Change what the actor wants, fears, treats as legitimate action, and how it talks.
-Also update propaganda motifs if relevant.
-```
-
-### Tune Propaganda-Lab
-
-```text
-Make propaganda-lab less repetitive and more surprising.
-Let each turn choose the most effective propaganda artifact type while preserving bloc-specific political identity.
-```
-
-### Promote A Session To Featured Weekly
-
-```text
-Promote session <session_id> to this week's featured roundtable and regenerate snapshots.
-```
-
-### Refresh The Frontend Fallback
-
-```text
-Regenerate the public roundtable snapshots so weekly current, archive, recent live sessions, and replay payloads match the latest backend state.
-```
-
-## Which Files Actually Matter For Agent Behavior
-
-Most important:
-
-- actor hub pages in `wiki/`
-- linked actor pages in `wiki/china-ai-policy/`, `wiki/us-ai-policy/`, `wiki/eu-ai-policy/`
-- linked shared pages in `wiki/shared-ai-geopolitics/` and related folders
-- prompt logic in `app/llm.py`
-
-Not enough by itself:
-
-- dropping PDFs or news directly into `raw/`
-
-## Which Session Feeds The Frontend Should Use
-
-Frontend data is intentionally split:
-
-- `GET /weekly/current`
-  - featured weekly session
-
-- `GET /weekly/archive`
-  - curated weekly archive
-
-- `GET /sessions/recent`
-  - recent live and ad hoc sessions
-
-- `GET /api/replay/{session_id}`
-  - full replay, summary, wiki proposals, replay audio, propaganda metadata
-
-Snapshot fallback mirrors this split:
-
-- `current.json`
-- `archive.json`
-- `recent.json`
-- `replay/{session_id}.json`
-
-## Propaganda-Lab In One Sentence
-
-`propaganda-lab` is a dynamic propaganda-artifact mode where agents can produce posters, memes, TikTok-style stills, campaign ads, infographics, hostile remixes, and soft-power imagery rather than only long-form policy argument.
-
-## Review Surfaces
-
-If you want a compact operator reference:
-
-- `wiki/ops/agent-prompts-only.md`
-- `wiki/ops/agent-simulation-control-surface.md`
-- `wiki/ops/propaganda-lab-mode.md`
-
-## Future Wishlist
-
-- add a second-stage `llama_index`-based document synthesis layer for deeper PDF/DOCX parsing, chunking, extraction, and semi-automatic wiki update assistance after raw ingestion
-
-## Run the local runtime
-
-Create and activate a virtual environment, then install dependencies:
+## Setup
 
 ```powershell
 python -m venv .venv
@@ -250,235 +101,72 @@ Run the API:
 
 ```powershell
 uvicorn app.main:app --reload
+# or, matching CONTRIBUTING.md / production:
+.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Open the docs at:
+- Docs: `http://127.0.0.1:8000/docs`
+- Test UI: `http://127.0.0.1:8000/test`
+- Roundtable stage UI: `http://127.0.0.1:8000/roundtable`, `/stage`
 
-- `http://127.0.0.1:8000/docs`
+Without `OPENROUTER_API_KEY`, everything still runs on deterministic fallbacks — useful for testing the flow offline.
 
-Open the simple local test page at:
+## Environment variables (`.env` at project root)
 
-- `http://127.0.0.1:8000/test`
+| Var | Purpose |
+|---|---|
+| `OPENROUTER_API_KEY` | Gates the whole LLM path; unset = deterministic fallback everywhere |
+| `OPENROUTER_MODEL_{CHINA,US,EU,RECAP,PULSE,JAMES,HALCYON_FALLBACK}` | Per-role model overrides |
+| `IMAGE_PROVIDER_{CHINA,US,EU}` / `IMAGE_MODEL_{CHINA,US,EU}` / `IMAGE_FALLBACK_MODEL_{CHINA,US,EU}` | Per-actor image generation routing (propaganda-lab) |
+| `MIRROR_VISUAL_MODEL` | Image model for mirror-world visuals |
+| `OPENAI_API_KEY` / `TOGETHER_API_KEY` / `SILICONFLOW_API_KEY` | Image provider credentials |
+| `HALCYON_MODEL` / `HALCYON_BASE_URL` / `HALCYON_API_KEY` / `HALCYON_LEDGER_PATH` | Halcyon's separate CERIT-hosted model + ledger location |
+| `ELEVENLABS_API_KEY` / `OPENAI_TTS_MODEL` / `TTS_SERVICE` | Replay/satire audio (TTS) |
+| `ROUNDTABLE_OPERATOR_TOKEN` | Required header value (`X-Roundtable-Token`) for all live mutating endpoints |
+| `API_TOKEN` | Bearer token for `verify_token`-guarded endpoints (no-op unless `PRODUCTION=true`) |
+| `DATABASE_URL` | SQLAlchemy DB URL, defaults to `sqlite:///./sessions.db` |
+| `PRODUCTION` | `true` restricts CORS and enforces `verify_token` |
 
-## What this test runtime does
-
-- loads actor hub pages directly from the wiki
-- follows allowed wiki links inside actor and shared scopes
-- starts synchronous live sessions
-- runs as an alternating dialogue where one actor speaks and the next responds
-- supports human intervention and shocks
-- returns simple grounded actor turns
-- generates summaries and wiki proposals
-
-## Optional: enable real per-actor models through OpenRouter
-
-Set your API key before starting the server:
+## Weekly roundtable generation
 
 ```powershell
-$env:OPENROUTER_API_KEY="your_key_here"
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/session/scheduled/sync" -Headers @{"X-Roundtable-Token"="$env:ROUNDTABLE_OPERATOR_TOKEN"}
 ```
 
-Optional model overrides:
+This runs the full pipeline server-side (3 actors × LLM turns + images) and can take minutes — prefer letting the Lovable frontend trigger it over blocking a client call on it.
 
-```powershell
-$env:OPENROUTER_MODEL_CHINA="deepseek/deepseek-chat-v3-0324"
-$env:OPENROUTER_MODEL_US="openai/gpt-4.1-mini"
-$env:OPENROUTER_MODEL_EU="mistralai/ministral-14b-2512"
-```
-
-Default routing is already:
-
-- China -> DeepSeek
-- U.S. -> OpenAI
-- EU -> Mistral
-
-Without `OPENROUTER_API_KEY`, the backend falls back to deterministic local heuristic turns for testing.
-
-## Operator Access For Lovable
-
-The weekly roundtable frontend can expose public archive browsing while requiring an operator token for live session actions.
-
-Set this before starting the backend:
-
-```powershell
-$env:ROUNDTABLE_OPERATOR_TOKEN="your-shared-secret"
-```
-
-Protected mutating endpoints now require the header `X-Roundtable-Token`:
-
-- `POST /session/start`
-- `POST /session/message`
-- `POST /session/intervene`
-- `POST /session/shock`
-- `POST /session/{session_id}/summary`
-- `POST /session/{session_id}/wiki-proposals`
-
-Public endpoints remain readable without the operator token:
-
-- `GET /health`
-- `GET /weekly/current`
-- `GET /weekly/archive`
-- `GET /session/{session_id}`
-- `GET /api/replay/{session_id}`
-
-Example:
-
-```powershell
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/session/start" `
-  -Headers @{"X-Roundtable-Token"="your-shared-secret"} `
-  -ContentType "application/json" `
-  -Body '{"prompt":"test","actors":["china","us","eu"],"mode":"debate","include_shared":true,"auto_generate_opening_turn":true}'
-```
-
-## Weekly Roundtable Endpoints
-
-The backend now supports a featured weekly session and archive browsing for Lovable:
-
-- `GET /weekly/current`
-- `GET /weekly/archive?limit=12&offset=0`
-- `GET /weekly/{week_key}`
-- `GET /api/replay/{session_id}`
-
-Weekly sessions are persisted in the same session store as live runs, but are tagged with weekly metadata such as `week_key`, `week_start`, `title`, `theme`, and `is_featured`.
-
-To generate the current featured weekly session locally:
-
-```powershell
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/session/scheduled/sync"
-```
-
-## Snapshot Fallback For Lovable
-
-To publish a static fallback of the current weekly archive and replay payloads:
-
-```powershell
-Set-Location "C:\dev\AIcoldWar2026"
-node scripts/snapshot-roundtable.mjs
-```
-
-This writes:
-
-- `public/roundtable-archive/current.json`
-- `public/roundtable-archive/archive.json`
-- `public/roundtable-archive/recent.json`
-- `public/roundtable-archive/replay/<session_id>.json`
-
-To snapshot from a public tunnel instead of localhost:
-
-```powershell
-$env:ROUNDTABLE_BASE_URL="https://your-ngrok-url.ngrok-free.app"
-node scripts/snapshot-roundtable.mjs
-```
-
-Lovable can use these files as a read-only fallback when the live backend is unavailable.
-
-Use the endpoints like this:
-
-- `GET /weekly/current` for the featured weekly session
-- `GET /weekly/archive` for the curated weekly archive
-- `GET /sessions/recent` for recent live and weekly sessions
-
-Suggested frontend behavior:
-
-- use `weekly/current` for the main hero session
-- use `weekly/archive` for official previous weeks
-- use `sessions/recent` for ad hoc live sessions that should appear quickly without being promoted into the weekly archive
-
-## Refreshing The Knowledge Base
-
-Important: adding files to `raw/` does not automatically change the agents.
-
-The agents read `wiki/` at runtime, so new source files only affect behavior after the relevant wiki pages are updated to incorporate them.
-
-Fast workflow:
-
-1. Add new source files under `raw/`
-2. Build an ingest manifest:
-
-```powershell
-python scripts/build_ingest_manifest.py
-```
-
-3. Review:
-
-- `sessions/ingest-manifest.md`
-
-4. Ask for a wiki update pass using those files
-5. Start a new round
-6. Regenerate snapshots if needed
-
-See also:
-
-- `wiki/ops/knowledge-base-refresh-workflow.md`
-
-## News Ingest
-
-Manual-first news ingest is available for geopolitics, China, U.S., EU, regulation, industry actors, and open-source/open-weight model coverage.
-
-Run:
+## Refreshing the knowledge base
 
 ```powershell
 python scripts/run_news_ingest.py --days 3 --max-per-query 5 --build-manifest
+python scripts/build_ingest_manifest.py
 ```
 
-This will:
+Writes `sessions/ingest-manifest.md`. Review it, then hand-synthesize the relevant items into `wiki/` — dropping files into `raw/` alone changes nothing (see above). `--focus "<topic>"` promotes a weekly issue to the top of the manifest and saves matching items under `raw/focus-issues/<slug>/`.
 
-1. search recent web results using Tavily and SerpAPI
-2. save normalized files directly into `raw/articles/` or `raw/reg-documents/`
-3. write `sessions/news-ingest-report.md`
-4. optionally rebuild `sessions/ingest-manifest.md`
-
-Use `--topics` to narrow scope, for example:
+## Refreshing frontend snapshots
 
 ```powershell
-python scripts/run_news_ingest.py --topics open-models,policy,industry
+node scripts/snapshot-roundtable.mjs
+# from a tunnel instead of localhost:
+$env:ROUNDTABLE_BASE_URL="https://your-ngrok-url.ngrok-free.app"; node scripts/snapshot-roundtable.mjs
 ```
 
-Use `--focus` when there is a specific issue you care about that week, for example:
+## Operator references
 
-```powershell
-python scripts/run_news_ingest.py --days 3 --focus "Manus Meta acquisition China security review" --build-manifest
-```
+For prose-level operational docs (prompts, control surface, propaganda-lab, mirror-world, threat-intel feed, Lovable wiring), see `wiki/ops/` — especially:
 
-The ingest now applies relevance filtering to reduce generic market and low-signal items.
+- `agent-simulation-control-surface.md`
+- `propaganda-lab-mode.md`
+- `mirror-world-mode.md`
+- `threat-intel-feed-integration.md`
+- `knowledge-base-refresh-workflow.md`
+- `lovable-connection-guide.md`, `lovable-roundtable-ui-spec.md`, `lovable-satire-integration.md`, `lovable-roster-whos-who.md`
 
-When `--focus` is used, the matching focus-specific items are saved under:
-
-- `raw/focus-issues/<focus-slug>/`
-
-This makes it easier to track a special weekly issue that should influence the broader wiki update pass.
-
-## Propaganda Lab Poster Dialogue
-
-`propaganda-lab` now supports a poster-dialogue style exchange instead of only long-form rhetoric.
-
-When this mode is active, agent turns may include structured metadata with:
-
-- `format`
-- `slogan`
-- `commentary`
-- `image_prompt`
-- `image_url`
-- `image_provider`
-- `image_model`
-- `image_status`
-- `response_target`
-- `intended_image_stack`
-
-Live session messages include this data under `message.metadata`.
-Replay payloads include the same data under `event.metadata` from `GET /api/replay/{session_id}`.
-
-The intended frontend behavior is to render propaganda turns as poster cards rather than normal transcript bubbles.
-
-## Lovable connection
-
-See:
-
-- `wiki/ops/lovable-connection-guide.md`
-- `wiki/ops/lovable-page-build-steps.md`
+See also `CONTRIBUTING.md` for repo hygiene notes.
 
 ## Current limitations
 
-- no external LLM integration yet
-- turn generation is deterministic and extractive, intended only for testing the runtime flow
-- no persistent database, sessions are kept in memory for now
+- No test suite, linter, or build step — "building a round" means starting a session via the API
+- In-memory session state is lost on backend restart (DB-backed reads like replay/weekly survive; live mutation on that session does not)
+- Deterministic fallback turns are extractive/heuristic, meant for testing the flow, not for real argumentative quality
