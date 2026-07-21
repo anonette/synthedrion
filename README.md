@@ -23,6 +23,36 @@ China/US/EU each run on their own model via OpenRouter (`ACTOR_MODELS` in `app/c
 - **`propaganda-lab`** — actors produce structured propaganda artifacts (slogan, image prompt, artifact type — poster, meme, campaign ad, infographic...) instead of prose. `app/images.py` renders an actual image per turn (per-actor image model, Pollinations URL as fallback). Rides along as `message.metadata` / replay `event.metadata` for the frontend to render as poster cards.
 - **`mirror-world`** — a real DPRK crypto-incident (from `app/threat_intel.py`'s ingested feed) is prepended as the "buried reality" layer underneath the actors' official lines, contrasting stated position against ground truth.
 
+## Guest characters, in detail
+
+The core debate is always China/US/EU. On top of that, three optional guests can be summoned — none of them are round-robin actors, so summoning one doesn't consume a turn slot; it just appends an extra message to the transcript.
+
+### Halcyon — the peace-builder
+
+An outsider who belongs to no bloc. Opens with a real hopeful news item, then dares the other three toward something built together, mid-debate.
+
+- Trigger: `POST /session/{session_id}/summon-halcyon` (operator-token guarded), or via `/intervene`
+- Voice: a separate CERIT-hosted model (`HALCYON_MODEL`/`HALCYON_BASE_URL`/`HALCYON_API_KEY`), with `OPENROUTER_MODEL_HALCYON_FALLBACK` as a real backup model — **no canned fallback text**; if both are down the endpoint 502s in-character ("Even Halcyon needs a signal to hope with...")
+- Source material: `halcyon/positive-stories.md`, a ledger of hopeful stories that grows over time; served on its own as `GET /halcyon/good-news`. Each summon pulls the next unused entries so Halcyon doesn't repeat himself within a session (tracked via how many times he's already spoken)
+
+### The Satire Heads — brutal caricature rewrites
+
+Xi / Trump / von der Leyen (plus a Halcyon caricature) talking-head avatars that rewrite a real turn into a savage one-liner, toggled by the "Brutal Satire" switch on the `/stage` UI.
+
+- Trigger: `POST /satire` — takes `{actor, text, speak?, voice?, drift?}` and returns a rewritten quip; unauthenticated and read-only (it never touches session state), generated on a low-censorship CERIT endpoint, with a canned per-actor fallback line (`SATIRE_FALLBACKS`) if that's unreachable — this one *does* degrade gracefully, unlike Halcyon/James, so the show never stops
+- `drift` (0–1) tunes faithful-and-savage vs. absurd; `speak: true` also synthesizes the line as audio (`TTS_SERVICE`: OpenAI / ElevenLabs / free edge-tts)
+- `POST /session/{session_id}/satire-take` persists a full ordered take plus per-line audio so a whole performance replays later (including from an external frontend); `GET /api/satire-replay/{session_id}` and `GET /api/satire-takes` read them back
+- Avatar assets live under `app/static/heads/`; packaging/publishing the static archive is `scripts/snapshot-satire.mjs` + `scripts/pack-satire.ps1` / `publish-satire.ps1` → `public/satire-archive/`
+
+### James — the Machiavellian Crypto-Native Analyst
+
+No other name, just the title. Trusts no one's stated motive and talks in the room's real currency — liquidity, exit liquidity, MEV. Gives a grounded, contrarian counter-prediction naming a specific mechanism, never a generic cynical aside.
+
+- Trigger: `POST /session/{session_id}/james-take` for his closing take (cached on the session row; `?regenerate=true` forces a fresh one), or `POST /session/{session_id}/summon-james` for a live mid-debate interjection
+- Works on any existing log, not just live sessions — checks the database first (so he can comment on archived/weekly sessions after a restart), falling back to the in-memory store, same lookup order as `/api/replay`
+- Feed of past takes: `GET /james/takes`
+- **By design, no fallback voice at all**: if `OPENROUTER_API_KEY` isn't set, or the model call fails, the endpoint raises a real error in-character ("The Analyst has nothing to say without a model to say it with") rather than ever returning a canned line
+
 ## Repository layout
 
 - `app/` — the FastAPI runtime: session orchestration, LLM prompting, image/audio generation, threat-intel ingest, auth, DB persistence (see `app/main.py` for the full route table)
