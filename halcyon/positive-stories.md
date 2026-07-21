@@ -43,3 +43,28 @@ Positive AI-cold-war stories: evidence that another path exists.
   - why hopeful: Rice University's flash Joule heating technique enables efficient rare earth recovery from e-waste, offering a sustainable alternative to mineral supply chain tensions.
   - https://news.google.com/rss/articles/CBMiswFBVV95cUxQTlNtWlQ1Yi1tN1JaVnloSE93TVhUSnhYdzVRcmx3RkJTc1Y1eFZsU3Z4TEp2aEwwTGoyQnRha0dlVlVvZFJ2UVhUbDlsNjBsemQyWkFTZmwyT0ZPMnQ4TU5USkV0RUQ1TUNHT21YQVlkQzJBRWh1alJQa1YyblRVSWlQWXpHbV9HWGZNSkQwV25mTi1kTDZTRDRZazlVT2M3MUptYmZta0pNdUNkRklPeGVvaw?oc=5
 
+## Manual add 2026-07-19 (Citizens' Track on AI Governance)
+
+- **UN Global Dialogue on AI Governance opens with every member state at the table for the first time** — _Citizens' Track whitepaper (Davies, Field Reid, Oman & Wilson, 2026)_
+  - front: `participation` · eases: structural exclusion from AI governance · unites: china, us, eu
+  - why hopeful: The first edition of the UN Global Dialogue (Geneva, July 2026) gives all UN member states a seat, directly confronting a deficit where up to 118 countries had been excluded from shaping the AI governance agenda.
+  - https://citizens-track.org/2026/report
+
+- **A citizens' track launches to make AI governance two-way, not just top-down** — _University of Sheffield, Centre for Machine Intelligence_
+  - front: `participation` · eases: democratic deficit in AI policy · unites: china, us, eu
+  - why hopeful: Researchers, Connected by Data, the Ada Lovelace Institute and Iswe Foundation launched a concrete mechanism during UN AI-governance week — an institutional interface, not a rhetorical gesture — for public deliberation to actually reach global AI policymakers.
+  - https://www.sheffield.ac.uk/machine-intelligence/news/putting-people-lead-ai-governance-un-week
+
+- **Over 200,000 people across 95 countries have already deliberated on AI governance** — _PAVE Case Book, via Citizens' Track whitepaper_
+  - front: `participation` · eases: evidence gap in AI governance · unites: china, us, eu
+  - why hopeful: The PAVE Case Book documents 80+ real participatory AI processes since 2021, across 280+ organisations spanning government, industry, academia and civil society — proof that public deliberation on AI is already happening at scale, not a hypothetical.
+  - https://pave.pairs.site
+
+- **Belgium ran a multilingual citizens' panel that delivered 9 concrete AI policy messages to the EU** — _PAVE Case Book_
+  - front: `participation` · eases: policy legitimacy gap · unites: eu
+  - why hopeful: 60 citizens deliberated 40 hours during Belgium's 2024 EU presidency and produced 9 clear recommendations — proof a mini-public can turn a technical, high-stakes AI debate into an actionable mandate.
+
+- **Meta, Oracle, DoorDash, PayPal, Cohere and Microsoft jointly commissioned public deliberation on regulating AI agents** — _PAVE Case Book_
+  - front: `participation` · eases: industry vs. public-interest gridlock · unites: us
+  - why hopeful: Six competing companies funded a shared 503-person deliberative poll on AI agent regulation rather than lobbying separately — rivals choosing a common evidence base over a race to the bottom.
+

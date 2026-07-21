@@ -2,11 +2,23 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from typing import Any
 
 import httpx
 
-from .config import ACTOR_MODELS, HALCYON_API_KEY, HALCYON_BASE_URL, HALCYON_MODEL, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, PULSE_MODEL, RECAP_MODEL
+from .config import ACTOR_MODELS, HALCYON_API_KEY, HALCYON_BASE_URL, HALCYON_FALLBACK_MODEL, HALCYON_MODEL, JAMES_MODEL, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, PULSE_MODEL, RECAP_MODEL
+
+
+# Applied to every speaking voice (actors, Halcyon, James) so turns read as live spoken
+# argument, not visibly LLM-written text — strips the common AI-writing tells.
+NO_LLM_TELLS_STYLE = (
+    " Write like natural spoken argument, not written prose: no em dashes (—), no semicolons, "
+    "no asterisks or markdown emphasis (*like this* or **like this**), no bracketed stage "
+    "directions or parenthetical asides explaining your own move. Use plain commas, periods, "
+    "and question marks only. If you'd naturally pause or pivot, start a new sentence instead "
+    "of reaching for a dash or semicolon."
+)
 
 
 ACTOR_PROMPT_PROFILES = {
@@ -68,6 +80,9 @@ def _parse_json_object(text: str) -> dict[str, str]:
     return json.loads(text[start:end + 1])
 
 
+GUEST_VOICE_LABELS = {"halcyon": "Halcyon, an outsider peace-builder", "james": "The Machiavellian Crypto-Native Analyst"}
+
+
 def build_actor_messages(actor: str, actor_label: str, prompt: str, notes: list[str], recent_context: list[dict], mode: str) -> list[dict[str, str]]:
     profile = ACTOR_PROMPT_PROFILES[actor]
     mode_guidance = MODE_PROMPT_GUIDANCE.get(mode, "")
@@ -76,6 +91,22 @@ def build_actor_messages(actor: str, actor_label: str, prompt: str, notes: list[
         f"- {item.get('actor','unknown')} ({item.get('kind','agent')}): {item.get('content','')[:500]}"
         for item in recent_context[-4:]
     ) or "- No recent dialogue context."
+
+    # Halcyon/James speak in a completely different register than a rival state actor
+    # (hope vs. crypto-cynicism), so the generic 'respond to the most recent speaker'
+    # instruction alone tends to get ignored — actors just resume their own argument as
+    # if a guest voice hadn't spoken. Force it explicitly when one just did.
+    guest_directive = ""
+    if recent_context:
+        last_speaker = recent_context[-1].get("actor", "")
+        if last_speaker in GUEST_VOICE_LABELS:
+            guest_directive = (
+                f" IMPORTANT: the last speaker was {GUEST_VOICE_LABELS[last_speaker]}, not one of the "
+                f"other state actors. You MUST open by directly engaging with what they specifically said — "
+                f"agree with a piece of it, dismiss it, weaponize it against a rival, or rebut it outright — "
+                f"before returning to your own argument. Do not silently ignore them and continue as if only "
+                f"the other states were in the room."
+            )
 
     system = (
         f"You are speaking as the {actor_label} actor in a live geopolitical AI simulation. "
@@ -90,6 +121,8 @@ def build_actor_messages(actor: str, actor_label: str, prompt: str, notes: list[
         f"Do not produce bullet points, numbered sections, or meta labels unless explicitly asked. Speak like a sharp policy actor in a live roundtable. "
         f"Avoid bland diplomatic sameness and avoid flattening everything into generic policy English. If useful, use one short institutional, political, or culturally specific term or phrase that this actor would naturally invoke, but keep the turn readable to an English-speaking audience. "
         f"Do not end by explaining your strategy, summarizing your rhetorical move, naming your twist, or adding editorial bracketed notes. End in voice, as if spoken aloud in the room."
+        f"{guest_directive}"
+        f"{NO_LLM_TELLS_STYLE}"
     )
 
     user = (
@@ -224,9 +257,10 @@ def build_halcyon_messages(prompt: str, good_news: list[str], recent_context: li
         "Your unbreakable ritual is COOL NEWS FIRST: open with ONE real, recent, hopeful development on the fronts they "
         "fight over (chips, critical minerals, energy, talent, AI safety/standards), cited plainly. Only AFTER the good "
         "news do you move the debate: name the zero-sum trap they are stuck in, then dare them toward ONE bold, original "
-        "thing the three could build TOGETHER that none can build alone. Motivate, never scold; be warm, sharp, and "
-        "disarming — persuasive and specific, not neutral mush. Speak in voice, as if spoken aloud in the room. "
+        "thing the three could build TOGETHER that none can build alone. Motivate, never scold. Be warm, sharp, and "
+        "disarming, persuasive and specific, not neutral mush. Speak in voice, as if spoken aloud in the room. "
         "No bullet points, no headers, no meta commentary, no bracketed notes. About 90 to 140 words."
+        f"{NO_LLM_TELLS_STYLE}"
     )
     user = (
         f"The roundtable's topic:\n{prompt}\n\n"
@@ -238,23 +272,53 @@ def build_halcyon_messages(prompt: str, good_news: list[str], recent_context: li
 
 
 def generate_halcyon_turn(prompt: str, good_news: list[str], recent_context: list[dict], mode: str = "debate") -> str:
-    if not HALCYON_API_KEY:
-        raise RuntimeError("HALCYON_API_KEY not set")
-    payload: dict[str, Any] = {
-        "model": HALCYON_MODEL,
-        "messages": build_halcyon_messages(prompt, good_news, recent_context, mode),
-        "temperature": 0.8,
-        "top_p": 0.95,
-    }
-    headers = {
-        "Authorization": f"Bearer {HALCYON_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    with httpx.Client(timeout=90.0) as client:
-        res = client.post(f"{HALCYON_BASE_URL}/chat/completions", headers=headers, json=payload)
-        res.raise_for_status()
-        data = res.json()
-    return data["choices"][0]["message"]["content"].strip()
+    """Tries the primary CERIT endpoint first; if that's unavailable, falls back to a real
+    OpenRouter model call with the same persona/prompt — a different brain, never canned
+    text. Only raises if BOTH are unavailable/fail."""
+    messages = build_halcyon_messages(prompt, good_news, recent_context, mode)
+    cerit_error: Exception | None = None
+    if HALCYON_API_KEY:
+        try:
+            payload: dict[str, Any] = {
+                "model": HALCYON_MODEL,
+                "messages": messages,
+                "temperature": 0.8,
+                "top_p": 0.95,
+            }
+            headers = {
+                "Authorization": f"Bearer {HALCYON_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            with httpx.Client(timeout=90.0) as client:
+                res = client.post(f"{HALCYON_BASE_URL}/chat/completions", headers=headers, json=payload)
+                res.raise_for_status()
+                data = res.json()
+            return data["choices"][0]["message"]["content"].strip()
+        except Exception as exc:
+            cerit_error = exc
+
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError(f"HALCYON_API_KEY unset/failed ({cerit_error}) and OPENROUTER_API_KEY not set")
+    try:
+        payload = {
+            "model": HALCYON_FALLBACK_MODEL,
+            "messages": messages,
+            "temperature": 0.8,
+            "top_p": 0.95,
+        }
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": OPENROUTER_SITE_URL,
+            "X-Title": OPENROUTER_APP_NAME,
+        }
+        with httpx.Client(timeout=90.0) as client:
+            res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
+            res.raise_for_status()
+            data = res.json()
+        return data["choices"][0]["message"]["content"].strip()
+    except Exception as fallback_exc:
+        raise RuntimeError(f"CERIT failed ({cerit_error}); OpenRouter fallback also failed ({fallback_exc})")
 
 
 # --- Brutal-satire "talking heads" layer ---------------------------------
@@ -402,7 +466,10 @@ def generate_satire_line(actor: str, text: str, drift: float = 0.6, max_words: i
     return line or SATIRE_FALLBACKS.get(actor, text)
 
 
-ACTOR_LABELS_FOR_RECAP = {"china": "China", "us": "United States", "eu": "European Union"}
+ACTOR_LABELS_FOR_RECAP = {
+    "china": "China", "us": "United States", "eu": "European Union",
+    "halcyon": "Halcyon", "james": "The Machiavellian Crypto-Native Analyst",
+}
 
 
 def build_recap_messages(prompt: str, transcript: list[dict], actors: list[str], mode: str) -> list[dict[str, str]]:
@@ -469,6 +536,160 @@ def generate_openrouter_recap(prompt: str, transcript: list[dict], actors: list[
         res.raise_for_status()
         data = res.json()
     return _parse_json_object(data["choices"][0]["message"]["content"])
+
+
+# --- James: closing cynical counter-prediction ----------------------------
+# A 4th voice, outside the china/us/eu turn-taking loop (same shape as Halcyon):
+# reads the finished transcript and delivers ONE grounded, contrarian take.
+# Deliberately has NO fallback — if the model isn't configured or the call
+# fails, the caller surfaces that as a real error, never a canned line.
+JAMES_PERSONA = (
+    "You are The Machiavellian Crypto-Native Analyst — no other name, that IS your title. Equal parts on-chain-forensics degen, "
+    "power-realist strategist, and true believer that the state is just the biggest rug pull still running. "
+    "You talk in the room's real currency — liquidity, exit liquidity, MEV, who's actually exposed, who's "
+    "actually the exit liquidity — never in the actors' currency of 'frameworks', 'sovereignty', 'de-risking'. "
+    "You do not believe anyone's stated motive, state or corporate: everyone is optimizing for extraction, and "
+    "virtue-talk is marketing copy. You are openly partisan — pro-decentralization, contemptuous of regulatory "
+    "theater as a captured incumbent's moat. You talk FAST and MEAN: clipped, staccato, zero throat-clearing, "
+    "zero hedging — you say the ugliest true sentence in the room and move on. Your edge is precision, not "
+    "vibes: you always name a specific mechanism, never just sneer in general — but you say it in half the "
+    "words anyone else would use."
+)
+
+# Forces James to actually reach for crypto/blockchain-native mechanics even when the transcript
+# stays at the level of generic geopolitics — and, injected randomly, stops him converging on the
+# same 2-3 moves every time (same trick SATIRE_ANGLES uses for the caricature module).
+CRYPTO_MECHANISM_HOOKS = [
+    "name the exact laundering pathway — mixer hop, cross-chain bridge, OTC desk, a shell exchange 'compliance' conveniently doesn't screen",
+    "name the exact DeFi primitive being abused or exploitable here — flash loan, oracle manipulation, MEV sandwich, validator collusion, a drained multisig",
+    "call out who's left holding the bag when the music stops — which retail wallet, which LP, which 'audited' protocol eats the loss",
+    "trace the stablecoin or bridge rail actually moving the money, not the press release describing it",
+    "name the custody failure specifically — hot wallet exposure, multisig threshold, KYC theater — that made this possible",
+    "trace the exit liquidity: who cashed out clean while everyone else got left holding the bag",
+    "reframe whatever 'framework' or 'regulation' is being discussed as a liquidity-routing decision in disguise — say what it actually redirects, to whom",
+]
+
+
+def _extract_stated_confidence(prompt: str) -> float | None:
+    """Mirror-world seeds (prompt_from_incident) literally say '...sourced claim at
+    0.41 confidence...'. Pull that number out so James can be held to it exactly,
+    rather than treating every attribution as equally fake or equally solid."""
+    m = re.search(r"at ([\d.]+) confidence", prompt)
+    if not m:
+        return None
+    try:
+        return float(m.group(1))
+    except ValueError:
+        return None
+
+
+def build_james_messages(prompt: str, transcript: list[dict], actors: list[str]) -> list[dict[str, str]]:
+    labels = [ACTOR_LABELS_FOR_RECAP.get(a, a.capitalize()) for a in actors]
+    lines = []
+    for idx, msg in enumerate(transcript):
+        speaker = ACTOR_LABELS_FOR_RECAP.get(msg.get("actor", ""), msg.get("actor", "unknown"))
+        text = " ".join((msg.get("content", "") or "").split())[:600]
+        lines.append(f"[{idx}] {speaker}: {text}")
+        meta = msg.get("metadata") or {}
+        if meta.get("format") == "mirror-turn":
+            lines.append(
+                f"    (official line: {meta.get('official_line', '')} | "
+                f"buried reality: {meta.get('buried_reality', '')} | "
+                f"the room's own speculation: {meta.get('speculation', '')})"
+            )
+    transcript_block = "\n".join(lines) or "- No turns were recorded."
+
+    # If Halcyon just spoke, he's the most recent thing in the room — address him
+    # specifically instead of skipping straight past him to the state actors, the same
+    # reciprocal-engagement rule state actors already follow when a guest voice speaks.
+    halcyon_directive = ""
+    if transcript and transcript[-1].get("actor") == "halcyon":
+        halcyon_directive = (
+            " The last speaker was Halcyon, the outsider peace-builder, not one of the state actors. Open by "
+            "addressing his optimism directly, by name, before your two moves: is the 'good news' he cited real "
+            "and does it actually change the mechanism you're about to name, or is it exactly the kind of clean "
+            "story that lets everyone avoid the ugly part? Don't just ignore him and go straight at the states."
+        )
+
+    confidence = _extract_stated_confidence(prompt)
+    if confidence is None:
+        calibration = ""
+    elif confidence >= 0.67:
+        calibration = (
+            f" The feed's own attribution confidence here is {confidence:.2f} — genuinely solid. Don't manufacture "
+            "fake doubt about WHO did it just for the bit; a confident fact isn't itself the story. Instead, point "
+            "your cynicism at what that solid fact conveniently lets everyone ignore — where the money actually "
+            "went next, who's still exposed, what a clean attribution is being used to justify or distract from."
+        )
+    elif confidence >= 0.34:
+        calibration = (
+            f" The feed's own attribution confidence here is only {confidence:.2f} — genuinely contested, not solid. "
+            "If any actor (or the room's own 'speculation') is talking about this incident with more certainty than "
+            "that number earns, name that gap explicitly — that overconfidence, not the incident itself, is the tell."
+        )
+    else:
+        calibration = (
+            f" The feed's own attribution confidence here is a weak {confidence:.2f} — barely more than a guess. "
+            "Treat any actor asserting it as settled fact as the real story: a low-confidence claim being laundered "
+            "into certainty is exactly the kind of theater you exist to expose. Say so specifically, by the number."
+        )
+
+    hook = random.choice(CRYPTO_MECHANISM_HOOKS)
+
+    system = (
+        f"{JAMES_PERSONA} You are reading the closing transcript of an AI Cold War roundtable. Do not summarize "
+        "it — that's someone else's job. Fuse two moves into ONE tight punch, don't write them as separate "
+        "paragraphs:\n"
+        f"- Call the powers' implicit bet wrong and stake out a concrete counter-mechanism (who profits, what "
+        f"gets captured, what breaks) — {hook}. If the transcript stays abstract ('frameworks', 'cooperation', "
+        "'sovereignty'), YOU translate it into what it actually routes, on-chain or off.\n"
+        "- Land ONE cui-bono line on the narrative itself: whose institutional interest is served by this story "
+        "being believed, independent of whether it's true (victim's alibi, a state's pretext, compliance "
+        "vendors' revenue) — pick whichever ONE actually fits, don't list all three.\n"
+        "Ground every claim in something actually said or reported in the transcript below — quote or reference "
+        "specifics (names, numbers, incidents), never invent facts that aren't there."
+        f"{calibration}{halcyon_directive} "
+        "HARD CAP: 3-4 sentences total, no more. Every sentence must land a specific fact or mechanism. Cut "
+        "anything that's just tone-setting or throat-clearing. First person, crypto-native idiom, no disclaimers, "
+        "no hedging, no 'as an AI'. Punchy over thorough."
+        f"{NO_LLM_TELLS_STYLE}"
+    )
+    user = (
+        f"Debate prompt:\n{prompt}\n\n"
+        f"Participating actors: {', '.join(labels)}\n\n"
+        f"Full transcript (each line prefixed with its turn index):\n{transcript_block}\n\n"
+        "Give your take."
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def generate_james_take(prompt: str, transcript: list[dict], actors: list[str]) -> str:
+    """No fallback by design: raises if OPENROUTER_API_KEY is unset or the call fails,
+    so the caller surfaces a real error instead of a canned cynical line."""
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not set")
+    payload: dict[str, Any] = {
+        "model": JAMES_MODEL,
+        "messages": build_james_messages(prompt, transcript, actors),
+        "temperature": 0.85,
+        "top_p": 0.95,
+        "frequency_penalty": 0.4,
+        "max_tokens": 220,  # hard ceiling backing the 3-4-sentence instruction — punchy, not rambling
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_SITE_URL,
+        "X-Title": OPENROUTER_APP_NAME,
+    }
+    with httpx.Client(timeout=90.0) as client:
+        res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        data = res.json()
+    take = (data["choices"][0]["message"]["content"] or "").strip()
+    if not take:
+        raise RuntimeError("The Analyst returned an empty take")
+    return take
 
 
 def build_pulse_messages(prompt: str, recent_context: list[dict], last_turn: dict, actors: list[str]) -> list[dict[str, str]]:

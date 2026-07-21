@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, Column, String, DateTime, Text, JSON, Bool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session as DBSession
 
-from .models import SessionState, TranscriptMessage, SessionSummary, WikiProposal
+from .models import SessionState, TranscriptMessage, SessionSummary, WikiProposal, IncidentBrief
 
 # Database URL from environment or default to SQLite
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sessions.db")
@@ -52,6 +52,10 @@ class SessionDB(Base):
     is_featured_weekly = Column(Boolean, nullable=False, default=False)
     title = Column(String(255), nullable=True)
     theme = Column(String(255), nullable=True)
+    james_take = Column(Text, nullable=True)
+    mirror_card = Column(JSON, nullable=True)
+    incident = Column(JSON, nullable=True)
+    recap = Column(JSON, nullable=True)
 
 
 class WeeklyPromptDB(Base):
@@ -95,6 +99,10 @@ def _ensure_session_columns() -> None:
         "is_featured_weekly": "ALTER TABLE sessions ADD COLUMN is_featured_weekly BOOLEAN NOT NULL DEFAULT 0",
         "title": "ALTER TABLE sessions ADD COLUMN title VARCHAR(255)",
         "theme": "ALTER TABLE sessions ADD COLUMN theme VARCHAR(255)",
+        "james_take": "ALTER TABLE sessions ADD COLUMN james_take TEXT",
+        "mirror_card": "ALTER TABLE sessions ADD COLUMN mirror_card TEXT",
+        "incident": "ALTER TABLE sessions ADD COLUMN incident TEXT",
+        "recap": "ALTER TABLE sessions ADD COLUMN recap TEXT",
     }
 
     with engine.begin() as conn:
@@ -123,6 +131,9 @@ def _session_preview(s: SessionDB) -> dict:
         "status": s.status,
         "turn_count": s.turn_index,
         "has_audio": bool(s.audio_url),
+        "has_james_take": bool(s.james_take),
+        "has_mirror_card": bool(s.mirror_card),
+        "has_recap": bool(s.recap),
         "session_type": s.session_type or "live",
         "week_key": s.week_key,
         "week_start": s.week_start.isoformat() if s.week_start else None,
@@ -166,7 +177,10 @@ def save_session_to_db(session_state: SessionState, db: DBSession, metadata: Opt
     
     if session_state.wiki_proposals:
         db_session.wiki_proposals = [prop.model_dump(mode="json") for prop in session_state.wiki_proposals]
-    
+
+    if session_state.incident:
+        db_session.incident = session_state.incident.model_dump(mode="json")
+
     if session_state.status == "completed" and not db_session.completed_at:
         db_session.completed_at = datetime.utcnow()
     
@@ -211,8 +225,127 @@ def load_session_from_db(session_id: str, db: DBSession) -> Optional[SessionStat
     
     if db_session.wiki_proposals:
         state.wiki_proposals = [WikiProposal(**prop) for prop in db_session.wiki_proposals]
-    
+
+    if db_session.incident:
+        state.incident = IncidentBrief(**db_session.incident)
+
     return state
+
+
+def get_james_take(session_id: str, db: DBSession) -> Optional[str]:
+    """Return a previously-saved James take for this session, if any."""
+    row = db.query(SessionDB).filter(SessionDB.id == session_id).first()
+    return row.james_take if row else None
+
+
+def save_james_take(session_id: str, take: str, db: DBSession) -> bool:
+    """Persist James's take onto an existing session row so it survives restarts
+    and shows up in replay. Returns False if the session has no DB row yet
+    (e.g. a brand-new in-memory-only session) — the take is still returned to
+    the caller, it just won't be saved until the session itself is persisted."""
+    row = db.query(SessionDB).filter(SessionDB.id == session_id).first()
+    if not row:
+        return False
+    row.james_take = take
+    db.add(row)
+    db.commit()
+    return True
+
+
+def get_mirror_card(session_id: str, db: DBSession) -> Optional[dict]:
+    """Return a previously-saved mirror-card for this session, if any."""
+    row = db.query(SessionDB).filter(SessionDB.id == session_id).first()
+    return row.mirror_card if row else None
+
+
+def save_mirror_card(session_id: str, card: dict, db: DBSession) -> bool:
+    """Persist the mirror-card onto an existing session row, same pattern as
+    save_james_take. Returns False if the session has no DB row yet."""
+    row = db.query(SessionDB).filter(SessionDB.id == session_id).first()
+    if not row:
+        return False
+    row.mirror_card = card
+    db.add(row)
+    db.commit()
+    return True
+
+
+def get_james_takes_feed(db: DBSession, limit: int = 50) -> list[dict]:
+    """Every session with a saved James take, newest first — browsable as its own feed,
+    independent of any specific session replay."""
+    rows = (
+        db.query(SessionDB)
+        .filter(SessionDB.james_take.isnot(None))
+        .order_by(SessionDB.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "session_id": r.id,
+            "title": r.title or _session_title(r.prompt),
+            "mode": r.mode,
+            "created_at": r.created_at.isoformat(),
+            "james_take": r.james_take,
+        }
+        for r in rows
+    ]
+
+
+def get_recap(session_id: str, db: DBSession) -> Optional[dict]:
+    """Return a previously-saved recap/scoreboard for this session, if any."""
+    row = db.query(SessionDB).filter(SessionDB.id == session_id).first()
+    return row.recap if row else None
+
+
+def save_recap(session_id: str, recap: dict, db: DBSession) -> bool:
+    """Persist the recap onto an existing session row, same pattern as save_james_take
+    and save_mirror_card. Returns False if the session has no DB row yet."""
+    row = db.query(SessionDB).filter(SessionDB.id == session_id).first()
+    if not row:
+        return False
+    row.recap = recap
+    db.add(row)
+    db.commit()
+    return True
+
+
+def _session_export_row(r: SessionDB) -> dict:
+    return {
+        "session_id": r.id,
+        "created_at": r.created_at.isoformat(),
+        "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+        "mode": r.mode,
+        "actors": r.actors,
+        "prompt": r.prompt,
+        "status": r.status,
+        "title": r.title,
+        "theme": r.theme,
+        "session_type": r.session_type,
+        "week_key": r.week_key,
+        "transcript": r.transcript,
+        "summary": r.summary,
+        "wiki_proposals": r.wiki_proposals,
+        "recap": r.recap,
+        "james_take": r.james_take,
+        "mirror_card": r.mirror_card,
+        "incident": r.incident,
+    }
+
+
+def get_all_sessions_export(db: DBSession) -> list[dict]:
+    """Full data for every session — transcript, summary, recap, james_take, mirror_card,
+    incident, everything. For archiving/backup, not for the live UI (use the lighter preview
+    endpoints for that)."""
+    rows = db.query(SessionDB).order_by(SessionDB.created_at).all()
+    return [_session_export_row(r) for r in rows]
+
+
+def get_session_export(session_id: str, db: DBSession) -> Optional[dict]:
+    """Same shape as one entry of get_all_sessions_export, for a single session — so a
+    per-session export file is structurally identical to an entry in the bulk one."""
+    row = db.query(SessionDB).filter(SessionDB.id == session_id).first()
+    return _session_export_row(row) if row else None
 
 
 def get_recent_sessions(db: DBSession, limit: int = 10) -> list[dict]:

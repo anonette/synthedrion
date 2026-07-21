@@ -1,8 +1,8 @@
 # AI Infrastructure Sovereignty
 
-> Sources: arXiv, 2026-04-22; JPMorganChase Center for Geopolitics, 2025-10; Axios, 2026-06-05; FP Analytics, 2025-10
-> Raw: `../../raw/sovereignity/Ai infrastructure .pdf`; `../../raw/sovereignity/decoding-the-new-global-operating-system (1).pdf`; `../../raw/datacenters/China fueling U.S. data center resistance, AI groups claim.pdf`; `../../raw/minerals/FPA-JCDREAM-October-2025-Part-2-final_260605_220024.pdf`
-> Updated: 2026-06-07
+> Sources: arXiv, 2026-04-22; JPMorganChase Center for Geopolitics, 2025-10; Axios, 2026-06-05; FP Analytics, 2025-10; Avi Spitz (Bar-Ilan University) student essay, 2026-06; ynet, 2026-07; Clayton Tucker TX campaign site, 2026-07
+> Raw: `../../raw/sovereignity/Ai infrastructure .pdf`; `../../raw/sovereignity/decoding-the-new-global-operating-system (1).pdf`; `../../raw/datacenters/China fueling U.S. data center resistance, AI groups claim.pdf`; `../../raw/minerals/FPA-JCDREAM-October-2025-Part-2-final_260605_220024.pdf`; `../../raw/datacenters/2026-06-avi-spitz-ai-has-a-territory.md`; `../../raw/datacenters/2026-07-19-ynet-ai-environmental-toll.md`; `../../raw/datacenters/2026-07-19-clayton-tucker-texas-stop-ai-centers.md`
+> Updated: 2026-07-19
 
 ## Overview
 
@@ -20,11 +20,19 @@ The infrastructure paper and the JPMorgan geopolitics report converge on the sam
 
 JPMorgan's report generalizes this into a geopolitical claim: energy and hardware are now core AI chokepoints, while the infrastructure paper makes the physical mechanism explicit. The result is a stronger shared frame for the whole knowledge base: actors that cannot secure energy and high-capacity infrastructure may remain formally sovereign while becoming practically dependent.
 
+## Infrastructural Suzerainty — a Sharper Name for the Same Gap
+
+A 2026 essay analyzing this exact tension coins the term **infrastructural suzerainty**: a state may hold formal, legal sovereignty over AI within its borders while practical control sits elsewhere — with foreign chip suppliers, cloud providers, or external corporations. Historically, suzerainty describes indirect domination: one entity formally governs itself while another exercises decisive influence over its strategic choices. Applied to AI, a country can announce a national AI strategy, host a major data center, and still depend on foreign chips, foreign software stacks, and foreign cloud providers for the computation that makes the strategy real. The essay frames the AI stack as six layers, from the visible down to the load-bearing: models/applications → cloud platforms & APIs → data centers & compute clusters → chips/accelerators/software → electricity/cooling/water/land/fiber → jurisdiction/ownership/security/crisis-access. Sovereignty claimed at the top layer is hollow if the bottom layers are foreign-controlled — which is exactly why hosting compute is not the same as controlling it.
+
+Concrete Gulf-hub evidence for this gap: Stargate UAE (Abu Dhabi) began its first 200MW phase in 2026 with a broader plan for 1GW, while Saudi Arabia is building parallel capacity — an AWS Saudi cloud region and PIF-backed HUMAIN data centers in Riyadh and Dammam. Both are real compute buildout, financed and sited locally — but running on foreign accelerators and foreign cloud software stacks, the textbook infrastructural-suzerainty condition. The frontier of this contest is also expanding past land entirely: floating data centers at sea and orbital/space-based compute are now live proposals, driven by the same constraints (land scarcity, electricity bottlenecks, cooling, security, local opposition) pushing infrastructure into new, less-regulated territories.
+
 ## Community Resistance Is Part of the Infrastructure Story
 
 The Axios datacenter article adds a domestic-political layer missing from the more strategic papers. It shows that datacenter buildout also creates local backlash around electricity bills, water use, noise, and land-use change. Even though the article centers on alleged foreign amplification, its more important contribution for this wiki is that AI infrastructure is becoming politically legible at the community level.
 
 This matters because sovereignty is not only an interstate question. It is also mediated by zoning fights, permitting, public tolerance, and the ability to legitimize large infrastructure projects inside democratic and quasi-democratic systems.
+
+Two concrete 2026 cases show this backlash moving from planning-commission disputes into open political and legal conflict. In California's Imperial Valley, after recycled-water negotiations stalled, a data-center developer sued the local irrigation district for ~260 million gallons/year of Colorado River water — with local reporting finding the project would need more electricity than the entire county consumed in 2024. In Texas, a candidate for statewide Agriculture Commissioner built campaign infrastructure explicitly around "stopping AI data centers," naming a specific project (Amarillo's "Project Matador," marketed as nuclear-powered while actually building a large natural-gas plant) and proposing "Ag Impact Studies" and "Ag Development Districts" as policy tools. AI infrastructure siting has become electorally contestable, not just a permitting-desk problem.
 
 ## Critical Minerals Extend the Constraint Chain
 

@@ -11,6 +11,7 @@ from .wiki_loader import assemble_context_notes, collect_actor_pages, extract_no
 from .llm import generate_openrouter_turn, openrouter_enabled
 from .models import SessionState, TranscriptMessage, SessionSummary, MemoOption, WikiProposal
 from .database import clear_featured_weekly, get_db, save_session_to_db
+from .news_ingest import tavily_search, serpapi_search
 
 # Prompt themes for variety
 PROMPT_THEMES = [
@@ -35,56 +36,42 @@ PROMPT_TEMPLATES = [
 ]
 
 
-def generate_weekly_prompt() -> str:
-    """Generate a fresh prompt for the weekly session."""
+async def fetch_current_event(theme: str) -> str | None:
+    """Search real news for something actually happening on this theme right now — replaces
+    the old generate_plausible_event(), which fabricated a fake headline from a hardcoded
+    list. Returns None (not a made-up fallback) if no API keys are configured or nothing
+    real comes back; the caller falls back to a plain templated prompt with no invented
+    'current event' framing rather than inventing one."""
+    query = f"{theme} AI news this week"
+    results = []
+    try:
+        results = await tavily_search(query, days=7, max_results=3)
+    except Exception:
+        pass
+    if not results:
+        try:
+            results = await serpapi_search(query, days=7, max_results=3)
+        except Exception:
+            pass
+    if not results:
+        return None
+    top = results[0]
+    return f"{top.title} ({top.source_name})."
+
+
+async def generate_weekly_prompt() -> str:
+    """Generate a fresh prompt for the weekly session, grounded in a real, currently-searched
+    news item when one is found — no fabricated 'plausible events' anymore."""
     theme = random.choice(PROMPT_THEMES)
     template = random.choice(PROMPT_TEMPLATES)
-    
-    # Add some variety with current events style
-    if random.random() > 0.5:
-        recent_event = generate_plausible_event(theme)
-        prompt = f"{recent_event} {template}"
-    else:
-        prompt = template
-    
+
+    recent_event = await fetch_current_event(theme)
+    prompt = f"{recent_event} {template}" if recent_event else template
+
     return prompt.format(
         actors="China, US, and EU",
         theme=theme
     )
-
-
-def generate_plausible_event(theme: str) -> str:
-    """Generate a plausible current event related to the theme."""
-    events = {
-        "chip controls and supply chains": [
-            "A major foundry announces new capacity constraints.",
-            "Export control loopholes are discovered and exploited.",
-            "A new chip architecture bypasses current restrictions.",
-        ],
-        "AI safety and alignment": [
-            "A frontier lab reports concerning capability jumps.",
-            "International safety standards face implementation challenges.",
-            "A major AI incident triggers calls for regulation.",
-        ],
-        "compute sovereignty and cloud dependence": [
-            "Critical cloud infrastructure faces sovereignty challenges.",
-            "National compute reserves are proposed by multiple nations.",
-            "Cross-border compute access becomes politically contentious.",
-        ],
-        "AI labor displacement and social stability": [
-            "AI automation accelerates beyond projections.",
-            "Mass retraining programs show mixed results.",
-            "Labor unions demand AI deployment restrictions.",
-        ],
-        "military AI applications and deterrence": [
-            "Autonomous systems blur deterrence doctrines.",
-            "AI-enabled surveillance reaches new capabilities.",
-            "Military AI accidents raise control questions.",
-        ],
-    }
-    
-    theme_events = events.get(theme, ["Unexpected developments emerge."])
-    return random.choice(theme_events)
 
 
 async def run_scheduled_session(
@@ -100,8 +87,8 @@ async def run_scheduled_session(
     week_start = (now - timedelta(days=iso_weekday - 1)).date()
     week_key = f"{iso_year}-W{iso_week:02d}"
 
-    # Generate fresh prompt
-    prompt = generate_weekly_prompt()
+    # Generate fresh prompt (now grounded in a real, currently-searched news item when found)
+    prompt = await generate_weekly_prompt()
     theme = next((item for item in PROMPT_THEMES if item in prompt), None)
     
     # Start session

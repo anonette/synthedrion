@@ -11,6 +11,7 @@ This note captures the current contract between the local backend and the Lovabl
 Public GET endpoints:
 
 - `GET /health`
+- `GET /roster` — structured "who's who" data for all six voices (core debaters + guest voices)
 - `GET /weekly/current`
 - `GET /weekly/archive`
 - `GET /weekly/{week_key}`
@@ -29,6 +30,7 @@ Protected mutating endpoints:
 - `POST /session/{session_id}/pulse`
 - `POST /session/{session_id}/recap`
 - `POST /session/{session_id}/mirror-card`
+- `POST /session/{session_id}/james-take` — persists once generated; also adds `james_take` to `/api/replay/{id}` and `has_james_take` (bool) to every session preview (`/sessions/recent`, `/weekly/current`, `/weekly/archive`, `/weekly/{week_key}`)
 
 Protected routes require:
 

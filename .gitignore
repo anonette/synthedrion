@@ -48,3 +48,6 @@ build/
 # Generated satire snapshot bundle — LOCAL ONLY, never committed
 # (regenerate with `node scripts/snapshot-satire.mjs`)
 public/satire-archive/
+
+# Generated export artifacts (session dumps, tabloid images/PDF, uvicorn logs) — LOCAL ONLY
+exports/

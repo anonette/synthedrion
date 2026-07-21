@@ -5,6 +5,7 @@ import asyncio
 import base64
 import json
 import logging
+import random
 import re
 from datetime import datetime
 from uuid import uuid4
@@ -12,21 +13,22 @@ from pathlib import Path
 
 import httpx
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
-from .audio import ensure_replay_audio_assets, generate_satire_audio
+from .audio import check_replay_audio_status, ensure_replay_audio_assets, generate_satire_audio
 from .config import ACTOR_MODELS, HALCYON_LEDGER_PATH, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
-from .llm import SATIRE_FALLBACKS, generate_halcyon_turn, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, generate_satire_line, openrouter_enabled
-from .threat_intel import latest_incident, prompt_from_incident
+from .llm import SATIRE_FALLBACKS, generate_halcyon_turn, generate_james_take, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, generate_satire_line, openrouter_enabled
+from .threat_intel import dataset_stats, get_incident_by_id, latest_incident, prompt_from_incident, random_incident
 from .auth import verify_token, require_roundtable_operator
-from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key
+from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key, get_james_take, save_james_take, get_mirror_card, save_mirror_card, get_james_takes_feed, get_recap, save_recap, get_all_sessions_export, get_session_export
 from .scheduler import run_scheduled_session, run_test_session
 from .models import (
+    IncidentBrief,
     InterventionRequest,
     MemoOption,
     SessionMessageRequest,
@@ -338,6 +340,60 @@ def health() -> dict:
     }
 
 
+ROSTER = [
+    {
+        "id": "china", "type": "core",
+        "name": "China",
+        "archetype": "A PRC strategic actor: sovereignty, non-interference, developmental legitimacy, long-horizon industrial policy.",
+        "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
+        "trigger": "Always present — start any session to see them live.",
+    },
+    {
+        "id": "us", "type": "core",
+        "name": "United States",
+        "archetype": "Frontier competition, alliance power, market scale; prosecutorial and impatient with euphemism.",
+        "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
+        "trigger": "Always present — start any session to see them live.",
+    },
+    {
+        "id": "eu", "type": "core",
+        "name": "European Union",
+        "archetype": "Brussels institutionalism, strategic autonomy; precise and sardonic, disciplines louder powers through regulation.",
+        "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
+        "trigger": "Always present — start any session to see them live.",
+    },
+    {
+        "id": "halcyon", "type": "guest",
+        "name": "Halcyon",
+        "archetype": "An outsider peace-builder who belongs to no bloc — opens with real hopeful news, then dares the three toward something built together.",
+        "produces": "One injected turn mid-debate.",
+        "trigger": "Off by default — triggered via /intervene.",
+    },
+    {
+        "id": "satire-heads", "type": "guest",
+        "name": "The Satire Heads",
+        "archetype": "Xi / Trump / von der Leyen caricature avatars delivering savage one-liner rewrites of the real debate.",
+        "produces": "A rewritten quip per turn via talking-head video avatars.",
+        "trigger": "Off by default — toggled by the \"Brutal Satire\" switch.",
+    },
+    {
+        "id": "james", "type": "guest",
+        "name": "The Machiavellian Crypto-Native Analyst",
+        "archetype": "No other name, just the title. Trusts no one's stated motive, talks in the room's real currency — liquidity, exit liquidity, MEV.",
+        "produces": "A grounded, contrarian counter-prediction naming a specific mechanism, never a generic cynical aside. No fallback — a failed call surfaces as a real error, never a canned line.",
+        "trigger": "Off by default — click \"Get his take\" at the end of a session, or summon him mid-debate for a live interjection.",
+    },
+]
+
+
+@app.get("/roster")
+def get_roster() -> dict:
+    """Public, unauthenticated — structured 'who's who' data for the Lovable roster screen.
+    Keeps the frontend's cast list in sync with what the backend actually does, instead of
+    hardcoded copy drifting out of date."""
+    return {"roster": ROSTER}
+
+
 @app.get("/auth/check")
 def auth_check(x_roundtable_token: str | None = None) -> dict:
     expected = os.getenv("ROUNDTABLE_OPERATOR_TOKEN", "")
@@ -402,19 +458,41 @@ def start_session(request: SessionStartRequest) -> dict:
     loaded_pages: dict[str, list[str]] = {}
     context_notes: dict[str, list[str]] = {}
 
-    # mirror-world: prepend the latest threat-intel incident (the reality layer) to the prompt
+    # mirror-world: prepend a threat-intel incident (the reality layer) to the prompt.
+    # A specific incident_id wins if given; otherwise seed_incident draws RANDOMLY from the
+    # whole dataset (not always the same "latest" file) and adds dataset-level context so
+    # actors can contest the pattern, not just the one case.
     prompt = request.prompt
-    if request.seed_incident:
-        incident = latest_incident()
-        if incident:
-            seeded = prompt_from_incident(incident)
-            prompt = f"{seeded}\n\n{request.prompt}".strip() if request.prompt.strip() else seeded
+    incident = None
+    if request.incident_id:
+        incident = get_incident_by_id(request.incident_id)
+    elif request.seed_incident:
+        incident = random_incident()
+    if incident:
+        seeded = prompt_from_incident(incident, dataset_stats())
+        prompt = f"{seeded}\n\n{request.prompt}".strip() if request.prompt.strip() else seeded
 
     for actor in request.actors:
         pages = collect_actor_pages(actor, include_shared=request.include_shared)
         loaded_pages[actor] = [relative_wiki_path(page) for page in pages]
         # query-aware, breadth-covering note selection (see wiki_loader.assemble_context_notes)
         context_notes[actor] = assemble_context_notes(pages, prompt)
+
+    incident_brief = (
+        IncidentBrief(
+            id=incident.id,
+            target=incident.target,
+            state=incident.state,
+            group=incident.group,
+            confidence=incident.confidence,
+            amount_usd=incident.amount_usd,
+            asset=incident.asset,
+            vector=incident.vector,
+            timestamp=incident.timestamp,
+        )
+        if incident
+        else None
+    )
 
     state = SessionState(
         session_id=session_id,
@@ -423,11 +501,16 @@ def start_session(request: SessionStartRequest) -> dict:
         prompt=prompt,
         loaded_pages=loaded_pages,
         context_notes=context_notes,
+        incident=incident_brief,
     )
+    if request.mode == "mirror-world" and state.actors:
+        # Vary who opens each incident instead of always China — a fixed order reads as
+        # repetitive across sessions, and there's no dramatic reason it should always lead.
+        state.next_actor_index = random.randrange(len(state.actors))
     SESSIONS[session_id] = state
 
     opening_messages: list[dict] = []
-    next_actor_name = state.actors[0] if state.actors else None
+    next_actor_name = state.actors[state.next_actor_index] if state.actors else None
 
     if request.auto_generate_opening_turn and state.actors:
         msg, next_actor_name = _generate_session_turn(state)
@@ -443,6 +526,7 @@ def start_session(request: SessionStartRequest) -> dict:
         "loaded_page_counts": {actor: len(paths) for actor, paths in state.loaded_pages.items()},
         "next_actor": next_actor_name,
         "messages": opening_messages,
+        "incident": state.incident.model_dump() if state.incident else None,
     }
 
 
@@ -471,6 +555,14 @@ def advance_session(request: SessionMessageRequest) -> dict:
     }
 
 
+INTERVENTION_DIRECTIVES = {
+    "question": "The next actor to speak MUST directly answer this question before returning to their own agenda — no deflecting to a talking point instead.",
+    "challenge": "This directly attacks the next actor's position. Their next turn MUST open by confronting this challenge head-on — concede the point, rebut it with a specific counter-fact, or reframe it — not simply continue their prior argument as if unchallenged.",
+    "redirect": "The debate MUST pivot to this new angle for at least the next turn — the next actor should engage with this specific redirection, not steer back to the previous topic.",
+    "source": "A specific source/citation is being put to the room. The next actor MUST explicitly engage with this source (accept it, dispute its framing, or contextualize it) rather than ignoring it.",
+}
+
+
 @app.post("/session/intervene", dependencies=[Depends(require_roundtable_operator)])
 def intervene(request: InterventionRequest) -> dict:
     state = SESSIONS.get(request.session_id)
@@ -479,7 +571,11 @@ def intervene(request: InterventionRequest) -> dict:
     state.transcript.append(
         TranscriptMessage(actor="human", content=request.content, kind="human")
     )
-    state.prompt = f"{state.prompt}\nHuman intervention ({request.type}): {request.content}"
+    directive = INTERVENTION_DIRECTIVES.get(request.type, "")
+    state.prompt = (
+        f"{state.prompt}\nHuman intervention ({request.type}): {request.content}"
+        + (f" [{directive}]" if directive else "")
+    )
     _persist_session_state(state)
     return {"session_id": state.session_id, "accepted": True, "status": state.status}
 
@@ -518,13 +614,98 @@ def _halcyon_good_news(n: int = 5, used: int = 0) -> list[str]:
                 if w.lower().startswith("- why hopeful:"):
                     why = w.split(":", 1)[1].strip()
                     break
-            stories.append(title + (f" — {why}" if why else ""))
+            stories.append(title + (f". {why}" if why else ""))
     if not stories:
         return []
     fresh = stories[::-1]  # newest first
     offset = used % len(fresh)
     rotated = fresh[offset:] + fresh[:offset]
     return rotated[:n]
+
+
+def _parse_halcyon_ledger() -> list[dict]:
+    """Full structured parse of the Halcyon ledger — every field, not just the collapsed
+    title+why string _halcyon_good_news uses for his turn prompt. For browsing his ledger
+    as its own feed, independent of any specific session."""
+    try:
+        text = Path(HALCYON_LEDGER_PATH).read_text(encoding="utf-8")
+    except Exception:
+        return []
+    lines = text.splitlines()
+    entries: list[dict] = []
+    current_crawl = ""
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if s.startswith("## "):
+            current_crawl = s[3:].strip()
+            continue
+        if s.startswith("- **"):
+            title_m = re.search(r"\*\*(.+?)\*\*", s)
+            source_m = re.search(r"—\s*_(.+?)_", s)
+            entry = {
+                "crawl": current_crawl,
+                "title": title_m.group(1) if title_m else s[2:].strip(),
+                "source": source_m.group(1) if source_m else "",
+                "front": "", "eases": "", "unites": [], "why_hopeful": "", "url": "",
+            }
+            for j in range(i + 1, min(i + 5, len(lines))):
+                w = lines[j].strip()
+                if w.startswith("- **"):
+                    break
+                fm = re.search(r"front:\s*`([^`]*)`\s*·\s*eases:\s*(.+?)\s*·\s*unites:\s*(.*)", w)
+                if fm:
+                    entry["front"] = fm.group(1)
+                    entry["eases"] = fm.group(2).strip()
+                    entry["unites"] = [u.strip() for u in fm.group(3).split(",") if u.strip()]
+                elif w.lower().startswith("- why hopeful:"):
+                    entry["why_hopeful"] = w.split(":", 1)[1].strip()
+                elif w.startswith("http") or w.startswith("- http"):
+                    entry["url"] = w.lstrip("- ").strip()
+            entries.append(entry)
+    return entries
+
+
+def _crawl_sort_key(crawl_label: str) -> datetime:
+    """Parse a real sortable datetime out of a '## ' section label — handles both
+    'Crawl 2026-07-02 16:50 UTC' and 'Manual add 2026-07-19 (...)' shapes. Falls back to
+    the epoch (sorts last) if nothing parses, rather than silently mis-ordering entries."""
+    m = re.search(r"(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}):(\d{2}))?", crawl_label)
+    if not m:
+        return datetime.min
+    date_part, hh, mm = m.group(1), m.group(2), m.group(3)
+    try:
+        if hh is not None:
+            return datetime.strptime(f"{date_part} {hh}:{mm}", "%Y-%m-%d %H:%M")
+        return datetime.strptime(date_part, "%Y-%m-%d")
+    except ValueError:
+        return datetime.min
+
+
+@app.get("/halcyon/good-news")
+def halcyon_good_news_feed(limit: int = 50) -> dict:
+    """Public: Halcyon's full ledger of hopeful stories, browsable as its own feed —
+    newest first BY ACTUAL DATE (not file order — the ledger has repeated near-duplicate
+    crawls at different timestamps, so naive reversal doesn't sort correctly). Deduped by
+    title, keeping the newest-dated occurrence of each story."""
+    entries = _parse_halcyon_ledger()
+    entries.sort(key=lambda e: _crawl_sort_key(e["crawl"]), reverse=True)
+    seen_titles: set[str] = set()
+    deduped = []
+    for e in entries:
+        if e["title"] in seen_titles:
+            continue
+        seen_titles.add(e["title"])
+        deduped.append(e)
+    return {"entries": deduped[:limit], "total": len(deduped)}
+
+
+@app.get("/james/takes")
+def james_takes_feed(limit: int = 50, db: DBSession = Depends(get_db)) -> dict:
+    """Public: every session with a saved take from The Machiavellian Crypto-Native Analyst,
+    browsable as its own feed — his running commentary on the dark underworld of AI
+    geopolitics, independent of any specific session replay."""
+    items = get_james_takes_feed(db, limit=limit)
+    return {"items": items, "total": len(items)}
 
 
 @app.get("/operator-token")
@@ -728,7 +909,9 @@ def get_satire_take(session_id: str) -> dict:
 def summon_halcyon(session_id: str) -> dict:
     """Inject one Halcyon peace-builder turn on demand. Halcyon is NOT a
     round-robin actor, so this does not advance the china/us/eu order — it just
-    appends a hope-first intervention that speaks after the current exchange."""
+    appends a hope-first intervention that speaks after the current exchange.
+    No fabricated fallback text: if his primary voice (CERIT) is unavailable, this tries
+    a real backup model instead; only raises if both are down."""
     state = SESSIONS.get(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
@@ -742,20 +925,56 @@ def summon_halcyon(session_id: str) -> dict:
             recent_context=recent_context,
             mode=state.mode,
         )
-        source = "cerit"
-    except Exception as exc:  # never 500 the room — degrade gracefully
-        lead = good_news[0] if good_news else "rivals have cooperated before, and can again"
-        content = (
-            f"Before we go further — some good news. {lead}. That alone is proof another path exists. "
-            "So rather than race to control this alone, what could the three of you build together that none of you "
-            "can build apart? Name it, and I will hold you to it."
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Even Halcyon needs a signal to hope with, and his is dark right now. Try again shortly. (technical: {exc})",
         )
-        source = f"fallback ({exc})"
     msg = TranscriptMessage(
         actor="halcyon",
         content=content,
         kind="agent",
-        metadata={"format": "halcyon", "summoned": True, "source": source},
+        metadata={"format": "halcyon", "summoned": True, "source": "cerit"},
+    )
+    state.transcript.append(msg)
+    state.turn_index += 1
+    _persist_session_state(state)
+    return {
+        "session_id": state.session_id,
+        "turn_index": state.turn_index,
+        "messages": [msg.model_dump()],
+        "next_actor": state.actors[state.next_actor_index] if state.actors else None,
+        "status": state.status,
+    }
+
+
+@app.post("/session/{session_id}/summon-james", dependencies=[Depends(require_roundtable_operator)])
+def summon_james(session_id: str) -> dict:
+    """Inject one live interjection from The Machiavellian Crypto-Native Analyst into the
+    debate — the same voice as /james-take, but mid-conversation instead of only at the
+    close. Not a round-robin actor: this does not advance the china/us/eu turn order, it
+    just appends his read on the exchange so far. No fallback (matching /james-take): if
+    the call fails, this raises a real error rather than a canned line."""
+    state = SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+    if not openrouter_enabled():
+        raise HTTPException(status_code=503, detail="needs OPENROUTER_API_KEY set — no fallback voice")
+
+    transcript = [m.model_dump() for m in state.transcript]
+    try:
+        content = generate_james_take(prompt=state.prompt, transcript=transcript, actors=state.actors)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"The Analyst went dark mid-sentence, somewhere his own API call got rugged. Try again shortly. (technical: {exc})",
+        )
+
+    msg = TranscriptMessage(
+        actor="james",
+        content=content,
+        kind="agent",
+        metadata={"format": "james-interjection", "summoned": True},
     )
     state.transcript.append(msg)
     state.turn_index += 1
@@ -887,13 +1106,29 @@ def pulse_session(session_id: str) -> dict:
 
 
 @app.post("/session/{session_id}/mirror-card", dependencies=[Depends(require_roundtable_operator)])
-def mirror_card_session(session_id: str, tone: str = "grounded-absurdist", visual: bool = False, image_model: str | None = None) -> dict:
+def mirror_card_session(
+    session_id: str,
+    tone: str = "grounded-absurdist",
+    visual: bool = False,
+    image_model: str | None = None,
+    regenerate: bool = False,
+    db: DBSession = Depends(get_db),
+) -> dict:
     """Closing artifact for a mirror-world session: the three-layer card (reality / official /
     speculation) plus a satirical dispatch. LLM when enabled, heuristic fallback otherwise.
-    Pass visual=true to also generate one speculative poster via the image pipeline."""
-    state = SESSIONS.get(session_id)
+    Pass visual=true to also generate one speculative poster via the image pipeline.
+
+    Works on archived sessions too (database fallback, same lookup order as /api/replay and
+    /james-take), and is persisted once generated — replayed from the session row (and from
+    /api/replay/{id}) rather than regenerated every call. Pass ?regenerate=true for a fresh one."""
+    state = load_session_from_db(session_id, db) or SESSIONS.get(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
+
+    if not regenerate:
+        cached = get_mirror_card(session_id, db)
+        if cached:
+            return {"session_id": session_id, "mirror_card": cached, "cached": True}
 
     transcript = [m.model_dump() for m in state.transcript]
 
@@ -926,19 +1161,27 @@ def mirror_card_session(session_id: str, tone: str = "grounded-absurdist", visua
         except Exception as exc:
             card["visual"] = {"image_status": "error", "image_error": str(exc)}
 
-    return {"session_id": state.session_id, "mirror_card": card}
+    saved = save_mirror_card(state.session_id, card, db)
+    return {"session_id": state.session_id, "mirror_card": card, "cached": False, "saved": saved}
 
 
 @app.post("/session/{session_id}/recap", dependencies=[Depends(require_roundtable_operator)])
-def recap_session(session_id: str) -> dict:
-    """Generate the closing recap and scoreboard for a live debate.
-
-    Uses the per-actor LLM when OpenRouter is enabled, otherwise falls back to the
-    deterministic heuristic. Computed on demand from the in-memory transcript; not persisted.
+def recap_session(session_id: str, regenerate: bool = False, db: DBSession = Depends(get_db)) -> dict:
+    """Generate the closing recap and scoreboard (dominance scores, key moments, agreement/
+    conflict ratios — the visualizable data) for a debate. Works on archived sessions too
+    (database fallback, same lookup order as /api/replay), and is persisted once generated —
+    replayed from the session row (and from /api/replay/{id}) instead of regenerated every
+    call. Pass ?regenerate=true for a fresh one. Uses the per-actor LLM when OpenRouter is
+    enabled, otherwise the deterministic heuristic.
     """
-    state = SESSIONS.get(session_id)
+    state = load_session_from_db(session_id, db) or SESSIONS.get(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
+
+    if not regenerate:
+        cached = get_recap(session_id, db)
+        if cached:
+            return {"session_id": session_id, "recap": cached, "cached": True}
 
     transcript = [m.model_dump() for m in state.transcript]
 
@@ -957,7 +1200,51 @@ def recap_session(session_id: str) -> dict:
     else:
         recap = build_recap(state.prompt, transcript, state.actors, state.mode)
 
-    return {"session_id": state.session_id, "recap": recap}
+    saved = save_recap(state.session_id, recap, db)
+    return {"session_id": state.session_id, "recap": recap, "cached": False, "saved": saved}
+
+
+@app.post("/session/{session_id}/james-take", dependencies=[Depends(require_roundtable_operator)])
+def james_take_session(session_id: str, regenerate: bool = False, db: DBSession = Depends(get_db)) -> dict:
+    """The Analyst's closing take: a cynical crypto-native counter-prediction against whatever
+    the room's official actors (and, in mirror-world sessions, their own 'speculation')
+    are implicitly betting will happen. Works on ANY existing log, not just a live
+    in-memory session — tries the database first (archived/weekly sessions), falling
+    back to the in-memory store (same lookup order as /api/replay), so he can
+    comment on old logs after a server restart, not only fresh ones.
+
+    Persisted: once generated, the take is saved onto the session row and served
+    back here (and from /api/replay/{id}) on future calls, instead of being
+    regenerated every time. Pass ?regenerate=true to force a fresh take.
+
+    No heuristic fallback by design — if OpenRouter isn't configured or the call
+    fails, this raises a real error rather than a canned line."""
+    state = load_session_from_db(session_id, db) or SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    if not regenerate:
+        cached = get_james_take(session_id, db)
+        if cached:
+            return {"session_id": session_id, "james_take": cached, "cached": True}
+
+    if not openrouter_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail="The Analyst has nothing to say without a model to say it with. No fallback voice, that's the point.",
+        )
+
+    transcript = [m.model_dump() for m in state.transcript]
+    try:
+        take = generate_james_take(prompt=state.prompt, transcript=transcript, actors=state.actors)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"The Analyst is speechless, which should tell you how bad the connection is. Try again shortly. (technical: {exc})",
+        )
+
+    saved = save_james_take(session_id, take, db)
+    return {"session_id": state.session_id, "james_take": take, "cached": False, "saved": saved}
 
 
 @app.post("/session/{session_id}/wiki-proposals", dependencies=[Depends(require_roundtable_operator)])
@@ -985,6 +1272,43 @@ def get_recent_sessions_list(
         "sessions": sessions,
         "total": len(sessions),
     }
+
+
+@app.get("/export/sessions")
+def export_all_sessions(db: DBSession = Depends(get_db)) -> Response:
+    """Full export of every session — transcript, summary, recap, james_take, mirror_card,
+    incident, everything. For archiving/backup, downloaded as a single JSON file. Public,
+    no operator token — every session here is already individually public via
+    /api/replay/{id}; this is just a bulk-download convenience over the same data."""
+    sessions = get_all_sessions_export(db)
+    payload = {
+        "exported_at": datetime.utcnow().isoformat(),
+        "total": len(sessions),
+        "sessions": sessions,
+    }
+    body = json.dumps(payload, indent=2, ensure_ascii=False)
+    filename = f"all-sessions-export-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.json"
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/export/sessions/{session_id}")
+def export_one_session(session_id: str, db: DBSession = Depends(get_db)) -> Response:
+    """Export a single session — same shape as one entry of /export/sessions, downloaded
+    as its own JSON file. Public, no operator token (same reasoning as the bulk export)."""
+    row = get_session_export(session_id, db)
+    if not row:
+        raise HTTPException(status_code=404, detail="session not found")
+    body = json.dumps(row, indent=2, ensure_ascii=False)
+    filename = f"session-export-{session_id}.json"
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/weekly/current")
@@ -1074,18 +1398,18 @@ async def get_replay_data(session_id: str, db: DBSession = Depends(get_db)) -> d
             "elapsed_seconds": i * 30,  # Approximate timing
         })
 
-    audio = None
-    try:
-        audio = await ensure_replay_audio_assets(session_id, events)
-        by_index = {item["index"]: item for item in audio.get("event_audio", []) if item.get("audio_url")}
-        for event in events:
-            event_audio = by_index.get(event["index"])
-            if event_audio:
-                event["audio_url"] = event_audio["audio_url"]
-                event["audio_cached"] = event_audio["cached"]
-    except Exception as exc:
-        audio = {"error": str(exc), "full_audio_url": None, "event_audio": []}
-    
+    # Cache-only check — NEVER generates audio here. Generating TTS for every uncached turn
+    # used to block this whole response for 20-60+ seconds, causing client-side timeouts/
+    # aborts. Real generation now happens lazily via POST /api/replay/{id}/audio, called
+    # only when a caller (e.g. pressing Play) actually wants it.
+    audio = check_replay_audio_status(session_id, events)
+    by_index = {item["index"]: item for item in audio.get("event_audio", []) if item.get("audio_url")}
+    for event in events:
+        event_audio = by_index.get(event["index"])
+        if event_audio:
+            event["audio_url"] = event_audio["audio_url"]
+            event["audio_cached"] = event_audio["cached"]
+
     return {
         "session": {
             "session_id": state.session_id,
@@ -1100,4 +1424,36 @@ async def get_replay_data(session_id: str, db: DBSession = Depends(get_db)) -> d
         "audio": audio,
         "summary": state.summary.model_dump() if state.summary else None,
         "wiki_proposals": [p.model_dump() for p in state.wiki_proposals] if state.wiki_proposals else [],
+        "james_take": get_james_take(session_id, db),
+        "mirror_card": get_mirror_card(session_id, db),
+        "incident": state.incident.model_dump() if state.incident else None,
+        "recap": get_recap(session_id, db),
     }
+
+
+@app.post("/api/replay/{session_id}/audio")
+async def generate_replay_audio(session_id: str, db: DBSession = Depends(get_db)) -> dict:
+    """Lazily generate (or return already-cached) audio for a session's full replay — the
+    slow path split out of GET /api/replay/{id} so that endpoint stays fast. Call this only
+    when a caller actually wants audio (e.g. the user presses Play), not on every page load.
+    Can genuinely take 20-60+ seconds on a cold cache for a long session — the caller should
+    show a real loading state, not a bare spinner with a short timeout."""
+    state = load_session_from_db(session_id, db) or SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    events = [
+        {
+            "index": i,
+            "actor": msg.actor,
+            "content": msg.content,
+            "kind": msg.kind,
+            "narration_text": _build_replay_narration(msg),
+        }
+        for i, msg in enumerate(state.transcript)
+    ]
+    try:
+        audio = await ensure_replay_audio_assets(session_id, events)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"audio generation failed: {exc}")
+    return {"session_id": session_id, "audio": audio}

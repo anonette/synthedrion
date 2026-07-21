@@ -264,6 +264,35 @@ def _full_audio_file(session_id: str) -> Path:
     return _audio_dir(session_id) / "replay-full.mp3"
 
 
+def check_replay_audio_status(session_id: str, events: list[dict]) -> dict:
+    """Cheap, generation-free cache check — file-existence only, no TTS calls. Used by the
+    main /api/replay response so it stays fast (that endpoint used to block on generating
+    audio for every uncached turn, which could take 20-60+ seconds and cause client-side
+    timeouts/aborts). Actual generation happens lazily via the separate audio endpoint,
+    only when a caller explicitly asks for it (e.g. the user presses Play)."""
+    event_entries: list[dict] = []
+    for event in events:
+        if event.get("kind") not in {"agent", "human"}:
+            event_entries.append({"index": event.get("index"), "audio_url": None, "cached": True})
+            continue
+        index = int(event["index"])
+        audio_file = _event_audio_file(session_id, index)
+        cached = audio_file.exists()
+        event_entries.append({
+            "index": index,
+            "audio_url": f"/session-assets/{quote(session_id)}/audio/{audio_file.name}" if cached else None,
+            "cached": cached,
+        })
+    full_audio_file = _full_audio_file(session_id)
+    full_cached = full_audio_file.exists()
+    return {
+        "full_audio_url": f"/session-assets/{quote(session_id)}/audio/{full_audio_file.name}" if full_cached else None,
+        "full_audio_cached": full_cached,
+        "event_audio": event_entries,
+        "fully_cached": full_cached and all(e["cached"] for e in event_entries),
+    }
+
+
 async def ensure_replay_audio_assets(session_id: str, events: list[dict]) -> dict:
     """Generate and cache per-event and full replay audio."""
     if not events:

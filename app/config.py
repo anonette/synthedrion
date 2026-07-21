@@ -34,6 +34,13 @@ RECAP_MODEL = os.getenv("OPENROUTER_MODEL_RECAP", ACTOR_MODELS["us"])
 # Model used for the lightweight per-turn live "pulse" analysis. Keep it small/fast.
 PULSE_MODEL = os.getenv("OPENROUTER_MODEL_PULSE", ACTOR_MODELS["us"])
 
+# Model used for The Analyst's closing take (the cynical crypto-native counter-prediction).
+JAMES_MODEL = os.getenv("OPENROUTER_MODEL_JAMES", RECAP_MODEL)
+
+# Backup model for Halcyon when the primary CERIT endpoint is unavailable — a real model
+# call, not canned text, so his voice degrades to a different brain, never to fabrication.
+HALCYON_FALLBACK_MODEL = os.getenv("OPENROUTER_MODEL_HALCYON_FALLBACK", RECAP_MODEL)
+
 ACTOR_IMAGE_MODELS = {
     "china": {
         "provider": os.getenv("IMAGE_PROVIDER_CHINA", "openrouter"),
@@ -66,18 +73,21 @@ ALLOWED_PATH_PREFIXES = {
         WIKI_ROOT / "shared-ai-geopolitics",
         WIKI_ROOT / "geopolitics",
         WIKI_ROOT / "ai-governance",
+        WIKI_ROOT / "ai-infrastructure",
     ],
     "us": [
         WIKI_ROOT / "us-ai-policy",
         WIKI_ROOT / "shared-ai-geopolitics",
         WIKI_ROOT / "geopolitics",
         WIKI_ROOT / "ai-governance",
+        WIKI_ROOT / "ai-infrastructure",
     ],
     "eu": [
         WIKI_ROOT / "eu-ai-policy",
         WIKI_ROOT / "shared-ai-geopolitics",
         WIKI_ROOT / "geopolitics",
         WIKI_ROOT / "ai-governance",
+        WIKI_ROOT / "ai-infrastructure",
     ],
 }
 
@@ -88,7 +98,7 @@ ALLOWED_PATH_PREFIXES = {
 # positive-stories ledger the Halcyon crawler fills.
 HALCYON_MODEL = os.getenv("HALCYON_MODEL", "mistral-medium-3.5")
 HALCYON_BASE_URL = os.getenv("HALCYON_BASE_URL", "https://agenthymia-llm.dyn.cloud.e-infra.cz/v1")
-HALCYON_API_KEY = os.getenv("HALCYON_API_KEY", "agh_denisa_a129ce")
+HALCYON_API_KEY = os.getenv("HALCYON_API_KEY", "")
 HALCYON_LEDGER_PATH = os.getenv(
     "HALCYON_LEDGER_PATH",
     str(PROJECT_ROOT / "halcyon" / "positive-stories.md"),

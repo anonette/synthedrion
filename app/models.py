@@ -6,7 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-ActorName = Literal["china", "us", "eu", "halcyon"]
+ActorName = Literal["china", "us", "eu", "halcyon", "james"]
 SessionMode = Literal["debate", "negotiation", "crisis", "policy-planning", "propaganda-lab", "mirror-world"]
 InterventionType = Literal["question", "challenge", "redirect", "source", "shock"]
 SessionStatus = Literal["running", "completed"]
@@ -18,7 +18,22 @@ class SessionStartRequest(BaseModel):
     mode: SessionMode = "debate"
     include_shared: bool = True
     auto_generate_opening_turn: bool = False
-    seed_incident: bool = False  # mirror-world: prepend the latest threat-intel incident to the prompt
+    seed_incident: bool = False  # mirror-world: prepend a threat-intel incident to the prompt (random by default)
+    incident_id: str | None = None  # mirror-world: seed this SPECIFIC incident instead of a random one
+
+
+class IncidentBrief(BaseModel):
+    """Structured seed-incident summary, so the frontend can show a clean 'Incident:' header
+    instead of parsing it out of the prose seed prompt."""
+    id: str
+    target: str
+    state: str
+    group: str
+    confidence: str
+    amount_usd: float | None = None
+    asset: str
+    vector: str
+    timestamp: str
 
 
 class SessionMessageRequest(BaseModel):
@@ -82,3 +97,4 @@ class SessionState(BaseModel):
     summary: SessionSummary | None = None
     wiki_proposals: list[WikiProposal] = Field(default_factory=list)
     context_notes: dict[str, list[str]] = Field(default_factory=dict)
+    incident: IncidentBrief | None = None  # mirror-world: the structured seed incident, if any

@@ -59,14 +59,28 @@ python scripts/run_threat_intel_ingest.py --sample docs/sample_incidents.json --
 # then start a session: mode=mirror-world, seed_incident=true, and call /mirror-card?tone=absurdist&visual=true
 ```
 
-## Frontend rendering — PARKED until real data
+## Incident selection (2026-07-19)
 
-Once the live feed is connected, wire this into Lovable. Paste prompt (kept here deliberately; do not build until there's real data):
+`POST /session/start` seeds mirror-world from one incident in `raw/threat-intel/`, chosen by:
 
-> Add a `mirror-world` mode. For each turn (`metadata.format == "mirror-turn"`) render a three-row card: **Official line** / **Buried reality** / **Mirror (speculation)**, with the `irony` as a caption. Start it with `POST /session/start` `{mode:"mirror-world", seed_incident:true}`. On close, call `POST /session/{id}/mirror-card?tone=absurdist&visual=true` and render the result as a **tabloid front page**: the `headline` as a screaming banner, `perex` as the standfirst, the `visual.image_url` as the hero image, and `dispatch` as the body; show `reality` / `official_story` / `speculation` as three labeled strips. Treat attribution as a sourced claim, never fact.
+- `seed_incident: true` (no `incident_id`) — picks **randomly** across the whole dataset (208 incidents as of this feed), not always the same "latest" file. Each session draws a different case.
+- `incident_id: "<id>"` — seeds that **specific** incident (e.g. `"CHA-Ronin-Network-149"`), for a chosen/repeatable case.
+
+The seed prompt also carries a **dataset-context clause** (`app/threat_intel.py::dataset_stats()` + `prompt_from_incident()`): how this incident's attribution confidence and scale compare to the dataset's own median, how many incidents even have a known attack vector, and the most-named threat group across the set. This gives actors a pattern to contest, not just one isolated anecdote — e.g. an actor can argue a case is "a convenient outlier" versus "representative," using real dataset numbers, not vibes.
+
+## Frontend rendering — live as of 2026-07-19
+
+The live feed is connected (205 real DPRK/Lazarus-attributed incidents, see [Threat-Intel Feed Integration](threat-intel-feed-integration.md)), so `mirror-world` should move from a parked/experimental mode into the **main mode menu** alongside the standard debate and propaganda-lab modes. Paste prompt for Lovable:
+
+> Add `mirror-world` as a normal, always-available mode option in the main mode menu (not hidden/experimental). Start it with `POST /session/start` `{mode:"mirror-world", seed_incident:true}`. For each turn (`metadata.format == "mirror-turn"`) render a three-row card: **Official line** / **Buried reality** / **Mirror (speculation)**, with the `irony` as a caption. On close, call `POST /session/{id}/mirror-card?tone=absurdist&visual=true` and render the result as a **tabloid front page**: the `headline` as a screaming banner, `perex` as the standfirst, the `visual.image_url` as the hero image, and `dispatch` as the body; show `reality` / `official_story` / `speculation` as three labeled strips. Then offer a **"Get James's take"** button that calls `POST /session/{id}/james-take` and renders `james_take` as a single cynical closing quote block, visually distinct from the state actors (he's not one of them — a 4th, uninvited voice). That call has no fallback: a non-200 response means show an error state ("James isn't available right now"), never fabricate a take client-side. Treat attribution as a sourced claim, never fact.
+
+## James's closing take
+
+`POST /session/{session_id}/james-take` (operator-token protected, see [James persona](#see-also) wiring in `app/llm.py::generate_james_take`) reads the finished transcript — including each mirror-turn's `official_line`/`buried_reality`/`speculation` metadata when present — and returns `{session_id, james_take}`: one grounded, contrarian counter-prediction from a Machiavellian crypto-native analyst-activist persona, naming a specific mechanism rather than a generic cynical aside. Works on any session transcript, not just mirror-world, though mirror-world sessions give him the richest material. Deliberately has **no heuristic fallback** — if `OPENROUTER_API_KEY` isn't set or the call fails, it returns a real error (503/502), never a canned line.
 
 ## See also
 
-- [Threat-Intel Feed Integration](threat-intel-feed-integration.md) — connecting the live feed when it arrives.
+- [Threat-Intel Feed Integration](threat-intel-feed-integration.md) — the live feed powering the reality layer.
 - [Roundtable Frontend Contract](roundtable-frontend-contract.md) — the Mirror-World Contract (endpoint shapes).
 - [Propaganda Lab Mode](propaganda-lab-mode.md) — the sibling structured-artifact mode.
+- [Roundtable Roster (Who's Who)](lovable-roster-whos-who.md) — introducing James, Halcyon, and the satire heads alongside china/us/eu.
