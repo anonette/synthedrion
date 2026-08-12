@@ -26,6 +26,11 @@ ACTOR_VOICES = {
         "elevenlabs": {"voice_id": "ErXwobaYiN019PkySvjV", "stability": 0.55, "similarity_boost": 0.75},
         "edge-tts": {"voice": "en-GB-RyanNeural", "rate": "-3%"},
     },
+    "archivist": {  # The Critical Archivist — precise, dry, faintly amused
+        "openai": {"voice": "sage", "instructions": "Speak with dry, precise, librarian-like authority and a faint undertone of amusement, as someone calmly rearranging the shelves under everyone's argument."},
+        "elevenlabs": {"voice_id": "onwK4e9ZLuTAKqWW03F9", "stability": 0.7, "similarity_boost": 0.7},
+        "edge-tts": {"voice": "en-GB-SoniaNeural", "rate": "-4%"},
+    },
     "human": {
         "openai": {"voice": "nova", "instructions": "Speak naturally and clearly."},
         "elevenlabs": {"voice_id": "pNInz6obpgDQGcFmaJgB", "stability": 0.7, "similarity_boost": 0.7},

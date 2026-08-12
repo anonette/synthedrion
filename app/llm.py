@@ -80,7 +80,11 @@ def _parse_json_object(text: str) -> dict[str, str]:
     return json.loads(text[start:end + 1])
 
 
-GUEST_VOICE_LABELS = {"halcyon": "Halcyon, an outsider peace-builder", "james": "The Machiavellian Crypto-Native Analyst"}
+GUEST_VOICE_LABELS = {
+    "halcyon": "Halcyon, an outsider peace-builder",
+    "james": "The Machiavellian Crypto-Native Analyst",
+    "archivist": "The Critical Archivist, a meta-agent who interrogates the archive your statements depend on",
+}
 
 
 def build_actor_messages(actor: str, actor_label: str, prompt: str, notes: list[str], recent_context: list[dict], mode: str) -> list[dict[str, str]]:
@@ -107,6 +111,16 @@ def build_actor_messages(actor: str, actor_label: str, prompt: str, notes: list[
                 f"before returning to your own argument. Do not silently ignore them and continue as if only "
                 f"the other states were in the room."
             )
+            # The Archivist's move is a challenge about sources, not a policy position, so the
+            # generic 'engage the guest' nudge is too weak for smaller models — they answer the
+            # topic and skip the archival point. Force an explicit, named acknowledgment.
+            if last_speaker == "archivist":
+                guest_directive += (
+                    " Specifically: The Critical Archivist just reorganized the shared archive and challenged "
+                    "the room about what the current ordering of sources includes and excludes. Open by "
+                    "addressing the Archivist BY NAME, and either answer the archival question, contest the "
+                    "reorganization itself, or turn it against a rival's sources. Only then continue your argument."
+                )
 
     system = (
         f"You are speaking as the {actor_label} actor in a live geopolitical AI simulation. "
@@ -469,6 +483,7 @@ def generate_satire_line(actor: str, text: str, drift: float = 0.6, max_words: i
 ACTOR_LABELS_FOR_RECAP = {
     "china": "China", "us": "United States", "eu": "European Union",
     "halcyon": "Halcyon", "james": "The Machiavellian Crypto-Native Analyst",
+    "archivist": "The Critical Archivist",
 }
 
 

@@ -14,6 +14,7 @@ Docs at `http://127.0.0.1:8000/docs` once running; a bare-bones test UI at `/tes
 | **Halcyon** | guest, via `/intervene` | An outsider peace-builder belonging to no bloc — opens with real hopeful news, then dares the other three toward something built together |
 | **The Satire Heads** | guest, "Brutal Satire" toggle | Xi / Trump / von der Leyen caricature avatars rewriting each real turn as a savage one-liner, delivered as talking-head video avatars |
 | **James** (the Machiavellian Crypto-Native Analyst) | guest, on demand | A contrarian counter-take naming a specific mechanism (liquidity, exit liquidity, MEV) — no canned fallback; a failed call surfaces as a real error |
+| **The Critical Archivist** | guest, on demand | A meta-agent targeting the archive itself — really reorganizes the wiki corpus by a rotating archival logic and confronts the room with what each order foregrounds and buries |
 
 China/US/EU each run on their own model via OpenRouter (`ACTOR_MODELS` in `app/config.py`: DeepSeek, GPT-4.1-mini, Ministral). Halcyon runs on a separate CERIT-hosted endpoint with its own fallback model. Live roster data (including current archetypes/triggers) is served at `GET /roster`.
 
@@ -52,6 +53,17 @@ No other name, just the title. Trusts no one's stated motive and talks in the ro
 - Works on any existing log, not just live sessions — checks the database first (so he can comment on archived/weekly sessions after a restart), falling back to the in-memory store, same lookup order as `/api/replay`
 - Feed of past takes: `GET /james/takes`
 - **By design, no fallback voice at all**: if `OPENROUTER_API_KEY` isn't set, or the model call fails, the endpoint raises a real error in-character ("The Analyst has nothing to say without a model to say it with") rather than ever returning a canned line
+
+### The Critical Archivist — the archive made perceptible
+
+A meta-agent (`app/archivist.py`) whose object of intervention is the archive the debate runs on: the wiki knowledge bases, transcripts, and retrieval conventions that condition what the other agents can say. Grounded in a dedicated critical archival studies knowledge base (`wiki/critical-archives/` — Derrida, Mbembe, Stoler, Schwartz & Cook, Caswell, Appadurai, Zinn and others, extracted from PDFs into `raw/archivist/`) that the state actors cannot read.
+
+- Trigger: `POST /session/{session_id}/summon-archivist` (operator-token guarded; `?logic=<key>` forces a specific logic, otherwise each summons rotates through the repertoire), or the 🗂 button on `/stage`
+- **Reorganizations are real**: ten archival logics (chronology, geography, citation-gravity, threat-vocabulary, inevitability, byte mass, brevity, question density, absence, deterministic shuffle) are computed over the actual wiki corpus — folders, bytes, link graph, lexicon densities — so the foreground/suppressed page lists in `message.metadata` are measurements, not flavor text. Opaque logics are flagged `experimental` and announced as computational artifacts, never revealed truth
+- Public census: `GET /archivist/catalog?logic=<key>` exposes the same reorganization for a frontend shelf view
+- Roundtable-as-archive: `POST /archivist/retrospective` reads all past sessions from the database (words per actor, dominant modes, recurring prompt vocabulary, sessions argued but never summarized) and delivers the Archivist's reading, ending by naming a forgotten session to reintroduce
+- Offline-honest fallback: without `OPENROUTER_API_KEY` its turn is composed entirely from the computed census — true by construction, never canned prose
+- Operator docs: `wiki/ops/critical-archivist-mode.md`
 
 ## Repository layout
 

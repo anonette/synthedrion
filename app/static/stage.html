@@ -10,6 +10,7 @@
     --us: #3b82f6; --us-deep: #1e3a8a;
     --eu: #f59e0b; --eu-deep: #78350f;
     --halcyon: #5eb2e9; --halcyon-deep: #0c4a6e;
+    --archivist: #d4b26a; --archivist-deep: #6b4e1c;
     --human: #94a3b8; --system: #f59e0b;
     --bg: #0a0d14; --panel: #121724; --ink: #e8edf6; --muted: #8a94a6;
   }
@@ -114,6 +115,7 @@
   .caption.system { border-left-color: var(--system); background: #241a0b; }
   .tag.china{background:var(--china-deep)} .tag.us{background:var(--us-deep)} .tag.eu{background:var(--eu-deep)}
   .tag.halcyon{background:var(--halcyon-deep)} .caption.halcyon{border-left-color:var(--halcyon)}
+  .tag.archivist{background:var(--archivist-deep)} .caption.archivist{border-left-color:var(--archivist)}
   .tag.human{background:#334155} .tag.system{background:#92400e}
   .caption.satire .body { font-style: italic; font-weight: 600; font-size: clamp(22px, 3vw, 34px); }
   .satire-badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; background: #7c2d12; color: #fde68a; letter-spacing: .6px; }
@@ -305,6 +307,7 @@
     <button class="btn sm ghost" id="interveneBtn">🗣 Human point</button>
     <button class="btn sm warn" id="shockBtn">⚡ Shock</button>
     <button class="btn sm" id="halcyonBtn" style="background:linear-gradient(180deg,#0ea5e9,#0369a1)">🕊 Summon Halcyon</button>
+    <button class="btn sm" id="archivistBtn" style="background:linear-gradient(180deg,#b8923f,#6b4e1c)" title="The Critical Archivist reorganizes the corpus by the next archival logic and confronts the room with what the new order buries">🗂 Summon Archivist</button>
     <button class="btn sm ghost" id="satireBtn" title="Talking heads deliver brutally satirical one-liners (Xi / Trump / von der Leyen)">🎭 Brutal satire: off</button>
     <button class="btn sm ghost" id="saveTakeBtn" title="Save this satirical performance (text + audio) for replay in Lovable">💾 Save take</button>
     <div class="spacer"></div>
@@ -375,8 +378,8 @@
 </div>
 
 <script>
-const LABELS = { china: "China", us: "United States", eu: "European Union", halcyon: "Halcyon", human: "Human", system: "System" };
-const INITIALS = { china: "CN", us: "US", eu: "EU", halcyon: "🕊" };
+const LABELS = { china: "China", us: "United States", eu: "European Union", halcyon: "Halcyon", archivist: "The Critical Archivist", human: "Human", system: "System" };
+const INITIALS = { china: "CN", us: "US", eu: "EU", halcyon: "🕊", archivist: "🗂" };
 const HEAD_ACTORS = ["china", "us", "eu", "halcyon"];   // have talking-head avatars under /heads/
 let satireHeadsOn = false;                              // the "special module": off until connected
 let replayMode = false;                                 // true while satirizing a stored debate (no live generation)
@@ -774,6 +777,7 @@ const BROWSER_VOICE = {
   us:      { langs: ["en-US", "en"], pitch: 0.6, rate: 1.18, gender: "male" },    // Trump — aggressive, mean man
   eu:      { langs: ["de-DE", "de"], pitch: 1.25, rate: 0.98, gender: "female" }, // Ursula — woman, German
   halcyon: { langs: ["en-GB", "en-US", "en"], pitch: 1.2, rate: 1.0 },
+  archivist: { langs: ["en-GB", "en"], pitch: 0.9, rate: 0.96, gender: "female" }, // dry, precise, faintly amused
 };
 // Common OS voice-name keywords, used to bias gender when a language has both.
 const VOICE_NAME_HINTS = {
@@ -951,6 +955,7 @@ function wireOps() {
   document.getElementById("interveneSend").onclick = sendIntervention;
   document.getElementById("shockSend").onclick = sendShock;
   document.getElementById("halcyonBtn").onclick = summonHalcyon;
+  document.getElementById("archivistBtn").onclick = summonArchivist;
   document.getElementById("satireBtn").onclick = toggleSatire;
   document.getElementById("saveTakeBtn").onclick = saveSatireTake;
 
@@ -995,6 +1000,22 @@ async function summonHalcyon() {
     if (msg) { await renderTurn(msg); await pacedWait(readMs(msg.content)); }
   } catch (e) { setOpsStatus("summon failed: " + e.message); }
   btn.disabled = false; btn.textContent = "🕊 Summon Halcyon";
+  paused = wasPaused; reflectPaused();
+}
+
+async function summonArchivist() {
+  const btn = document.getElementById("archivistBtn");
+  const wasPaused = paused; paused = true; reflectPaused();
+  btn.disabled = true; btn.textContent = "🗂 Reorganizing the shelves…";
+  try {
+    const data = await api(`/session/${session.session_id}/summon-archivist`);
+    const msg = data.messages && data.messages[0];
+    if (msg) {
+      if (msg.metadata && msg.metadata.logic_label) setOpsStatus("archival logic: " + msg.metadata.logic_label);
+      await renderTurn(msg); await pacedWait(readMs(msg.content));
+    }
+  } catch (e) { setOpsStatus("summon failed: " + e.message); }
+  btn.disabled = false; btn.textContent = "🗂 Summon Archivist";
   paused = wasPaused; reflectPaused();
 }
 

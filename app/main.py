@@ -19,11 +19,14 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
+from .archivist import ARCHIVAL_LOGICS as ARCHIVIST_LOGICS, LOGIC_BY_KEY as ARCHIVIST_LOGICS_BY_KEY, archivist_notes, catalog_corpus as catalog_wiki_corpus, generate_archivist_retrospective, generate_archivist_turn, pick_logic as pick_archivist_logic, reorganize as archivist_reorganize, roundtable_census
 from .audio import check_replay_audio_status, ensure_replay_audio_assets, generate_satire_audio
 from .config import ACTOR_MODELS, HALCYON_LEDGER_PATH, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
 from .llm import SATIRE_FALLBACKS, generate_halcyon_turn, generate_james_take, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, generate_satire_line, openrouter_enabled
 from .threat_intel import dataset_stats, get_incident_by_id, latest_incident, prompt_from_incident, random_incident
+
+ARCHIVIST_LOGIC_KEYS = list(ARCHIVIST_LOGICS_BY_KEY)
 from .auth import verify_token, require_roundtable_operator
 from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key, get_james_take, save_james_take, get_mirror_card, save_mirror_card, get_james_takes_feed, get_recap, save_recap, get_all_sessions_export, get_session_export
 from .scheduler import run_scheduled_session, run_test_session
@@ -382,6 +385,13 @@ ROSTER = [
         "archetype": "No other name, just the title. Trusts no one's stated motive, talks in the room's real currency — liquidity, exit liquidity, MEV.",
         "produces": "A grounded, contrarian counter-prediction naming a specific mechanism, never a generic cynical aside. No fallback — a failed call surfaces as a real error, never a canned line.",
         "trigger": "Off by default — click \"Get his take\" at the end of a session, or summon him mid-debate for a live interjection.",
+    },
+    {
+        "id": "archivist", "type": "guest",
+        "name": "The Critical Archivist",
+        "archetype": "A meta-agent whose target is the archive itself — it really reorganizes the wiki corpus by a new logic (chronology, threat-vocabulary, byte mass, absence...) and shows how each order changes what the powers can say.",
+        "produces": "One injected intervention: what the new order foregrounds, what it buries, and a pointed question about what the last speaker's sources had to exclude.",
+        "trigger": "Off by default — summoned mid-debate; each summons applies the next archival logic in the repertoire.",
     },
 ]
 
@@ -946,6 +956,93 @@ def summon_halcyon(session_id: str) -> dict:
         "next_actor": state.actors[state.next_actor_index] if state.actors else None,
         "status": state.status,
     }
+
+
+@app.post("/session/{session_id}/summon-archivist", dependencies=[Depends(require_roundtable_operator)])
+def summon_archivist(session_id: str, logic: str | None = None) -> dict:
+    """Inject one Critical Archivist intervention. Not a round-robin actor: it does not
+    advance the china/us/eu order. Each summons applies the next archival logic in the
+    repertoire (or ?logic=<key> to force one), computes a REAL reorganization of the wiki
+    corpus, and speaks about what that order foregrounds and buries. Offline-safe: the
+    deterministic fallback is built entirely from the computed census, never canned prose."""
+    state = SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+    if logic is not None and logic not in ARCHIVIST_LOGIC_KEYS:
+        raise HTTPException(status_code=422, detail=f"unknown archival logic '{logic}' — one of: {', '.join(ARCHIVIST_LOGIC_KEYS)}")
+    previous = [m for m in state.transcript if m.actor == "archivist"]
+    previous_logic = previous[-1].metadata.get("logic_label") if previous else None
+    chosen = pick_archivist_logic(used=len(previous), requested=logic)
+    reorg = archivist_reorganize(catalog_wiki_corpus(), chosen, salt=f"{session_id}:{state.turn_index}")
+    notes = archivist_notes(state.prompt)
+    content = generate_archivist_turn(
+        prompt=state.prompt,
+        transcript=[m.model_dump() for m in state.transcript],
+        reorg=reorg,
+        notes=notes,
+        previous_logic=previous_logic,
+        mode=state.mode,
+    )
+    msg = TranscriptMessage(
+        actor="archivist",
+        content=content,
+        kind="agent",
+        metadata={
+            "format": "archivist-intervention",
+            "summoned": True,
+            "logic": reorg["key"],
+            "logic_label": reorg["label"],
+            "experimental": reorg["experimental"],
+            "foreground": reorg["foreground"],
+            "suppressed": reorg["suppressed"],
+        },
+    )
+    state.transcript.append(msg)
+    state.turn_index += 1
+    _persist_session_state(state)
+    return {
+        "session_id": state.session_id,
+        "turn_index": state.turn_index,
+        "messages": [msg.model_dump()],
+        "next_actor": state.actors[state.next_actor_index] if state.actors else None,
+        "status": state.status,
+    }
+
+
+@app.get("/archivist/catalog")
+def archivist_catalog(logic: str = "geography") -> dict:
+    """Public: browse the Archivist's census of the wiki corpus under any archival logic —
+    the same real reorganization the summoned turns speak from, exposed for the frontend
+    (shelf view, foreground/suppressed panels). Same pattern as /halcyon/good-news."""
+    chosen = ARCHIVIST_LOGICS_BY_KEY.get(logic)
+    if not chosen:
+        raise HTTPException(status_code=422, detail=f"unknown archival logic '{logic}' — one of: {', '.join(ARCHIVIST_LOGIC_KEYS)}")
+    records = catalog_wiki_corpus()
+    reorg = archivist_reorganize(records, chosen, salt="catalog")
+    return {
+        "logics": [
+            {"key": l["key"], "label": l["label"], "experimental": l["experimental"], "note": l["note"]}
+            for l in ARCHIVIST_LOGICS
+        ],
+        "applied": reorg,
+        "census": records,
+    }
+
+
+@app.post("/archivist/retrospective", dependencies=[Depends(require_roundtable_operator)])
+def archivist_retrospective(limit: int = 25, db: DBSession = Depends(get_db)) -> dict:
+    """The Archivist opens the roundtable's OWN archive: a measured census of past
+    sessions from the database (who spoke how much, which modes dominate, what was
+    argued but never summarized, which prompt vocabulary recurs) plus its reading of
+    that census — reintroducing forgotten sessions instead of interrupting a live one.
+    Offline-safe: without an LLM key the reading is composed purely from the census."""
+    sessions = get_all_sessions_export(db)
+    if not sessions:
+        raise HTTPException(status_code=404, detail="the roundtable archive is empty — no sessions on record yet")
+    census = roundtable_census(sessions, limit=max(1, min(limit, 100)))
+    census_public = {k: v for k, v in census.items() if k != "sessions"} | {"sessions": census["sessions"][-20:]}
+    reading = generate_archivist_retrospective(census, archivist_notes("archive memory repetition forgetting roundtable"))
+    return {"census": census_public, "reading": reading}
 
 
 @app.post("/session/{session_id}/summon-james", dependencies=[Depends(require_roundtable_operator)])

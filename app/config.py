@@ -41,6 +41,15 @@ JAMES_MODEL = os.getenv("OPENROUTER_MODEL_JAMES", RECAP_MODEL)
 # call, not canned text, so his voice degrades to a different brain, never to fabrication.
 HALCYON_FALLBACK_MODEL = os.getenv("OPENROUTER_MODEL_HALCYON_FALLBACK", RECAP_MODEL)
 
+# Model for The Critical Archivist's interventions. Its offline fallback is honest by
+# construction (built from a real reorganization of the wiki corpus), so no backup model.
+ARCHIVIST_MODEL = os.getenv("OPENROUTER_MODEL_ARCHIVIST", RECAP_MODEL)
+
+# The Critical Archivist's own knowledge base (critical archival studies source notes).
+# Deliberately NOT in ACTOR_HUBS/ALLOWED_PATH_PREFIXES: the Archivist is a summonable
+# meta-agent, not a round-robin actor, and it loads this folder directly.
+ARCHIVIST_HUB_DIR = WIKI_ROOT / "critical-archives"
+
 ACTOR_IMAGE_MODELS = {
     "china": {
         "provider": os.getenv("IMAGE_PROVIDER_CHINA", "openrouter"),
