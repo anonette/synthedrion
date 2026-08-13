@@ -400,9 +400,12 @@ ROSTER = [
 # Edit here (or override via env) when the next session is scheduled.
 UPCOMING_EVENT = {
     "format": os.getenv("EVENT_FORMAT", "Roundtable"),
-    "location": os.getenv("EVENT_LOCATION", "C-7, room 3.09"),
-    "sessions": os.getenv("EVENT_SESSIONS", "Thursday 10 September, 9:00-10:30"),
+    "location": os.getenv("EVENT_LOCATION", "C-7, room 3.09, Kraków, Poland"),
+    "sessions": os.getenv("EVENT_SESSIONS", "Thursday 10 September 2026, 9:00-10:30"),
     "timezone": os.getenv("EVENT_TIMEZONE", "Europe/Warsaw"),
+    # Papers and participants are confirmed — there is no open call. Frontends should
+    # show this status instead of any leftover Call for Proposals copy.
+    "status": os.getenv("EVENT_STATUS", "Program confirmed — accepted papers and participants are set; no open call"),
 }
 
 
