@@ -519,6 +519,28 @@ PARTICIPANTS = [
             "Archivist exists to expose."
         ),
     },
+    {
+        "id": "alexander-cohen",
+        "name": "Alexander Cohen",
+        "affiliation": "PhD Candidate in Electronic Arts, Rensselaer Polytechnic Institute",
+        "paper": "",
+        "abstract": (
+            "A performance artist and musician whose research moves across performance studies, science and "
+            "technology studies, and critical AI ethics — examining how notions of \"intelligence\" and ethical "
+            "authority get staged and legitimized in public-facing AI discourse."
+        ),
+        "research_interests": (
+            "Performance studies and STS; critical AI ethics; how \"intelligence\" and ethical authority are staged "
+            "and legitimized in public AI discourse; satire and interactive installation as interventions in those "
+            "performances."
+        ),
+        "inspired": ["satire-heads"],
+        "notes": (
+            "The Satire Heads are this practice running live: the roundtable's earnest geopolitical performance is "
+            "rewritten in real time into savage caricature by talking-head avatars — satire as an instrument that "
+            "exposes the staging of authority even while the staging is happening."
+        ),
+    },
 ]
 
 
