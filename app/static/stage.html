@@ -619,21 +619,20 @@ async function startDebate() {
   const btn = document.getElementById("startBtn");
   btn.disabled = true; btn.textContent = "Starting…";
   errEl.style.color = "#94a3b8";
-  errEl.textContent = "⏳ Generating the opening turn — the models take ~10–20s, hang tight…";
+  errEl.textContent = "⏳ Setting up the room…";
   try {
+    // Start WITHOUT the opening turn: session creation is ~1s, and the run loop
+    // generates turn 1 with its own retry/backoff — so a slow model or a backend
+    // blip can no longer kill the start with a 90s timeout.
     const data = await api("/session/start", {
       prompt: document.getElementById("prompt").value,
       actors,
       mode: document.getElementById("mode").value,
       include_shared: true,
-      auto_generate_opening_turn: true,
-    });
+      auto_generate_opening_turn: false,
+    }, 30000);
     session = { session_id: data.session_id, mode: data.mode, actors: data.actors, prompt: document.getElementById("prompt").value };
     enterStage();
-    if (data.messages && data.messages.length) {
-      const shown0 = await renderTurn(data.messages[0]);
-      await pacedWait(readMs(shown0), true);
-    }
     runLoop();
   } catch (e) {
     errEl.style.color = "#f87171";
