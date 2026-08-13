@@ -396,6 +396,23 @@ ROSTER = [
 ]
 
 
+# Upcoming live event details, shown on /stage and available to the Lovable frontend.
+# Edit here (or override via env) when the next session is scheduled.
+UPCOMING_EVENT = {
+    "format": os.getenv("EVENT_FORMAT", "Roundtable"),
+    "location": os.getenv("EVENT_LOCATION", "C-7, room 3.09"),
+    "sessions": os.getenv("EVENT_SESSIONS", "Thursday 10 September, 9:00-10:30"),
+    "timezone": os.getenv("EVENT_TIMEZONE", "Europe/Warsaw"),
+}
+
+
+@app.get("/event")
+def get_event() -> dict:
+    """Public, unauthenticated — details of the upcoming live roundtable, so any
+    frontend can show when and where it takes place without hardcoding copy."""
+    return {"event": UPCOMING_EVENT}
+
+
 @app.get("/roster")
 def get_roster() -> dict:
     """Public, unauthenticated — structured 'who's who' data for the Lovable roster screen.
