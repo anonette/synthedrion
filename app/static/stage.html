@@ -263,7 +263,7 @@
         <input id="pace" type="text" value="6" />
       </div>
       <div>
-        <label class="f">Satire voice (talking heads speak the quip)</label>
+        <label class="f">Voice — agents speak every turn aloud (satire quips too)</label>
         <select id="voiceMode">
           <option value="edge">Free — Microsoft neural voice ($0)</option>
           <option value="openai">OpenAI — richer voices (paid)</option>
@@ -942,6 +942,11 @@ async function renderTurn(msg) {
   if (satire && voiceMode !== "off") {
     if (voiceClip) playAudioClip(voiceClip.b64, voiceClip.mime);
     else speakBrowser(actor, shown);
+  } else if (isAgent && voiceMode !== "off") {
+    // voice-first stage: every agent turn is spoken in its own voice; audio starts
+    // while the caption types, and the pacing loop waits for the voice to finish
+    if (voiceMode === "browser") speakBrowser(actor, shown);
+    else speakActorLine(actor, shown);
   }
 
   startTimer();
