@@ -541,6 +541,57 @@ PARTICIPANTS = [
             "exposes the staging of authority even while the staging is happening."
         ),
     },
+    {
+        "id": "avi-spitz",
+        "name": "Avi Spitz",
+        "affiliation": "Bar-Ilan University",
+        "paper": "AI Has a Territory: Data Centers, Sovereignty, and the Geopolitics of AI Infrastructure",
+        "abstract": (
+            "Argues that AI sovereignty cannot be understood only as control over models, data, or regulation: "
+            "frontier AI depends on physical, energy-hungry, often privately owned infrastructure, producing a "
+            "condition of \"infrastructural suzerainty\" in which states claim authority over AI while practical "
+            "control rests with corporations, foreign chip suppliers, cloud providers, and energy systems."
+        ),
+        "research_interests": (
+            "Data centers as territory; layered compute sovereignty (territory, ownership, accelerators); the Gulf "
+            "compute build-out; contested local geographies of water, land, and grid; the operational rather than "
+            "declarative test of AI sovereignty."
+        ),
+        "inspired": [],
+        "notes": (
+            "His paper lives in the shared knowledge layer all three state actors read — the US actor has already "
+            "invoked \"infrastructural suzerainty\" in a live session. He also helped prepare the articles and news "
+            "from which the weekly roundtables' knowledge base is built."
+        ),
+    },
+    {
+        "id": "merav-turgeman",
+        "name": "Merav Turgeman",
+        "affiliation": "Bar-Ilan University",
+        "paper": "",
+        "abstract": "",
+        "research_interests": "",
+        "inspired": [],
+        "notes": (
+            "Prepared the articles and news on which the weekly roundtables' knowledge base is built — the ingest "
+            "layer from which the wiki pages grounding every actor are synthesized. Every session argues from "
+            "material this curation selected: appraisal, in the Archivist's sense, is the most political act."
+        ),
+    },
+    {
+        "id": "hila-ofek",
+        "name": "Hila Ofek",
+        "affiliation": "Bar-Ilan University",
+        "paper": "",
+        "abstract": "",
+        "research_interests": "",
+        "inspired": [],
+        "notes": (
+            "Prepared the articles and news on which the weekly roundtables' knowledge base is built — the ingest "
+            "layer from which the wiki pages grounding every actor are synthesized. What the actors can say next "
+            "week depends on what this curation collected this week."
+        ),
+    },
 ]
 
 
