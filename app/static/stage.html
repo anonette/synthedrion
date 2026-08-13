@@ -122,6 +122,18 @@
   .ops-sep { width: 1px; height: 22px; background: #243049; margin: 0 4px; align-self: center; }
   .logic-chip { font-size: 11px; font-weight: 400; letter-spacing: .3px; padding: 2px 9px; border-radius: 999px; background: #241d0e; border: 1px solid var(--archivist-deep); color: var(--archivist); margin-left: 8px; }
   .pop .pop-hint { font-size: 12px; color: #8a94a6; line-height: 1.45; margin: 4px 0 8px; }
+  #dialoguePanel { position: fixed; left: 50%; bottom: 74px; transform: translateX(-50%); z-index: 40;
+    display: flex; align-items: center; gap: 14px; background: rgba(10,13,20,.92); border: 1px solid #7f1d1d;
+    border-radius: 16px; padding: 12px 18px; box-shadow: 0 8px 40px rgba(0,0,0,.55); backdrop-filter: blur(6px); }
+  #dialoguePanel.hidden { display: none; }
+  #pttBig { min-width: 300px; padding: 16px 26px; font-size: 18px; font-weight: 800; letter-spacing: .4px;
+    border-radius: 12px; border: 0; cursor: pointer; color: #fff; user-select: none; touch-action: none;
+    background: linear-gradient(180deg,#dc2626,#7f1d1d); }
+  #pttBig.listening { background: linear-gradient(180deg,#16a34a,#14532d); animation: pttpulse 1.1s infinite; }
+  #pttBig:disabled { opacity: .7; cursor: wait; }
+  @keyframes pttpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.5);} 50% { box-shadow: 0 0 0 14px rgba(34,197,94,0);} }
+  #dialoguePanel .who { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #8a94a6; }
+  #dialoguePanel select { background: #121724; color: #e8edf6; border: 1px solid #2c3a57; border-radius: 8px; padding: 7px 10px; font-size: 13px; }
   .james-quote { background: #08130f; border: 1px solid var(--james-deep); border-left: 4px solid var(--james); border-radius: 10px; padding: 14px 16px; margin: 8px 0 22px; font-style: italic; font-size: 15px; line-height: 1.55; color: #d1fae5; }
   .tag.human{background:#334155} .tag.system{background:#92400e}
   .caption.satire .body { font-style: italic; font-weight: 600; font-size: clamp(22px, 3vw, 34px); }
@@ -215,6 +227,7 @@
       <span style="color:#d4b26a">&#128450; <b>The Archivist</b></span> (really reorganizes the debate&rsquo;s knowledge archive and asks what the current order buries &mdash; pick a logic or let it rotate) &middot;
       <span style="color:#34d399">&#127183; <b>James</b></span> the crypto-native analyst (cynical counter-read, no safety net).
       <b style="color:#cbd5e1">&#128483; Human point</b> and <b style="color:#cbd5e1">&#9889; Shock</b> inject your own words and events.
+      <b style="color:#f87171">&#127908; Dialogue</b> lets real people in the room SPEAK to the agents: a big hold-to-talk mic appears, your words are transcribed into the debate, and the agent you choose answers aloud in its own voice.
     </div>
 
     <label class="f">Debate prompt</label>
@@ -336,14 +349,30 @@
     <button class="btn sm" id="archivistBtn" style="background:linear-gradient(180deg,#b8923f,#6b4e1c)" title="The Critical Archivist really reorganizes the debate&#39;s knowledge archive by a chosen logic and confronts the room with what that order buries. Click to pick a logic or let it rotate.">🗂 Archivist ▾</button>
     <button class="btn sm" id="jamesBtn" style="background:linear-gradient(180deg,#059669,#065f46)" title="The Machiavellian Crypto-Native Analyst interjects with a contrarian counter-read in the room&#39;s real currency (liquidity, exit liquidity, MEV). No fallback: a failed call shows an error, never a canned line.">🃏 James</button>
     <span class="ops-sep"></span>
-    <button class="btn sm ghost" id="dialogueBtn" title="Dialogue mode: pause the auto-advancing debate so real people in the room can speak to the agents. Hold the mic button, talk, release — your words are transcribed into the debate and one agent answers aloud.">🎙 Dialogue: off</button>
-    <button class="btn sm hidden" id="pttBtn" style="background:linear-gradient(180deg,#dc2626,#7f1d1d)" title="Hold while speaking; release to send">🎙 Hold to speak</button>
+    <button class="btn sm ghost" id="dialogueBtn" title="Dialogue mode: pause the auto-advancing debate so real people in the room can speak to the agents. A large hold-to-speak mic appears center stage; your words are transcribed into the debate and the chosen agent answers aloud.">🎙 Dialogue: off</button>
     <span class="ops-sep"></span>
     <button class="btn sm ghost" id="satireBtn" title="Talking heads deliver brutally satirical one-liners (Xi / Trump / von der Leyen)">🎭 Brutal satire: off</button>
     <button class="btn sm ghost" id="saveTakeBtn" title="Save this satirical performance (text + audio) for replay in Lovable">💾 Save take</button>
     <div class="spacer"></div>
     <span class="hint" id="opsStatus"></span>
     <button class="btn sm stop" id="endBtn" title="End the debate and show the scoreboard + recap">⏹ End &amp; score</button>
+  </div>
+</div>
+
+<!-- Dialogue mode: center-stage hold-to-speak panel -->
+<div id="dialoguePanel" class="hidden">
+  <button id="pttBig" title="Hold while speaking; release to send">🎙 HOLD TO SPEAK</button>
+  <div class="who">
+    <label for="respondWho">Who answers</label>
+    <select id="respondWho">
+      <option value="">Next in rotation</option>
+      <option value="china">China</option>
+      <option value="us">United States</option>
+      <option value="eu">European Union</option>
+      <option value="halcyon">🕊 Halcyon</option>
+      <option value="james">🃏 James</option>
+      <option value="archivist">🗂 The Archivist</option>
+    </select>
   </div>
 </div>
 
@@ -1019,7 +1048,7 @@ function wireOps() {
   document.getElementById("archivistLogic").onchange = showArchivistLogicNote;
   document.getElementById("jamesBtn").onclick = summonJames;
   document.getElementById("dialogueBtn").onclick = toggleDialogue;
-  const ptt = document.getElementById("pttBtn");
+  const ptt = document.getElementById("pttBig");
   ptt.addEventListener("pointerdown", startTalking);
   ptt.addEventListener("pointerup", stopTalking);
   ptt.addEventListener("pointerleave", stopTalking);
@@ -1072,8 +1101,8 @@ function toggleDialogue() {
   const b = document.getElementById("dialogueBtn");
   b.textContent = "🎙 Dialogue: " + (dialogueOn ? "ON" : "off");
   b.classList.toggle("ghost", !dialogueOn);
-  document.getElementById("pttBtn").classList.toggle("hidden", !dialogueOn);
-  if (dialogueOn) { paused = true; reflectPaused(); setOpsStatus("dialogue mode — hold the mic button to speak"); }
+  document.getElementById("dialoguePanel").classList.toggle("hidden", !dialogueOn);
+  if (dialogueOn) { paused = true; reflectPaused(); setOpsStatus("dialogue mode — the room has the floor"); }
   else setOpsStatus("");
 }
 
@@ -1088,15 +1117,17 @@ async function startTalking() {
   recorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
   recorder.start();
   recording = true;
-  const b = document.getElementById("pttBtn");
-  b.textContent = "🔴 Listening… release to send";
+  const b = document.getElementById("pttBig");
+  b.classList.add("listening");
+  b.textContent = "🔴 LISTENING — RELEASE TO SEND";
   setOpsStatus("listening…");
 }
 
 async function stopTalking() {
   if (!recording || !recorder) return;
   recording = false;
-  const b = document.getElementById("pttBtn");
+  const b = document.getElementById("pttBig");
+  b.classList.remove("listening");
   b.disabled = true; b.textContent = "🎙 Transcribing…";
   const done = new Promise(res => { recorder.onstop = res; });
   recorder.stop();
@@ -1112,9 +1143,18 @@ async function stopTalking() {
     if (!res.ok) { let d = res.status + ""; try { d = (await res.json()).detail || d; } catch (e) {} throw new Error(d); }
     const heard = await res.json();
     await renderTurn({ actor: "human", kind: "human", content: heard.transcript });
-    b.textContent = "🎙 Agent is answering…";
-    const data = await api("/session/message", { session_id: session.session_id });
-    const msg = data.messages && data.messages[0];
+    const who = document.getElementById("respondWho").value;
+    b.textContent = "🎙 " + (LABELS[who] || "An agent") + " is answering…";
+    let msg = null;
+    if (who === "halcyon" || who === "james" || who === "archivist") {
+      const data = await api(`/session/${session.session_id}/summon-${who}`, undefined, 120000);
+      msg = data.messages && data.messages[0];
+    } else {
+      const body = { session_id: session.session_id };
+      if (who) body.actor = who;                 // route the floor question to a chosen state actor
+      const data = await api("/session/message", body, 120000);
+      msg = data.messages && data.messages[0];
+    }
     if (msg && (msg.content || "").trim()) {
       const spoken = renderTurn(msg);            // type the caption while audio is fetched
       await speakActorLine(msg.actor, msg.content);
@@ -1123,7 +1163,7 @@ async function stopTalking() {
   } catch (e) {
     setOpsStatus("dialogue failed: " + e.message);
   }
-  b.disabled = false; b.textContent = "🎙 Hold to speak";
+  b.disabled = false; b.textContent = "🎙 HOLD TO SPEAK";
 }
 
 // Speak an earnest agent turn with its stage voice. Uses the satire audio element so

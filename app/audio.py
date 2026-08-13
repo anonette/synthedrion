@@ -26,6 +26,16 @@ ACTOR_VOICES = {
         "elevenlabs": {"voice_id": "ErXwobaYiN019PkySvjV", "stability": 0.55, "similarity_boost": 0.75},
         "edge-tts": {"voice": "en-GB-RyanNeural", "rate": "-3%"},
     },
+    "halcyon": {  # earnest peace-builder — warm, hopeful (serious register, not the satire caricature)
+        "openai": {"voice": "shimmer", "instructions": "Speak as a warm, earnest, quietly hopeful peacemaker addressing rivals with disarming sincerity."},
+        "elevenlabs": {"voice_id": "EXAVITQu4vr4xnSDxMaL", "stability": 0.6, "similarity_boost": 0.7},
+        "edge-tts": {"voice": "en-US-AriaNeural", "rate": "+2%"},
+    },
+    "james": {  # the crypto-native analyst — fast, dry, faintly contemptuous
+        "openai": {"voice": "onyx", "instructions": "Speak as a fast-talking, dry, faintly contemptuous market analyst who has seen every rug pull coming."},
+        "elevenlabs": {"voice_id": "TxGEqnHWrfWFTfGW9XjX", "stability": 0.55, "similarity_boost": 0.75},
+        "edge-tts": {"voice": "en-AU-WilliamNeural", "rate": "+8%"},
+    },
     "archivist": {  # The Critical Archivist — precise, dry, faintly amused
         "openai": {"voice": "sage", "instructions": "Speak with dry, precise, librarian-like authority and a faint undertone of amusement, as someone calmly rearranging the shelves under everyone's argument."},
         "elevenlabs": {"voice_id": "onwK4e9ZLuTAKqWW03F9", "stability": 0.7, "similarity_boost": 0.7},

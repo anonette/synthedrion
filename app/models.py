@@ -38,6 +38,9 @@ class IncidentBrief(BaseModel):
 
 class SessionMessageRequest(BaseModel):
     session_id: str
+    # Dialogue mode: route the reply to a specific state actor instead of the
+    # round-robin order. Out-of-turn replies do not advance the rotation.
+    actor: Literal["china", "us", "eu"] | None = None
 
 
 class InterventionRequest(BaseModel):

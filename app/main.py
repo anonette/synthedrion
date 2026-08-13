@@ -222,8 +222,13 @@ def _build_replay_narration(msg: TranscriptMessage) -> str:
     return msg.content
 
 
-def _generate_session_turn(state: SessionState) -> tuple[TranscriptMessage, str | None]:
-    actor, new_index = next_actor(state.actors, state.next_actor_index)
+def _generate_session_turn(state: SessionState, force_actor: str | None = None) -> tuple[TranscriptMessage, str | None]:
+    if force_actor:
+        # Dialogue mode routes a floor question to a chosen actor without consuming
+        # the round-robin order — an out-of-turn reply, like a summons.
+        actor, new_index = force_actor, state.next_actor_index
+    else:
+        actor, new_index = next_actor(state.actors, state.next_actor_index)
     recent_context = [m.model_dump() for m in state.transcript[-3:]]
     metadata: dict = {}
     actor_label = actor.capitalize() if actor != "us" else "United States"
@@ -863,7 +868,9 @@ def advance_session(request: SessionMessageRequest) -> dict:
     state = _live_session(request.session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
-    msg, next_actor_name = _generate_session_turn(state)
+    if request.actor and request.actor not in state.actors:
+        raise HTTPException(status_code=422, detail=f"actor '{request.actor}' is not in this session ({', '.join(state.actors)})")
+    msg, next_actor_name = _generate_session_turn(state, force_actor=request.actor)
     _persist_session_state(state)
 
     return {
