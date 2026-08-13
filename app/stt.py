@@ -21,7 +21,19 @@ STT_MODEL = os.getenv("STT_MODEL", "whisper-1")
 
 
 def _api_key() -> str:
-    return os.getenv("STT_API_KEY", "") or os.getenv("OPENAI_API_KEY", "")
+    """Key resolution: explicit STT_API_KEY wins; SUPERWHISPER_API_KEY is used only
+    when STT_BASE_URL points at a non-OpenAI host (Superwhisper has no public cloud
+    transcription API as of Aug 2026 — its key would fail against api.openai.com,
+    so it must never shadow the working OPENAI_API_KEY there); otherwise the
+    existing OPENAI_API_KEY carries hosted Whisper."""
+    explicit = os.getenv("STT_API_KEY", "")
+    if explicit:
+        return explicit
+    if "api.openai.com" not in STT_BASE_URL:
+        superwhisper = os.getenv("SUPERWHISPER_API_KEY", "")
+        if superwhisper:
+            return superwhisper
+    return os.getenv("OPENAI_API_KEY", "")
 
 
 def stt_enabled() -> bool:
