@@ -408,9 +408,8 @@ UPCOMING_EVENT = {
     "location": os.getenv("EVENT_LOCATION", "C-7, room 3.09, Kraków, Poland"),
     "sessions": os.getenv("EVENT_SESSIONS", "Thursday 10 September 2026, 9:00-10:30"),
     "timezone": os.getenv("EVENT_TIMEZONE", "Europe/Warsaw"),
-    # Papers and participants are confirmed — there is no open call. Frontends should
-    # show this status instead of any leftover Call for Proposals copy.
-    "status": os.getenv("EVENT_STATUS", "Program confirmed — accepted papers and participants are set; no open call"),
+    # Optional status line; empty means frontends show nothing beneath the banner.
+    "status": os.getenv("EVENT_STATUS", ""),
 }
 
 
@@ -428,7 +427,7 @@ PARTICIPANTS = [
         "id": "denisa-reshef-kera",
         "name": "Denisa Reshef Kera",
         "role": "Convener",
-        "affiliation": "Associate Professor, Design & Policy Lab, Science, Technology & Society Studies, Bar-Ilan University; AI National Expert for the Czech Republic at GPAI",
+        "affiliation": "Associate Professor, Design & Policy Lab, Science, Technology & Society Studies, Bar-Ilan University",
         "paper": "",
         "abstract": (
             "Conceived, programmed, and organized the AI Cold War roundtable: the simulation runtime, the actor "
@@ -438,10 +437,11 @@ PARTICIPANTS = [
             "sandboxes as instruments of participatory AI governance."
         ),
         "research_interests": (
-            "Experimental, participatory, and philosophically grounded approaches to AI ethics, accountability, and "
-            "human-machine agency; AI agent simulations and sandboxes for participatory governance; institutional "
-            "grammar and deictic structures shaping responsibility in LLMs; governance over rituals, machines, and "
-            "prototypes, from sundial to blockchain (Routledge 2023)."
+            "Probing AI agents as a method of STS and policy research — agent simulations as instruments for "
+            "stakeholder deliberation, scenario exploration, and participatory governance; experimental, "
+            "participatory, and philosophically grounded approaches to AI ethics, accountability, and human-machine "
+            "agency; institutional grammar and deictic structures shaping responsibility in LLMs; governance over "
+            "rituals, machines, and prototypes, from sundial to blockchain (Routledge 2023)."
         ),
         "inspired": ["china", "us", "eu", "halcyon", "satire-heads", "james", "archivist"],
         "notes": (
