@@ -350,21 +350,21 @@ def health() -> dict:
 
 ROSTER = [
     {
-        "id": "china", "type": "core", "collaboration": ["avi-spitz", "denisa-reshef-kera", "hila-ofek", "merav-turgeman"],
+        "id": "china", "type": "core", "collaboration": ["denisa-reshef-kera", "avi-spitz", "merav-turgeman", "hila-ofek"],
         "name": "China",
         "archetype": "A PRC strategic actor: sovereignty, non-interference, developmental legitimacy, long-horizon industrial policy.",
         "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
         "trigger": "Always present — start any session to see them live.",
     },
     {
-        "id": "us", "type": "core", "collaboration": ["avi-spitz", "denisa-reshef-kera", "hila-ofek", "merav-turgeman"],
+        "id": "us", "type": "core", "collaboration": ["denisa-reshef-kera", "avi-spitz", "merav-turgeman", "hila-ofek"],
         "name": "United States",
         "archetype": "Frontier competition, alliance power, market scale; prosecutorial and impatient with euphemism.",
         "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
         "trigger": "Always present — start any session to see them live.",
     },
     {
-        "id": "eu", "type": "core", "collaboration": ["avi-spitz", "denisa-reshef-kera", "hila-ofek", "merav-turgeman"],
+        "id": "eu", "type": "core", "collaboration": ["denisa-reshef-kera", "avi-spitz", "merav-turgeman", "hila-ofek"],
         "name": "European Union",
         "archetype": "Brussels institutionalism, strategic autonomy; precise and sardonic, disciplines louder powers through regulation.",
         "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
@@ -589,7 +589,7 @@ PARTICIPANTS = [
             "compute build-out; contested local geographies of water, land, and grid; the operational rather than "
             "declarative test of AI sovereignty."
         ),
-        "inspired": [],
+        "inspired": ["china", "us", "eu"],
         "notes": (
             "His paper lives in the shared knowledge layer all three state actors read — the US actor has already "
             "invoked \"infrastructural suzerainty\" in a live session. He also helped prepare the articles and news "
@@ -622,7 +622,7 @@ PARTICIPANTS = [
         "paper": "Europe's AI future as a meta-sovereign imaginary (European Journal of Futures Research, co-author)",
         "abstract": "",
         "research_interests": "",
-        "inspired": [],
+        "inspired": ["china", "us", "eu"],
         "notes": (
             "Co-author of the project's agenda paper, and prepared the articles and news on which the weekly "
             "roundtables' knowledge base is built — the ingest layer from which the wiki pages grounding every actor "
@@ -637,7 +637,7 @@ PARTICIPANTS = [
         "paper": "Europe's AI future as a meta-sovereign imaginary (European Journal of Futures Research, co-author)",
         "abstract": "",
         "research_interests": "",
-        "inspired": [],
+        "inspired": ["china", "us", "eu"],
         "notes": (
             "Co-author of the project's agenda paper, and prepared the articles and news on which the weekly "
             "roundtables' knowledge base is built — the ingest layer from which the wiki pages grounding every actor "
