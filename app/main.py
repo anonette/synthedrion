@@ -82,6 +82,11 @@ HEADS_DIR = STATIC_ROOT / "heads"
 if HEADS_DIR.is_dir():
     app.mount("/heads", StaticFiles(directory=HEADS_DIR), name="heads")
 
+# Comic-format experiments (Ruth's Pax Silica strips) and other future-work assets.
+COMICS_DIR = STATIC_ROOT / "comics"
+if COMICS_DIR.is_dir():
+    app.mount("/comics", StaticFiles(directory=COMICS_DIR), name="comics")
+
 log = logging.getLogger("aicoldwar")
 if not log.handlers:
     _handler = logging.StreamHandler()
@@ -565,6 +570,25 @@ PARTICIPANTS = [
         ),
     },
     {
+        "id": "ruth-aharon",
+        "name": "Ruth Aharon",
+        "affiliation": "Information Science / Artificial Intelligence BA program, Bar-Ilan University",
+        "paper": "",
+        "abstract": "",
+        "research_interests": (
+            "Comics as a format for geopolitical AI discourse — visualization that leaves interpretive space for "
+            "the viewer; staging meta-sovereignty in a single panel (existing infrastructure shown while future "
+            "capability is projected); how generative models resist ambiguity and push toward immediate legibility."
+        ),
+        "inspired": [],
+        "notes": (
+            "Author of the Pax Silica comic experiment in the Future Work section: a roundtable exchange translated "
+            "into two storyboards — one labeled, one where the actors are revealed only through their assumptions "
+            "about power — with the telling finding that the model kept reintroducing labels the prompt asked it "
+            "to withhold."
+        ),
+    },
+    {
         "id": "merav-turgeman",
         "name": "Merav Turgeman",
         "affiliation": "Bar-Ilan University",
@@ -593,6 +617,45 @@ PARTICIPANTS = [
         ),
     },
 ]
+
+
+# Future-work experiments around the roundtable — currently Ruth's comic-format
+# translation of an AIwars exchange. Served data-driven so the frontend never
+# hardcodes the copy; image paths are relative to the API base (mounted /comics).
+FUTURE_WORK = [
+    {
+        "id": "pax-silica-comics",
+        "title": "What kind of peace does Pax Silica actually make possible, and for whom?",
+        "author": "Ruth Aharon (Bar-Ilan University)",
+        "format": "Comic-format translation of a roundtable exchange",
+        "description": (
+            "An experiment in translating an AIwars exchange into comics — not only as visualization, but because "
+            "a panel leaves interpretive space for the viewer: a single image can stage the tension of "
+            "meta-sovereignty, showing existing infrastructure while projecting a future capability. In the first "
+            "storyboard the three actors become three theories of power: China as infrastructure and production, "
+            "the US as control of networks and access, the EU as standards and regulation — different actors "
+            "claiming different forms of control inside the same entangled system."
+        ),
+        "finding": (
+            "When asked to draw the actors without labels, the model preserved ambiguity for the first panels, then "
+            "couldn't resist reintroducing identifying symbols and explanatory captions — preferring immediate "
+            "legibility over letting the viewer construct the meaning. The comic format may matter precisely "
+            "because it lets the audience participate in interpretation instead of receiving an explanation."
+        ),
+        "images": ["/comics/pax-silica-01.png", "/comics/pax-silica-02.png"],
+        "image_captions": [
+            "Storyboard 1 — the labeled version: The Chinese Bet, The American Gatekeeper, The European Standoff, The Shared Reality.",
+            "Storyboard 2 — actors unlabeled, revealed only through their assumptions about power: the Logistics Architect, the Network Sovereign, the Standard Bearer, the Unmasking.",
+        ],
+    },
+]
+
+
+@app.get("/future-work")
+def get_future_work() -> dict:
+    """Public: experiments extending the roundtable (comics, posters, formats in
+    progress) for a Future Work section on the frontend."""
+    return {"future_work": FUTURE_WORK}
 
 
 @app.get("/roster")
