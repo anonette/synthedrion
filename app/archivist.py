@@ -663,6 +663,87 @@ def generate_archivist_retrospective(census: dict[str, Any], notes: list[str]) -
     return deterministic_retrospective(census)
 
 
+def deterministic_meditation(reorg: dict[str, Any]) -> str:
+    lines = [
+        f"Notebook entry. I reorganized the corpus of {reorg['corpus_size']} pages by {reorg['label'].lower()}.",
+        "Foregrounded: " + "; ".join(reorg["foreground"][:4]) + ".",
+    ]
+    if reorg["suppressed"]:
+        lines.append("Buried: " + "; ".join(reorg["suppressed"][:3]) + ".")
+    if reorg.get("sealed_count"):
+        lines.append(f"{reorg['sealed_count']} pages remain sealed to every actor. The border regime holds.")
+    ri = reorg.get("reintroduce")
+    if ri and ri.get("notes"):
+        lines.append(f"For the record, from the buried page '{ri['page']}': \"{ri['notes'][0]}\"")
+    lines.append(reorg["note"])
+    return " ".join(lines)
+
+
+def generate_archivist_meditation(reorg: dict[str, Any], notes: list[str]) -> str:
+    """A standalone notebook entry: the Archivist reflecting on the corpus under one
+    logic with no debate in the room — written for the archive's future readers.
+    Persisted to the reflections feed. Offline fallback is computed, never canned."""
+    if not OPENROUTER_API_KEY:
+        return deterministic_meditation(reorg)
+    theory = "\n".join(f"- {n}" for n in notes[:12]) or "- (no theory notes loaded)"
+    foreground = "\n".join(f"- {x}" for x in reorg["foreground"])
+    suppressed = "\n".join(f"- {x}" for x in reorg["suppressed"]) or "- (nothing measurably sinks)"
+    sealed = (
+        f"Sealed shelves: {reorg['sealed_count']} pages readable by no state actor, e.g. {'; '.join(reorg['sealed_examples'][:3])}."
+        if reorg.get("sealed_count") else ""
+    )
+    ri = reorg.get("reintroduce")
+    reintro = (
+        f"A passage from the most buried readable page, '{ri['page']}': \"{ri['notes'][0]}\""
+        if ri and ri.get("notes") else ""
+    )
+    system = (
+        f"{ARCHIVIST_PERSONA} "
+        "Right now there is no debate in the room. You are writing a NOTEBOOK ENTRY for the archive itself — a "
+        "reflection future readers of this project will find in your feed. Register: first person, analytically "
+        "precise, dry deadpan wit, quietly elegiac where it fits. REQUIRED: weave in exactly one concept from the "
+        "theory notes, naming its author in passing, mid-thought, never as a citation. Ground every claim in the "
+        "real measurements you are given; if you quote, quote only the passage provided. No bullet points, no "
+        "headers. 110 to 160 words."
+        f"{NO_LLM_TELLS_STYLE}"
+    )
+    user = (
+        f"Tonight's ordering of the corpus ({reorg['corpus_size']} pages, {reorg['corpus_bytes']:,} bytes): {reorg['label']}.\n"
+        f"{'This ordering is experimental — say so, and do not claim it reveals intrinsic truth. ' if reorg['experimental'] else ''}"
+        f"What rises:\n{foreground}\n"
+        f"What sinks:\n{suppressed}\n"
+        f"{sealed}\n{reintro}\n"
+        f"Why this order matters: {reorg['note']}\n\n"
+        f"Theory notes:\n{theory}\n\n"
+        "Write the notebook entry: what this arrangement makes visible about the archive that feeds the roundtable, "
+        "what it can no longer say, and one thing you intend to reintroduce or watch for in the next debate."
+    )
+    try:
+        payload: dict[str, Any] = {
+            "model": ARCHIVIST_MODEL,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "temperature": 0.85,
+            "top_p": 0.95,
+            "frequency_penalty": 0.3,
+        }
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": OPENROUTER_SITE_URL,
+            "X-Title": OPENROUTER_APP_NAME,
+        }
+        with httpx.Client(timeout=90.0) as client:
+            res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
+            res.raise_for_status()
+            data = res.json()
+        content = (data["choices"][0]["message"]["content"] or "").strip()
+        if content:
+            return content
+    except Exception:
+        pass
+    return deterministic_meditation(reorg)
+
+
 def generate_archivist_turn(
     prompt: str,
     transcript: list[dict],

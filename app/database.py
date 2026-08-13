@@ -58,6 +58,50 @@ class SessionDB(Base):
     recap = Column(JSON, nullable=True)
 
 
+class ArchivistReflectionDB(Base):
+    """The Critical Archivist's notebook: persisted reflections that outlive any one
+    session — retrospectives over the session archive and standalone corpus
+    meditations. In-session interventions are NOT stored here (they live in session
+    transcripts); the reflections feed harvests those at read time."""
+
+    __tablename__ = "archivist_reflections"
+
+    id = Column(sa.Integer, primary_key=True, autoincrement=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    kind = Column(String(30), nullable=False)  # "retrospective" | "meditation"
+    logic = Column(String(50), nullable=True)  # archival logic key for meditations
+    content = Column(Text, nullable=False)
+    meta = Column(JSON, nullable=True)  # census stats / reorg summary backing the text
+
+
+def save_archivist_reflection(db: DBSession, kind: str, content: str, logic: Optional[str] = None, meta: Optional[dict] = None) -> int:
+    row = ArchivistReflectionDB(kind=kind, logic=logic, content=content, meta=meta)
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row.id
+
+
+def get_archivist_reflections(db: DBSession, limit: int = 50) -> list[dict]:
+    rows = (
+        db.query(ArchivistReflectionDB)
+        .order_by(ArchivistReflectionDB.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "created_at": r.created_at.isoformat(),
+            "kind": r.kind,
+            "logic": r.logic,
+            "content": r.content,
+            "meta": r.meta,
+        }
+        for r in rows
+    ]
+
+
 class WeeklyPromptDB(Base):
     """Database model for weekly prompt storage."""
     

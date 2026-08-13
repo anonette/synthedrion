@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
-from .archivist import ARCHIVAL_LOGICS as ARCHIVIST_LOGICS, LOGIC_BY_KEY as ARCHIVIST_LOGICS_BY_KEY, archivist_notes, catalog_corpus as catalog_wiki_corpus, generate_archivist_retrospective, generate_archivist_turn, pick_closing_move as pick_archivist_closing_move, pick_logic as pick_archivist_logic, reorganize as archivist_reorganize, roundtable_census, session_reorg as archivist_session_reorg
+from .archivist import ARCHIVAL_LOGICS as ARCHIVIST_LOGICS, LOGIC_BY_KEY as ARCHIVIST_LOGICS_BY_KEY, archivist_notes, catalog_corpus as catalog_wiki_corpus, generate_archivist_meditation, generate_archivist_retrospective, generate_archivist_turn, pick_closing_move as pick_archivist_closing_move, pick_logic as pick_archivist_logic, reorganize as archivist_reorganize, roundtable_census, session_reorg as archivist_session_reorg
 from .audio import check_replay_audio_status, ensure_replay_audio_assets, generate_satire_audio
 from .config import ACTOR_MODELS, HALCYON_LEDGER_PATH, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
@@ -28,7 +28,7 @@ from .threat_intel import dataset_stats, get_incident_by_id, latest_incident, pr
 
 ARCHIVIST_LOGIC_KEYS = list(ARCHIVIST_LOGICS_BY_KEY)
 from .auth import verify_token, require_roundtable_operator
-from .database import init_db, get_db, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key, get_james_take, save_james_take, get_mirror_card, save_mirror_card, get_james_takes_feed, get_recap, save_recap, get_all_sessions_export, get_session_export
+from .database import init_db, get_db, save_archivist_reflection, get_archivist_reflections, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key, get_james_take, save_james_take, get_mirror_card, save_mirror_card, get_james_takes_feed, get_recap, save_recap, get_all_sessions_export, get_session_export
 from .scheduler import run_scheduled_session, run_test_session
 from .models import (
     IncidentBrief,
@@ -1069,7 +1069,66 @@ def archivist_retrospective(limit: int = 25, db: DBSession = Depends(get_db)) ->
     census = roundtable_census(sessions, limit=max(1, min(limit, 100)))
     census_public = {k: v for k, v in census.items() if k != "sessions"} | {"sessions": census["sessions"][-20:]}
     reading = generate_archivist_retrospective(census, archivist_notes("archive memory repetition forgetting roundtable"))
-    return {"census": census_public, "reading": reading}
+    reflection_id = save_archivist_reflection(
+        db, kind="retrospective", content=reading,
+        meta={"sessions_total": census["sessions_total"], "sessions_considered": census["sessions_considered"],
+              "words_by_actor": census["words_by_actor"], "modes": census["modes"],
+              "recurring_prompt_terms": census["recurring_prompt_terms"], "unprocessed": census["unprocessed"]},
+    )
+    return {"census": census_public, "reading": reading, "reflection_id": reflection_id}
+
+
+@app.post("/archivist/reflect", dependencies=[Depends(require_roundtable_operator)])
+def archivist_reflect(logic: str = "absence", db: DBSession = Depends(get_db)) -> dict:
+    """Generate a standalone notebook entry: the Archivist reflects on the corpus
+    under one archival logic with no debate running, and the entry is persisted to
+    its public reflections feed. Session-scoped logics are rejected here."""
+    chosen = ARCHIVIST_LOGICS_BY_KEY.get(logic)
+    if not chosen or chosen.get("scope") == "session":
+        raise HTTPException(status_code=422, detail=f"logic must be one of: {', '.join(k for k, l in ARCHIVIST_LOGICS_BY_KEY.items() if l.get('scope') != 'session')}")
+    reorg = archivist_reorganize(catalog_wiki_corpus(), chosen, salt=f"reflect:{datetime.utcnow().date().isoformat()}")
+    content = generate_archivist_meditation(reorg, archivist_notes("archive classification selection power"))
+    reflection_id = save_archivist_reflection(
+        db, kind="meditation", content=content, logic=reorg["key"],
+        meta={"label": reorg["label"], "experimental": reorg["experimental"],
+              "foreground": reorg["foreground"], "suppressed": reorg["suppressed"],
+              "sealed_count": reorg["sealed_count"], "reintroduce": reorg["reintroduce"]},
+    )
+    return {"reflection_id": reflection_id, "logic": reorg["key"], "reflection": content}
+
+
+@app.get("/archivist/reflections")
+def archivist_reflections(limit: int = 30, db: DBSession = Depends(get_db)) -> dict:
+    """Public: The Archivist's Notebook — persisted retrospectives and corpus
+    meditations, merged with every in-session archival intervention harvested from
+    stored transcripts (same lookup the replay uses), newest first. This is the
+    permanent, browsable trace of the Archivist's work across the whole project."""
+    limit = max(1, min(limit, 100))
+    entries = get_archivist_reflections(db, limit=limit)
+    for s in get_all_sessions_export(db):
+        for m in (s.get("transcript") or []):
+            if m.get("actor") != "archivist":
+                continue
+            md = m.get("metadata") or {}
+            entries.append({
+                "id": None,
+                "created_at": m.get("timestamp"),
+                "kind": "intervention",
+                "logic": md.get("logic"),
+                "content": m.get("content"),
+                "meta": {
+                    "session_id": s.get("session_id"),
+                    "prompt": " ".join((s.get("prompt") or "").split())[:120],
+                    "logic_label": md.get("logic_label"),
+                    "experimental": md.get("experimental"),
+                    "foreground": md.get("foreground"),
+                    "suppressed": md.get("suppressed"),
+                    "sealed_count": md.get("sealed_count"),
+                    "reintroduced": md.get("reintroduced"),
+                },
+            })
+    entries.sort(key=lambda e: e.get("created_at") or "", reverse=True)
+    return {"reflections": entries[:limit], "count": len(entries[:limit])}
 
 
 @app.post("/session/{session_id}/summon-james", dependencies=[Depends(require_roundtable_operator)])
