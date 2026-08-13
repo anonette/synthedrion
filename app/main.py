@@ -350,49 +350,49 @@ def health() -> dict:
 
 ROSTER = [
     {
-        "id": "china", "type": "core",
+        "id": "china", "type": "core", "collaboration": ["avi-spitz", "denisa-reshef-kera", "hila-ofek", "merav-turgeman"],
         "name": "China",
         "archetype": "A PRC strategic actor: sovereignty, non-interference, developmental legitimacy, long-horizon industrial policy.",
         "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
         "trigger": "Always present — start any session to see them live.",
     },
     {
-        "id": "us", "type": "core",
+        "id": "us", "type": "core", "collaboration": ["avi-spitz", "denisa-reshef-kera", "hila-ofek", "merav-turgeman"],
         "name": "United States",
         "archetype": "Frontier competition, alliance power, market scale; prosecutorial and impatient with euphemism.",
         "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
         "trigger": "Always present — start any session to see them live.",
     },
     {
-        "id": "eu", "type": "core",
+        "id": "eu", "type": "core", "collaboration": ["avi-spitz", "denisa-reshef-kera", "hila-ofek", "merav-turgeman"],
         "name": "European Union",
         "archetype": "Brussels institutionalism, strategic autonomy; precise and sardonic, disciplines louder powers through regulation.",
         "produces": "Argues every mode (debate/propaganda-lab/mirror-world).",
         "trigger": "Always present — start any session to see them live.",
     },
     {
-        "id": "halcyon", "type": "guest",
+        "id": "halcyon", "type": "guest", "collaboration": ["lena-slachmuijlder", "denisa-reshef-kera"],
         "name": "Halcyon",
         "archetype": "An outsider peace-builder who belongs to no bloc — opens with real hopeful news, then dares the three toward something built together.",
         "produces": "One injected turn mid-debate.",
         "trigger": "Off by default — triggered via /intervene.",
     },
     {
-        "id": "satire-heads", "type": "guest",
+        "id": "satire-heads", "type": "guest", "collaboration": ["alexander-cohen", "denisa-reshef-kera"],
         "name": "The Satire Heads",
         "archetype": "Xi / Trump / von der Leyen caricature avatars delivering savage one-liner rewrites of the real debate.",
         "produces": "A rewritten quip per turn via talking-head video avatars.",
         "trigger": "Off by default — toggled by the \"Brutal Satire\" switch.",
     },
     {
-        "id": "james", "type": "guest",
+        "id": "james", "type": "guest", "collaboration": ["james-usher", "denisa-reshef-kera"],
         "name": "The Machiavellian Crypto-Native Analyst",
         "archetype": "No other name, just the title. Trusts no one's stated motive, talks in the room's real currency — liquidity, exit liquidity, MEV.",
         "produces": "A grounded, contrarian counter-prediction naming a specific mechanism, never a generic cynical aside. No fallback — a failed call surfaces as a real error, never a canned line.",
         "trigger": "Off by default — click \"Get his take\" at the end of a session, or summon him mid-debate for a live interjection.",
     },
     {
-        "id": "archivist", "type": "guest",
+        "id": "archivist", "type": "guest", "collaboration": ["eliyahu-keller", "denisa-reshef-kera"],
         "name": "The Critical Archivist",
         "archetype": "A meta-agent whose target is the archive itself — it really reorganizes the wiki corpus by a new logic (chronology, threat-vocabulary, byte mass, absence...) and shows how each order changes what the powers can say.",
         "produces": "One injected intervention: what the new order foregrounds, what it buries, and a pointed question about what the last speaker's sources had to exclude.",
@@ -428,13 +428,13 @@ PARTICIPANTS = [
         "name": "Denisa Reshef Kera",
         "role": "Convener",
         "affiliation": "Associate Professor, Design & Policy Lab, Science, Technology & Society Studies, Bar-Ilan University",
-        "paper": "",
+        "paper": "Europe's AI future as a meta-sovereign imaginary: negotiating global norms, sovereign machines, and infrastructural futures through AI simulations (European Journal of Futures Research, with Odelya Natan, Merav Turgeman & Hila Ofek)",
         "abstract": (
-            "Conceived, programmed, and organized the AI Cold War roundtable: the simulation runtime, the actor "
-            "knowledge bases, the guest agents, and the archival apparatus that watches all of it. The project "
-            "practices what she calls culture-centered rather than human-centered AI — taking plurality, social "
-            "agency, and living traditions as the material of governance, and treating simulations and exploratory "
-            "sandboxes as instruments of participatory AI governance."
+            "Examines how AI sovereignty operates through meta-sovereign imaginaries: performances of authority "
+            "enacted through infrastructures, regulations, and narratives rather than territorial control. LLM-based "
+            "representatives of the US, EU, and China deliberate policy scenarios in simulation, revealing how "
+            "signals and political fictions sustain fragile authority amid structural interdependence — AI "
+            "repurposed from an object of governance into a medium of inquiry into sovereignty itself."
         ),
         "research_interests": (
             "Probing AI agents as a method of STS and policy research — agent simulations as instruments for "
@@ -443,11 +443,12 @@ PARTICIPANTS = [
             "agency; institutional grammar and deictic structures shaping responsibility in LLMs; governance over "
             "rituals, machines, and prototypes, from sundial to blockchain (Routledge 2023)."
         ),
-        "inspired": ["china", "us", "eu", "halcyon", "satire-heads", "james", "archivist"],
+        "inspired": ["china", "us", "eu"],
         "notes": (
-            "The whole cast is hers: the three state actors and their sandboxed knowledge bases, the summonable "
-            "guests, and The Critical Archivist — whose critical archival studies corpus (Derrida, Mbembe, Stoler, "
-            "Schwartz & Cook, Caswell) she curated so the simulation would carry its own critique inside it."
+            "Conceived, programmed, and organized the roundtable as this research agenda in practice: the simulation "
+            "runtime, the three state actors and their sandboxed knowledge bases are the paper's method made "
+            "operational. The guest agents grew from the other participants' research — see their profiles — so the "
+            "roundtable is itself a collective experiment in probing AI agents as an STS and policy method."
         ),
     },
     {
@@ -618,28 +619,29 @@ PARTICIPANTS = [
         "id": "merav-turgeman",
         "name": "Merav Turgeman",
         "affiliation": "Bar-Ilan University",
-        "paper": "",
+        "paper": "Europe's AI future as a meta-sovereign imaginary (European Journal of Futures Research, co-author)",
         "abstract": "",
         "research_interests": "",
         "inspired": [],
         "notes": (
-            "Prepared the articles and news on which the weekly roundtables' knowledge base is built — the ingest "
-            "layer from which the wiki pages grounding every actor are synthesized. Every session argues from "
-            "material this curation selected: appraisal, in the Archivist's sense, is the most political act."
+            "Co-author of the project's agenda paper, and prepared the articles and news on which the weekly "
+            "roundtables' knowledge base is built — the ingest layer from which the wiki pages grounding every actor "
+            "are synthesized. Every session argues from material this curation selected: appraisal, in the "
+            "Archivist's sense, is the most political act."
         ),
     },
     {
         "id": "hila-ofek",
         "name": "Hila Ofek",
         "affiliation": "Bar-Ilan University",
-        "paper": "",
+        "paper": "Europe's AI future as a meta-sovereign imaginary (European Journal of Futures Research, co-author)",
         "abstract": "",
         "research_interests": "",
         "inspired": [],
         "notes": (
-            "Prepared the articles and news on which the weekly roundtables' knowledge base is built — the ingest "
-            "layer from which the wiki pages grounding every actor are synthesized. What the actors can say next "
-            "week depends on what this curation collected this week."
+            "Co-author of the project's agenda paper, and prepared the articles and news on which the weekly "
+            "roundtables' knowledge base is built — the ingest layer from which the wiki pages grounding every actor "
+            "are synthesized. What the actors can say next week depends on what this curation collected this week."
         ),
     },
 ]
