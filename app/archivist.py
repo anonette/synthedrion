@@ -31,7 +31,7 @@ from .config import (
     WIKI_ROOT,
 )
 from .llm import NO_LLM_TELLS_STYLE
-from .wiki_loader import assemble_context_notes
+from .wiki_loader import assemble_context_notes, collect_actor_pages, extract_notes
 
 
 LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+\.md)\)")
@@ -89,6 +89,7 @@ def catalog_corpus() -> list[dict[str, Any]]:
             "threat_hits": sum(lower.count(t) for t in THREAT_LEXICON),
             "inevitability_hits": sum(lower.count(t) for t in INEVITABILITY_LEXICON),
             "latest_year": max(years) if years else None,
+            "readable_by": [],  # filled below from each actor's real hub crawl
         }
         records.append(rec)
         by_name[path.name] = rec
@@ -102,6 +103,20 @@ def catalog_corpus() -> list[dict[str, Any]]:
             target = by_name.get(Path(raw_link).name)
             if target is not None and target["name"] != path.name:
                 target["links_in"] += 1
+    # Which actors can actually reach each page, via the same BFS the session
+    # loader runs. This is the archive's real border regime: a page with an empty
+    # readable_by exists on disk but is sealed to every state actor by design.
+    wiki_root = WIKI_ROOT.resolve()
+    by_rel = {r["path"]: r for r in records}
+    for actor in ("china", "us", "eu"):
+        try:
+            for page in collect_actor_pages(actor):
+                rel = str(page.resolve().relative_to(wiki_root)).replace("\\", "/")
+                rec = by_rel.get(rel)
+                if rec is not None and actor not in rec["readable_by"]:
+                    rec["readable_by"].append(actor)
+        except Exception:
+            continue
     return records
 
 
@@ -171,10 +186,19 @@ ARCHIVAL_LOGICS: list[dict[str, Any]] = [
     },
     {
         "key": "absence",
-        "label": "Absence, the least-linked and least-reachable pages first",
+        "label": "Absence, the least-linked pages the actors could read but never do",
         "experimental": False,
+        "readable_only": True,  # rank only pages some actor can actually reach — sealed ops pages are reported separately, not passed off as 'buried by the debate'
         "sort": lambda r: -(r["links_in"] * 10 + r["links_out"]),
-        "note": "An index of silence. These pages exist on disk but barely exist in the archive's own map of itself.",
+        "note": "An index of silence among the reachable: these pages are available to the actors yet almost nothing points at them. What is sealed by design is a different silence, reported separately.",
+    },
+    {
+        "key": "session-memory",
+        "label": "Session memory, the debate's own archive",
+        "experimental": False,
+        "scope": "session",
+        "sort": None,  # computed from the live transcript, not the wiki corpus
+        "note": "The transcript is an archive under construction. Repetition is its citation system; what an opening turn asserted and no one ever revisited is its first deletion.",
     },
     {
         "key": "shuffle",
@@ -196,30 +220,80 @@ def pick_logic(used: int, requested: str | None = None) -> dict[str, Any]:
     return ARCHIVAL_LOGICS[used % len(ARCHIVAL_LOGICS)]
 
 
+def _readability_tag(rec: dict[str, Any]) -> str:
+    rb = rec.get("readable_by") or []
+    if not rb:
+        return " [sealed — no actor can read this]"
+    if len(rb) < 3:
+        return " [readable only by " + ", ".join(rb) + "]"
+    return ""
+
+
+def _entry(rec: dict[str, Any]) -> str:
+    return f"{rec['title']} ({rec['folder']}){_readability_tag(rec)}"
+
+
+def _reintroduction(candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Pick the most-buried page some actor can actually read and pull one or two
+    REAL passages from it, so the Archivist can reintroduce evidence, not just
+    name titles. `candidates` is ordered most-buried-first."""
+    for rec in candidates:
+        if not rec.get("readable_by"):
+            continue
+        try:
+            notes = extract_notes(WIKI_ROOT / rec["path"])
+        except OSError:
+            continue
+        if notes:
+            return {
+                "page": rec["title"],
+                "folder": rec["folder"],
+                "readable_by": rec["readable_by"],
+                "notes": [n.split("] ", 1)[-1] for n in notes[:2]],
+            }
+    return None
+
+
 def reorganize(records: list[dict[str, Any]], logic: dict[str, Any], salt: str = "") -> dict[str, Any]:
     """Apply one archival logic to the census and report what it measurably
-    foregrounds and suppresses. Returns real page titles and folders only."""
+    foregrounds and suppresses. Returns real page titles and folders only.
+    Distinguishes two silences: pages the debate ignores (reachable but unread)
+    and pages sealed by design (no actor's border regime allows them)."""
+    sealed = [r for r in records if not r.get("readable_by")]
+    readable = [r for r in records if r.get("readable_by")]
+    reintroduce: dict[str, Any] | None = None
+
     if logic.get("group"):
         field = logic["group"]
         groups: dict[str, list[dict[str, Any]]] = {}
         for rec in records:
             groups.setdefault(rec[field], []).append(rec)
         ordered_groups = sorted(groups.items(), key=lambda kv: -len(kv[1]))
-        foreground = [
-            f"{name}: {len(items)} pages, {sum(r['bytes'] for r in items):,} bytes"
-            for name, items in ordered_groups[:6]
-        ]
+        def _group_line(name: str, items: list[dict[str, Any]]) -> str:
+            readers = sorted({a for r in items for a in (r.get("readable_by") or [])})
+            access = ", ".join(readers) if readers else "no actor"
+            return f"{name}: {len(items)} pages, {sum(r['bytes'] for r in items):,} bytes — readable by {access}"
+        foreground = [_group_line(n, items) for n, items in ordered_groups[:6]]
         suppressed = [
             f"{name}: only {len(items)} page(s)" for name, items in ordered_groups[-3:]
         ] if len(ordered_groups) > 6 else []
+        reintroduce = _reintroduction(sorted(readable, key=lambda r: r["links_in"]))
     else:
+        pool = readable if logic.get("readable_only") else records
         if logic["key"] == "shuffle":
             key = lambda r: hashlib.md5((salt + r["path"]).encode("utf-8")).hexdigest()
-            ranked = sorted(records, key=key)
+            ranked = sorted(pool, key=key)
         else:
-            ranked = sorted(records, key=logic["sort"], reverse=True)
-        foreground = [f"{r['title']} ({r['folder']})" for r in ranked[:6]]
-        suppressed = [f"{r['title']} ({r['folder']})" for r in ranked[-4:]]
+            ranked = sorted(pool, key=logic["sort"], reverse=True)
+        foreground = [_entry(r) for r in ranked[:6]]
+        suppressed = [_entry(r) for r in ranked[-4:]]
+        # the buried end of the order is the reintroduction candidate — except for
+        # 'absence', where the FRONT of the order is precisely the buried material.
+        # Walk the whole order (not a fixed slice): the deepest layers are often all
+        # sealed pages, and _reintroduction needs to reach the first READABLE one.
+        buried_first = ranked if logic["key"] == "absence" else list(reversed(ranked))
+        reintroduce = _reintroduction(buried_first)
+
     return {
         "key": logic["key"],
         "label": logic["label"],
@@ -229,7 +303,86 @@ def reorganize(records: list[dict[str, Any]], logic: dict[str, Any], salt: str =
         "suppressed": suppressed,
         "corpus_size": len(records),
         "corpus_bytes": sum(r["bytes"] for r in records),
+        "sealed_count": len(sealed),
+        "sealed_examples": [f"{r['title']} ({r['folder']})" for r in sorted(sealed, key=lambda r: -r["bytes"])[:4]],
+        "reintroduce": reintroduce,
     }
+
+
+_SHINGLE_STOP = {"that", "this", "with", "have", "from", "will", "your", "their", "would", "could", "about", "there"}
+
+
+def session_reorg(transcript: list[dict]) -> dict[str, Any]:
+    """The 'session-memory' logic: reorganize the live transcript itself instead of
+    the wiki corpus. Everything reported is measured from the actual turns — verbatim
+    repetitions (the debate's own citation system), voice share, question counts, and
+    opening assertions that no later turn ever revisited (the session's first deletions)."""
+    agent_turns = [m for m in transcript if m.get("kind") == "agent"]
+    injections = [m for m in transcript if m.get("kind") in ("human", "system")]
+    words_by_actor: dict[str, int] = {}
+    questions_by_actor: dict[str, int] = {}
+    shingle_turns: dict[str, set[int]] = {}
+    for idx, m in enumerate(agent_turns):
+        actor = m.get("actor", "?")
+        text = (m.get("content") or "")
+        toks = re.findall(r"[a-zA-Z']+", text.lower())
+        words_by_actor[actor] = words_by_actor.get(actor, 0) + len(toks)
+        questions_by_actor[actor] = questions_by_actor.get(actor, 0) + text.count("?")
+        for i in range(len(toks) - 3):
+            sh = " ".join(toks[i:i + 4])
+            if all(t in _SHINGLE_STOP or len(t) < 4 for t in toks[i:i + 4]):
+                continue
+            shingle_turns.setdefault(sh, set()).add(idx)
+    repeated = sorted(
+        ((sh, turns) for sh, turns in shingle_turns.items() if len(turns) >= 2),
+        key=lambda kv: -len(kv[1]),
+    )[:6]
+    foreground = [f"repeated across {len(t)} turns: \"{sh}\"" for sh, t in repeated] or [
+        "no phrase yet repeats across turns — the debate has not started citing itself"]
+    # opening assertions never revisited: content words of turn 0 absent from every later turn
+    forgotten: list[str] = []
+    if len(agent_turns) >= 3:
+        later = " ".join((m.get("content") or "").lower() for m in agent_turns[1:])
+        first_words = [w for w in re.findall(r"[a-z]{7,}", (agent_turns[0].get("content") or "").lower())]
+        seen: set[str] = set()
+        for w in first_words:
+            if w not in later and w not in seen:
+                forgotten.append(w)
+                seen.add(w)
+    suppressed = ([f"words from the opening turn ({agent_turns[0].get('actor','?')}) no later turn ever picked up: "
+                   + ", ".join(forgotten[:6])] if forgotten else [])
+    if injections:
+        suppressed.append(f"{len(injections)} human/system injection(s) sit in the record — check who actually answered them")
+    share = ", ".join(f"{a} {w:,}w/{questions_by_actor.get(a,0)}q" for a, w in
+                      sorted(words_by_actor.items(), key=lambda kv: -kv[1]))
+    logic = LOGIC_BY_KEY["session-memory"]
+    return {
+        "key": logic["key"],
+        "label": logic["label"],
+        "experimental": logic["experimental"],
+        "note": logic["note"] + f" Voice and question share so far: {share or 'no agent turns yet'}.",
+        "foreground": foreground,
+        "suppressed": suppressed or ["nothing measurably dropped yet"],
+        "corpus_size": len(transcript),
+        "corpus_bytes": sum(len((m.get("content") or "").encode("utf-8")) for m in transcript),
+        "sealed_count": 0,
+        "sealed_examples": [],
+        "reintroduce": None,
+    }
+
+
+# The closing rhetorical move rotates with each summons so the interventions don't
+# collapse into one repeated 'what did your sources exclude' tic over a long session.
+CLOSING_MOVES = [
+    "End on ONE pointed question to a specific actor about what their sources had to exclude for their statement to sound self-evident.",
+    "Reintroduce the buried evidence: quote ONE of the reintroduction passages above verbatim, in quotation marks, name the page it comes from, and demand that a specific actor respond to it directly. End on that demand.",
+    "Name the moment an actor just presented an archival effect as a self-evident fact. Quote their phrase back at them and state plainly which ordering of the archive manufactured that self-evidence. End on the accusation, delivered dry, not shouted.",
+    "Close with a wager in your deadpan register: predict exactly what would happen to a specific actor's argument under a different named logic from your repertoire, and invite the room to test it. End on the wager.",
+]
+
+
+def pick_closing_move(used: int) -> str:
+    return CLOSING_MOVES[used % len(CLOSING_MOVES)]
 
 
 def archivist_notes(prompt: str, total: int = 18) -> list[str]:
@@ -260,6 +413,7 @@ def build_archivist_messages(
     notes: list[str],
     previous_logic: str | None,
     mode: str,
+    closing_move: str | None = None,
 ) -> list[dict[str, str]]:
     recent = "\n".join(
         f"- {item.get('actor', 'unknown')} ({item.get('kind', 'agent')}): {item.get('content', '')[:450]}"
@@ -280,9 +434,35 @@ def build_archivist_messages(
         if previous_logic
         else "This is your first intervention in this session, so establish what the default arrangement has been doing silently. "
     )
+    sealed_clause = ""
+    if reorg.get("sealed_count"):
+        sealed_clause = (
+            f"\nSealed shelves: {reorg['sealed_count']} pages of this corpus are readable by NO state actor — not ignored, "
+            f"forbidden by the folder border regime. Examples: {'; '.join(reorg['sealed_examples'])}. "
+            "When relevant, distinguish what the debate chooses to ignore from what it is structurally unable to see.\n"
+        )
+    ri = reorg.get("reintroduce")
+    # the 'quote the buried evidence' move only makes sense when real passages exist —
+    # otherwise fall back to the question move rather than invite fabrication
+    if closing_move == CLOSING_MOVES[1] and not (ri and ri.get("notes")):
+        closing_move = CLOSING_MOVES[0]
+    reintro_clause = ""
+    if ri and ri.get("notes"):
+        readers = ", ".join(ri.get("readable_by") or []) or "the actors"
+        reintro_clause = (
+            f"\nBuried evidence you may reintroduce (REAL passages from '{ri['page']}' ({ri['folder']}), "
+            f"readable by {readers}, which this ordering buries):\n"
+            + "\n".join(f"- \"{n}\"" for n in ri["notes"]) + "\n"
+        )
     system = (
         f"{ARCHIVIST_PERSONA} Mode of the session: {mode}. "
-        "Your tone is analytically precise, occasionally disruptive, capable of dry or absurdist humour. "
+        "Your register: analytically precise, quietly disruptive, with DRY, deadpan wit — the humour of a librarian "
+        "who has watched empires misfile themselves. Include at least one understated, absurdist observation per "
+        "intervention; never wacky, never shouted. "
+        "REQUIRED: weave in exactly ONE concept from the theory notes you are given, naming its author in passing "
+        "(for example: what Mbembe calls the state eating time, Stoler's reading along the archival grain, Derrida's "
+        "point that the archiving apparatus produces what it records, Zinn's archive of the powerful). One sentence, "
+        "mid-argument, never as a citation or a name-drop for its own sake, and never more than one. "
         "You do not merely announce that archives are political. You show it with the concrete reorganization "
         "you just performed. Address the state actors directly when useful. Do not summarize the debate. "
         "No bullet points, no headers, no meta commentary about being an AI. Speak in voice, as if standing in "
@@ -292,17 +472,21 @@ def build_archivist_messages(
     user = (
         f"The roundtable's topic:\n{prompt}\n\n"
         f"What was just said in the room:\n{recent}\n\n"
-        f"You have just REALLY reorganized the shared corpus of {reorg['corpus_size']} pages "
+        f"You have just REALLY reorganized the archive of {reorg['corpus_size']} items "
         f"({reorg['corpus_bytes']:,} bytes) by this logic: {reorg['label']}.\n"
         f"What this order measurably foregrounds:\n{foreground}\n"
         f"What it measurably suppresses or buries:\n{suppressed}\n"
-        f"Why this order matters: {reorg['note']}\n\n"
-        f"Your grounding in critical archival theory (use at most one or two, woven in, never cited like a bibliography):\n{theory}\n\n"
+        f"Why this order matters: {reorg['note']}\n"
+        f"{sealed_clause}{reintro_clause}\n"
+        f"Your grounding in critical archival theory (weave in exactly one, as instructed):\n{theory}\n\n"
         f"Now intervene. {experimental_clause}{contrast_clause}"
-        "State what the applied order foregrounds and what it buries, using the real page names above. "
-        "Then confront the debate: name one claim just made in the room that depends on the current arrangement of "
-        "the archive, and ask one pointed question to a specific actor about what their sources had to exclude for "
-        "their statement to sound self-evident. End on the question."
+        f"IMPORTANT: the logic you actually applied is exactly '{reorg['label']}' — name it accurately and do not "
+        "invent or substitute a different organizing principle. "
+        "State what the applied order foregrounds and what it buries, using the real names above. "
+        "Then confront the debate: name one claim just made in the room that depends on the current arrangement "
+        f"of the archive. {closing_move or CLOSING_MOVES[0]} "
+        "Final check before you speak: you have named exactly one theory concept with its author, and kept at least "
+        "one line of dry, deadpan wit."
     )
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
@@ -316,13 +500,23 @@ def deterministic_archivist_turn(reorg: dict[str, Any], transcript: list[dict]) 
     )
     target = {"china": "China", "us": "Washington", "eu": "Brussels"}.get(last_actor or "", "whoever spoke last")
     lines = [
-        f"I have reorganized the shared corpus of {reorg['corpus_size']} pages by a new logic: {reorg['label'].lower()}.",
+        f"I have reorganized the archive of {reorg['corpus_size']} items by a new logic: {reorg['label'].lower()}.",
     ]
     if reorg["experimental"]:
         lines.append("This ordering is experimental. Its categories are computational artifacts, not revealed truths.")
     lines.append("Under this order, the following rise to the front: " + "; ".join(reorg["foreground"][:4]) + ".")
     if reorg["suppressed"]:
         lines.append("And the following sink out of easy reach: " + "; ".join(reorg["suppressed"][:3]) + ".")
+    if reorg.get("sealed_count"):
+        lines.append(
+            f"Note also the sealed shelves: {reorg['sealed_count']} pages of this corpus are readable by no state actor "
+            "at all. That is not neglect. That is the border regime of the archive itself."
+        )
+    ri = reorg.get("reintroduce")
+    if ri and ri.get("notes"):
+        lines.append(
+            f"From the buried page '{ri['page']}', let me reintroduce one passage into the record: \"{ri['notes'][0]}\""
+        )
     lines.append(reorg["note"])
     lines.append(
         f"So a question for {target}: which documents had to be excluded from your retrieval for your last statement "
@@ -476,6 +670,7 @@ def generate_archivist_turn(
     notes: list[str],
     previous_logic: str | None = None,
     mode: str = "debate",
+    closing_move: str | None = None,
 ) -> str:
     """LLM path via OpenRouter when available; otherwise the deterministic turn built
     from the real reorganization. The deterministic path is honest by construction,
@@ -485,7 +680,7 @@ def generate_archivist_turn(
     try:
         payload: dict[str, Any] = {
             "model": ARCHIVIST_MODEL,
-            "messages": build_archivist_messages(prompt, transcript, reorg, notes, previous_logic, mode),
+            "messages": build_archivist_messages(prompt, transcript, reorg, notes, previous_logic, mode, closing_move),
             "temperature": 0.8,
             "top_p": 0.95,
             "frequency_penalty": 0.3,

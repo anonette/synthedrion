@@ -21,9 +21,16 @@ This folder is deliberately NOT in `ACTOR_HUBS`/`ALLOWED_PATH_PREFIXES` — the 
 
 Each summons applies the next logic in rotation (or a forced one). Keys:
 
-`chronology`, `geography`, `citation-gravity`, `threat-vocabulary`, `inevitability`, `mass` (bytes), `brevity`, `interrogative` (question density), `absence` (least-linked pages first), `shuffle` (deterministic control condition).
+`chronology`, `geography`, `citation-gravity`, `threat-vocabulary`, `inevitability`, `mass` (bytes), `brevity`, `interrogative` (question density), `absence` (least-linked pages *the actors can actually read*), `session-memory` (reorganizes the live transcript itself: verbatim repetitions, voice/question share, opening assertions never revisited), `shuffle` (deterministic control condition).
 
-`mass`, `brevity`, `interrogative`, and `shuffle` are flagged experimental.
+`mass`, `brevity`, `interrogative`, and `shuffle` are flagged experimental. `session-memory` is session-scoped and rejected by `/archivist/catalog`.
+
+## Border regime, reintroduction, and closing moves
+
+- **Per-actor reachability**: the census computes `readable_by` per page via the same BFS the session loader runs, so the Archivist distinguishes pages the debate *ignores* from pages *sealed by design* (readable by no actor — ops, its own theory shelf). Sealed counts and examples ride in `metadata.sealed_count` / `sealed_examples`.
+- **Reintroduction**: each corpus reorganization picks the most-buried *readable* page and extracts 1–2 real passages (`metadata.reintroduced`: page, folder, readable_by, notes) so the Archivist can quote buried evidence verbatim instead of only naming titles.
+- **Closing moves rotate** per summons (pointed question → quote-the-buried-evidence demand → name-the-archival-effect accusation → deadpan wager) so interventions don't collapse into one rhetorical tic. The quote move falls back to the question when no real passages exist — no fabrication.
+- **Prompt discipline**: each intervention must weave in exactly one named concept from the critical-archives theory notes (Derrida, Mbembe, Stoler, Ketelaar, Zinn...), keep one line of dry wit, and name its applied logic accurately.
 
 ## Endpoints
 

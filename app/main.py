@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
-from .archivist import ARCHIVAL_LOGICS as ARCHIVIST_LOGICS, LOGIC_BY_KEY as ARCHIVIST_LOGICS_BY_KEY, archivist_notes, catalog_corpus as catalog_wiki_corpus, generate_archivist_retrospective, generate_archivist_turn, pick_logic as pick_archivist_logic, reorganize as archivist_reorganize, roundtable_census
+from .archivist import ARCHIVAL_LOGICS as ARCHIVIST_LOGICS, LOGIC_BY_KEY as ARCHIVIST_LOGICS_BY_KEY, archivist_notes, catalog_corpus as catalog_wiki_corpus, generate_archivist_retrospective, generate_archivist_turn, pick_closing_move as pick_archivist_closing_move, pick_logic as pick_archivist_logic, reorganize as archivist_reorganize, roundtable_census, session_reorg as archivist_session_reorg
 from .audio import check_replay_audio_status, ensure_replay_audio_assets, generate_satire_audio
 from .config import ACTOR_MODELS, HALCYON_LEDGER_PATH, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
@@ -990,15 +990,20 @@ def summon_archivist(session_id: str, logic: str | None = None) -> dict:
     previous = [m for m in state.transcript if m.actor == "archivist"]
     previous_logic = previous[-1].metadata.get("logic_label") if previous else None
     chosen = pick_archivist_logic(used=len(previous), requested=logic)
-    reorg = archivist_reorganize(catalog_wiki_corpus(), chosen, salt=f"{session_id}:{state.turn_index}")
+    transcript_dicts = [m.model_dump() for m in state.transcript]
+    if chosen.get("scope") == "session":
+        reorg = archivist_session_reorg(transcript_dicts)
+    else:
+        reorg = archivist_reorganize(catalog_wiki_corpus(), chosen, salt=f"{session_id}:{state.turn_index}")
     notes = archivist_notes(state.prompt)
     content = generate_archivist_turn(
         prompt=state.prompt,
-        transcript=[m.model_dump() for m in state.transcript],
+        transcript=transcript_dicts,
         reorg=reorg,
         notes=notes,
         previous_logic=previous_logic,
         mode=state.mode,
+        closing_move=pick_archivist_closing_move(len(previous)),
     )
     msg = TranscriptMessage(
         actor="archivist",
@@ -1012,6 +1017,9 @@ def summon_archivist(session_id: str, logic: str | None = None) -> dict:
             "experimental": reorg["experimental"],
             "foreground": reorg["foreground"],
             "suppressed": reorg["suppressed"],
+            "sealed_count": reorg.get("sealed_count", 0),
+            "sealed_examples": reorg.get("sealed_examples", []),
+            "reintroduced": reorg.get("reintroduce"),
         },
     )
     state.transcript.append(msg)
@@ -1034,11 +1042,13 @@ def archivist_catalog(logic: str = "geography") -> dict:
     chosen = ARCHIVIST_LOGICS_BY_KEY.get(logic)
     if not chosen:
         raise HTTPException(status_code=422, detail=f"unknown archival logic '{logic}' — one of: {', '.join(ARCHIVIST_LOGIC_KEYS)}")
+    if chosen.get("scope") == "session":
+        raise HTTPException(status_code=422, detail="'session-memory' reorganizes a live transcript, not the corpus — summon the Archivist with ?logic=session-memory during a session instead")
     records = catalog_wiki_corpus()
     reorg = archivist_reorganize(records, chosen, salt="catalog")
     return {
         "logics": [
-            {"key": l["key"], "label": l["label"], "experimental": l["experimental"], "note": l["note"]}
+            {"key": l["key"], "label": l["label"], "experimental": l["experimental"], "note": l["note"], "scope": l.get("scope", "corpus")}
             for l in ARCHIVIST_LOGICS
         ],
         "applied": reorg,
