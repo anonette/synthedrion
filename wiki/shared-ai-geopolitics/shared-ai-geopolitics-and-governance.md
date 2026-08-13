@@ -35,6 +35,10 @@ This page is the shared layer for actor-specific agents. China, U.S., and EU age
 - [Gulf Capital, Petrodollars, and AI Infrastructure](gulf-capital-petrodollars-and-ai-infrastructure.md)
 - [Open-Model Competition and Ecosystem Speed](open-model-competition-and-ecosystem-speed.md)
 - [Gulf Sovereign Wealth and Compute Diplomacy](gulf-sovereign-wealth-and-compute-diplomacy.md)
+- [Chinese Model Export Curbs and the Coming AI Blockade](chinese-model-export-curbs-and-the-ai-blockade.md)
+- [AI Has a Territory: Data Centers and Infrastructural Suzerainty](ai-territory-datacenters-and-infrastructural-suzerainty.md)
+- [Africa, AI and Critical Minerals: Reclaiming Value at the Source](africa-minerals-data-and-value-at-source.md)
+- [A Citizens' Track on AI Governance](../ai-governance/citizens-track-and-participatory-ai-governance.md)
 
 ## Actor Links
 

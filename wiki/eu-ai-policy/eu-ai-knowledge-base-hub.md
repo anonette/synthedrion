@@ -13,6 +13,7 @@ This is the entry page for an EU-specific agent knowledge base. The folder exist
 - [EU AI Strategic Interests](eu-ai-strategic-interests.md)
 - [EU AI Governance Style](eu-ai-governance-style.md)
 - [EU AI Policy Instruments](eu-ai-policy-instruments.md)
+- [EU AI Governance Country Profile (Turing Institute, 2025)](eu-ai-governance-country-profile-2025.md)
 - [EU AI Simulation Profile](eu-ai-simulation-profile.md)
 - [Shared AI Geopolitics and Governance](../shared-ai-geopolitics/shared-ai-geopolitics-and-governance.md)
 - [AI Governance, Evaluation, Resilience, and Open Models](../ai-governance/ai-governance-evaluation-resilience-and-open-models.md)

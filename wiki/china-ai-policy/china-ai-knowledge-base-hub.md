@@ -21,6 +21,7 @@ Canonical policy anchor for the `AI+` layer:
 - [Chinese AI Anthropomorphism Governance](chinese-ai-anthropomorphism-governance.md)
 - [Chinese AI Cross-Border Sovereignty and the Manus Precedent](chinese-ai-cross-border-sovereignty.md)
 - [Chinese AI Ethics and Service Governance](chinese-ai-ethics-and-service-governance.md)
+- [China AI Governance Country Profile (Turing Institute, 2026)](china-ai-governance-country-profile-2026.md)
 - [Chinese AI Labor and Social Stability](chinese-ai-labor-and-social-stability.md)
 
 ## China Agent Layer
