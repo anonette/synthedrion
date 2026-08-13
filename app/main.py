@@ -44,6 +44,7 @@ from .models import (
 )
 from sqlalchemy.orm import Session as DBSession
 from .session_store import SESSIONS
+from .database import SessionLocal
 from .wiki_loader import assemble_context_notes, collect_actor_pages, extract_notes, relative_wiki_path
 
 
@@ -142,6 +143,23 @@ def _persist_image(session_id: str, image_data: dict, name: str) -> dict:
     except Exception as exc:
         log.warning("failed to save image %s: %s", name, exc)
         return {**image_data, "image_save_error": str(exc)}
+
+
+def _live_session(session_id: str):
+    """The in-memory working copy of a session, resurrected from the database if the
+    server restarted since it began — so summons, turns, and interventions survive
+    restarts instead of 404ing on sessions the DB still remembers."""
+    state = SESSIONS.get(session_id)
+    if state is not None:
+        return state
+    db = SessionLocal()
+    try:
+        state = load_session_from_db(session_id, db)
+    finally:
+        db.close()
+    if state is not None:
+        SESSIONS[session_id] = state
+    return state
 
 
 def _persist_session_state(state: SessionState) -> None:
@@ -833,7 +851,7 @@ def start_session(request: SessionStartRequest) -> dict:
 
 @app.get("/session/{session_id}")
 def get_session(session_id: str) -> SessionState:
-    state = SESSIONS.get(session_id)
+    state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     return state
@@ -841,7 +859,7 @@ def get_session(session_id: str) -> SessionState:
 
 @app.post("/session/message", dependencies=[Depends(require_roundtable_operator)])
 def advance_session(request: SessionMessageRequest) -> dict:
-    state = SESSIONS.get(request.session_id)
+    state = _live_session(request.session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     msg, next_actor_name = _generate_session_turn(state)
@@ -866,7 +884,7 @@ INTERVENTION_DIRECTIVES = {
 
 @app.post("/session/intervene", dependencies=[Depends(require_roundtable_operator)])
 def intervene(request: InterventionRequest) -> dict:
-    state = SESSIONS.get(request.session_id)
+    state = _live_session(request.session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     state.transcript.append(
@@ -883,7 +901,7 @@ def intervene(request: InterventionRequest) -> dict:
 
 @app.post("/session/shock", dependencies=[Depends(require_roundtable_operator)])
 def shock(request: ShockRequest) -> dict:
-    state = SESSIONS.get(request.session_id)
+    state = _live_session(request.session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     shock_text = f"Shock [{request.severity}] {request.title}: {request.content}"
@@ -1213,7 +1231,7 @@ def summon_halcyon(session_id: str) -> dict:
     appends a hope-first intervention that speaks after the current exchange.
     No fabricated fallback text: if his primary voice (CERIT) is unavailable, this tries
     a real backup model instead; only raises if both are down."""
-    state = SESSIONS.get(session_id)
+    state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     recent_context = [m.model_dump() for m in state.transcript[-4:]]
@@ -1256,7 +1274,7 @@ def summon_archivist(session_id: str, logic: str | None = None, db: DBSession = 
     repertoire (or ?logic=<key> to force one), computes a REAL reorganization of the wiki
     corpus, and speaks about what that order foregrounds and buries. Offline-safe: the
     deterministic fallback is built entirely from the computed census, never canned prose."""
-    state = SESSIONS.get(session_id)
+    state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     if logic is not None and logic not in ARCHIVIST_LOGIC_KEYS:
@@ -1442,7 +1460,7 @@ def summon_james(session_id: str) -> dict:
     close. Not a round-robin actor: this does not advance the china/us/eu turn order, it
     just appends his read on the exchange so far. No fallback (matching /james-take): if
     the call fails, this raises a real error rather than a canned line."""
-    state = SESSIONS.get(session_id)
+    state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     if not openrouter_enabled():
@@ -1528,7 +1546,7 @@ def _write_memo_markdown(state: SessionState) -> None:
 
 @app.post("/session/{session_id}/summary", dependencies=[Depends(require_roundtable_operator)])
 def summarize_session(session_id: str) -> dict:
-    state = SESSIONS.get(session_id)
+    state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     
@@ -1561,7 +1579,7 @@ def pulse_session(session_id: str) -> dict:
     Uses the fast pulse model when OpenRouter is enabled, otherwise the heuristic. Designed
     to be called asynchronously by the stage after each turn so it never blocks the debate flow.
     """
-    state = SESSIONS.get(session_id)
+    state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     if not state.transcript:
@@ -1736,7 +1754,7 @@ def james_take_session(session_id: str, regenerate: bool = False, db: DBSession 
 
 @app.post("/session/{session_id}/wiki-proposals", dependencies=[Depends(require_roundtable_operator)])
 def wiki_proposals(session_id: str) -> dict:
-    state = SESSIONS.get(session_id)
+    state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
     proposals = [WikiProposal(**proposal) for proposal in build_wiki_proposals(state.actors, state.prompt)]
@@ -1866,7 +1884,7 @@ async def get_replay_data(session_id: str, db: DBSession = Depends(get_db)) -> d
     
     # Fall back to in-memory
     if not state:
-        state = SESSIONS.get(session_id)
+        state = _live_session(session_id)
     
     if not state:
         raise HTTPException(status_code=404, detail="Session not found")
