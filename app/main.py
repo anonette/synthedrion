@@ -1404,29 +1404,34 @@ def archivist_reflections(limit: int = 30, db: DBSession = Depends(get_db)) -> d
     entries.sort(key=lambda e: e.get("created_at") or "", reverse=True)
     about = {
         "intro": (
-            "The Critical Archivist never speaks unprompted: every entry here was triggered by the roundtable "
-            "operator, and every number in it — page counts, sealed shelves, what rises and what sinks, the buried "
-            "passages — is measured from the actual knowledge base and session database at the moment of writing. "
-            "The prose is the agent's voice over those measurements, grounded in its own corpus of critical archival "
-            "theory (Derrida, Mbembe, Stoler, Schwartz & Cook, Caswell, Ketelaar), which the state actors cannot read."
+            "How this notebook works: the debating agents (China, US, EU) argue from a library of documents. The "
+            "Critical Archivist is an AI agent whose job is to study that library, not to take sides. It acts only "
+            "when a human operator presses a button. Each time, the software first RE-SORTS the library by one "
+            "simple rule (newest pages first, most-cited first, least-read first, and so on) and measures which "
+            "pages land on top and which get buried. The Archivist then writes a short text about what that "
+            "re-sorting reveals. So every entry below is: one sorting rule, real measurements, and the agent's "
+            "commentary on them. The three labels on the entries just say WHEN the Archivist was asked to speak."
         ),
         "kinds": {
             "intervention": (
-                "Filed mid-debate. The operator summons the Archivist into a live session; it really reorganizes "
-                "the shared corpus by the next archival logic in its rotation (or one the operator picks), then "
-                "confronts the room with what the new order foregrounds, what it buries, and what the last "
-                "speaker's sources had to exclude. These entries also appear inside the session replays."
+                "Spoken DURING a live debate. The operator summoned the Archivist into the session; it re-sorted "
+                "the library, told the debaters what the new order shows, and ended by challenging one of them "
+                "directly. These entries also appear inside that session's replay."
             ),
             "meditation": (
-                "Written between debates. The operator asks the Archivist to reflect on the corpus under a single "
-                "archival logic with no session running — a notebook entry addressed to the archive's future "
-                "readers, ending with what it intends to reintroduce into the next debate."
+                "Written when NO debate was running. A quiet journal entry about the library itself — same "
+                "re-sorting, but addressed to readers of this notebook instead of to the debaters."
             ),
             "retrospective": (
-                "The Archivist reads the roundtable's own archive: the full database of past sessions — who spoke "
-                "how much, which vocabularies recur, which sessions were argued but never summarized — and names "
-                "a forgotten session that deserves to be reintroduced."
+                "Looks at PAST DEBATES instead of the library: the database of all previous sessions. Who talked "
+                "the most, which words keep coming back, which debates were held but never summarized — and which "
+                "forgotten debate deserves to be brought back."
             ),
+        },
+        "glossary": {
+            "sealed shelves": "How many pages of the library none of the debaters is allowed to read (internal and meta documents).",
+            "rises & sinks": "The pages the re-sorting pushed to the top, and the pages it pushed out of view.",
+            "buried evidence": "A real quote, taken word for word from one of the buried pages, that the Archivist puts back on the table.",
         },
     }
     return {"about": about, "reflections": entries[:limit], "count": len(entries[:limit])}
