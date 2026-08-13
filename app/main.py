@@ -1402,7 +1402,34 @@ def archivist_reflections(limit: int = 30, db: DBSession = Depends(get_db)) -> d
                 },
             })
     entries.sort(key=lambda e: e.get("created_at") or "", reverse=True)
-    return {"reflections": entries[:limit], "count": len(entries[:limit])}
+    about = {
+        "intro": (
+            "The Critical Archivist never speaks unprompted: every entry here was triggered by the roundtable "
+            "operator, and every number in it — page counts, sealed shelves, what rises and what sinks, the buried "
+            "passages — is measured from the actual knowledge base and session database at the moment of writing. "
+            "The prose is the agent's voice over those measurements, grounded in its own corpus of critical archival "
+            "theory (Derrida, Mbembe, Stoler, Schwartz & Cook, Caswell, Ketelaar), which the state actors cannot read."
+        ),
+        "kinds": {
+            "intervention": (
+                "Filed mid-debate. The operator summons the Archivist into a live session; it really reorganizes "
+                "the shared corpus by the next archival logic in its rotation (or one the operator picks), then "
+                "confronts the room with what the new order foregrounds, what it buries, and what the last "
+                "speaker's sources had to exclude. These entries also appear inside the session replays."
+            ),
+            "meditation": (
+                "Written between debates. The operator asks the Archivist to reflect on the corpus under a single "
+                "archival logic with no session running — a notebook entry addressed to the archive's future "
+                "readers, ending with what it intends to reintroduce into the next debate."
+            ),
+            "retrospective": (
+                "The Archivist reads the roundtable's own archive: the full database of past sessions — who spoke "
+                "how much, which vocabularies recur, which sessions were argued but never summarized — and names "
+                "a forgotten session that deserves to be reintroduced."
+            ),
+        },
+    }
+    return {"about": about, "reflections": entries[:limit], "count": len(entries[:limit])}
 
 
 @app.post("/session/{session_id}/summon-james", dependencies=[Depends(require_roundtable_operator)])
