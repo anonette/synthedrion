@@ -29,7 +29,7 @@ from .threat_intel import dataset_stats, get_incident_by_id, latest_incident, pr
 
 ARCHIVIST_LOGIC_KEYS = list(ARCHIVIST_LOGICS_BY_KEY)
 from .auth import verify_token, require_roundtable_operator
-from .database import init_db, get_db, save_archivist_reflection, get_archivist_reflections, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key, get_james_take, save_james_take, get_mirror_card, save_mirror_card, get_james_takes_feed, get_recap, save_recap, get_all_sessions_export, get_session_export
+from .database import init_db, get_db, public_prompt, save_archivist_reflection, get_archivist_reflections, save_session_to_db, load_session_from_db, get_recent_sessions, get_session_count, get_last_session_time, get_featured_weekly_session, get_weekly_archive, get_weekly_session_by_week_key, get_james_take, save_james_take, get_mirror_card, save_mirror_card, get_james_takes_feed, get_recap, save_recap, get_all_sessions_export, get_session_export
 from .scheduler import run_scheduled_session, run_test_session
 from .models import (
     IncidentBrief,
@@ -860,7 +860,8 @@ def get_session(session_id: str) -> SessionState:
     state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
-    return state
+    # public read: show the original question, not the appended steering directives
+    return state.model_copy(update={"prompt": public_prompt(state.prompt)})
 
 
 @app.post("/session/message", dependencies=[Depends(require_roundtable_operator)])
@@ -1989,7 +1990,7 @@ async def get_replay_data(session_id: str, db: DBSession = Depends(get_db)) -> d
             "created_at": state.created_at.isoformat(),
             "mode": state.mode,
             "actors": state.actors,
-            "prompt": state.prompt,
+            "prompt": public_prompt(state.prompt),
             "status": state.status,
             "turn_count": state.turn_index,
         },

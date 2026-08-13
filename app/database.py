@@ -162,6 +162,21 @@ def _session_title(prompt: str) -> str:
     return head[:252] + "..." if len(head) > 255 else head
 
 
+_STEERING_MARKERS = ("\nHuman intervention (", "\nSpoken from the floor (", "\nShock [")
+
+
+def public_prompt(prompt: str) -> str:
+    """The prompt field doubles as LLM steering: interventions, floor questions, and
+    shocks are appended to it so the next turn must engage them. Public reads show
+    only the original question — the appended material already lives in the
+    transcript, and the bracketed directives are internal instructions."""
+    for marker in _STEERING_MARKERS:
+        idx = prompt.find(marker)
+        if idx != -1:
+            prompt = prompt[:idx]
+    return prompt.strip()
+
+
 def _session_preview(s: SessionDB) -> dict:
     summary_headline = None
     if s.summary and isinstance(s.summary, dict):
@@ -173,7 +188,7 @@ def _session_preview(s: SessionDB) -> dict:
         "completed_at": s.completed_at.isoformat() if s.completed_at else None,
         "mode": s.mode,
         "actors": s.actors,
-        "prompt": s.prompt[:100] + "..." if len(s.prompt) > 100 else s.prompt,
+        "prompt": (public_prompt(s.prompt)[:100] + "...") if len(public_prompt(s.prompt)) > 100 else public_prompt(s.prompt),
         "status": s.status,
         "turn_count": s.turn_index,
         "has_audio": bool(s.audio_url),
@@ -363,7 +378,7 @@ def _session_export_row(r: SessionDB) -> dict:
         "completed_at": r.completed_at.isoformat() if r.completed_at else None,
         "mode": r.mode,
         "actors": r.actors,
-        "prompt": r.prompt,
+        "prompt": public_prompt(r.prompt),
         "status": r.status,
         "title": r.title,
         "theme": r.theme,
