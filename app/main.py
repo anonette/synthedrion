@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import asyncio
+import threading
 import base64
 import json
 import logging
@@ -14,6 +15,7 @@ from pathlib import Path
 import httpx
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request, Response
+from starlette.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -146,6 +148,17 @@ def _persist_image(session_id: str, image_data: dict, name: str) -> dict:
         return {**image_data, "image_save_error": str(exc)}
 
 
+_SESSION_LOCKS: dict = {}
+_LOCKS_GUARD = threading.Lock()
+
+
+def _session_lock(session_id: str) -> threading.Lock:
+    """One lock per session so two overlapping /session/message calls can't both
+    generate a turn from the same rotation index (same actor twice, index clobber)."""
+    with _LOCKS_GUARD:
+        return _SESSION_LOCKS.setdefault(session_id, threading.Lock())
+
+
 def _live_session(session_id: str):
     """The in-memory working copy of a session, resurrected from the database if the
     server restarted since it began — so summons, turns, and interventions survive
@@ -159,7 +172,9 @@ def _live_session(session_id: str):
     finally:
         db.close()
     if state is not None:
-        SESSIONS[session_id] = state
+        # atomic under the GIL: if another thread resurrected concurrently, everyone
+        # shares the winner instead of holding divergent copies of the session
+        state = SESSIONS.setdefault(session_id, state)
     return state
 
 
@@ -871,8 +886,14 @@ def advance_session(request: SessionMessageRequest) -> dict:
         raise HTTPException(status_code=404, detail="session not found")
     if request.actor and request.actor not in state.actors:
         raise HTTPException(status_code=422, detail=f"actor '{request.actor}' is not in this session ({', '.join(state.actors)})")
-    msg, next_actor_name = _generate_session_turn(state, force_actor=request.actor)
-    _persist_session_state(state)
+    lock = _session_lock(request.session_id)
+    if not lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="turn already in progress for this session")
+    try:
+        msg, next_actor_name = _generate_session_turn(state, force_actor=request.actor)
+        _persist_session_state(state)
+    finally:
+        lock.release()
 
     return {
         "session_id": state.session_id,
@@ -1074,7 +1095,7 @@ async def satirize(payload: dict) -> dict:
     if not actor or not text:
         raise HTTPException(status_code=400, detail="actor and text are required")
     try:
-        line = generate_satire_line(actor, text, drift=drift)
+        line = await run_in_threadpool(generate_satire_line, actor, text, drift=drift)
         source = "cerit"
     except Exception as exc:  # noqa: BLE001 — degrade gracefully, keep the show going
         line = SATIRE_FALLBACKS.get(actor, text)
@@ -1293,7 +1314,7 @@ async def session_listen(session_id: str, request: Request, speaker: str = "audi
     content_type = (request.headers.get("content-type") or "audio/webm").split(";")[0]
     ext = {"audio/webm": "webm", "audio/ogg": "ogg", "audio/wav": "wav", "audio/mpeg": "mp3", "audio/mp4": "m4a"}.get(content_type, "webm")
     try:
-        text = transcribe_audio(data, filename=f"speech.{ext}", content_type=content_type, language=language)
+        text = await run_in_threadpool(transcribe_audio, data, filename=f"speech.{ext}", content_type=content_type, language=language)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"transcription failed: {exc}")
     msg = TranscriptMessage(

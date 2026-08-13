@@ -134,6 +134,8 @@
   @keyframes pttpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.5);} 50% { box-shadow: 0 0 0 14px rgba(34,197,94,0);} }
   #dialoguePanel .who { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #8a94a6; }
   #dialoguePanel select { background: #121724; color: #e8edf6; border: 1px solid #2c3a57; border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+  #ops .hint.err { color: #fca5a5; font-size: 13px; font-weight: 700; }
+  body.dialogue-on .caption-wrap { padding-bottom: 120px; }
   .james-quote { background: #08130f; border: 1px solid var(--james-deep); border-left: 4px solid var(--james); border-radius: 10px; padding: 14px 16px; margin: 8px 0 22px; font-style: italic; font-size: 15px; line-height: 1.55; color: #d1fae5; }
   .tag.human{background:#334155} .tag.system{background:#92400e}
   .caption.satire .body { font-style: italic; font-weight: 600; font-size: clamp(22px, 3vw, 34px); }
@@ -465,6 +467,9 @@ let voiceMode = "edge";                                 // "edge" (free MS), "op
 let satireDrift = 0.6;                                  // 0=faithful+savage … 1=absurd — the satire-style knob
 let satireTake = [];                                    // accumulates this run's satirical lines for saving/replay
 const satireAudio = new Audio();                        // reused element for server-synthesized satire audio (edge/openai)
+let voiceSeq = 0, ttsInFlight = 0;                      // stale-audio guard: stopVoice bumps the seq, late /tts responses are dropped
+let pauseEpoch = 0;                                     // pause ownership: a restore only applies if nobody else touched pause meanwhile
+let typeEpoch = 0;                                      // caption reentrancy: a newer typeOut cleanly cancels an older one
 const AGENTS = ["china", "us", "eu"];
 
 let token = "";
@@ -517,10 +522,11 @@ async function getJSON(path) {
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // Interruptible wait: resolves early if paused/skip/stop changes the world.
-async function pacedWait(ms, waitVoice = false) {
+async function pacedWait(ms, waitVoice = false, ignorePause = false) {
   const step = 80, hardCap = 20000; let waited = 0;
-  while (running && !paused && !skipRequested) {
+  while (running && (ignorePause || !paused) && !skipRequested) {
     const voiceBusy = waitVoice && (
+      ttsInFlight > 0 ||
       (satireAudio.src && !satireAudio.paused && !satireAudio.ended) ||
       (window.speechSynthesis && window.speechSynthesis.speaking)
     );
@@ -633,7 +639,7 @@ async function startDebate() {
     }, 30000);
     session = { session_id: data.session_id, mode: data.mode, actors: data.actors, prompt: document.getElementById("prompt").value };
     enterStage();
-    runLoop();
+    runLoop().catch(e => setOpsStatus("loop crashed: " + e.message + " — press Space twice to restart", true));
   } catch (e) {
     errEl.style.color = "#f87171";
     if (/token|operator|401/i.test(e.message)) {
@@ -713,7 +719,7 @@ async function saveSatireTake() {
     });
     setOpsStatus(`✅ saved ${r.count} lines — replay: ${r.replay_url}`);
   } catch (e) {
-    setOpsStatus("save failed: " + e.message);
+    setOpsStatus("save failed: " + e.message, true);
   }
 }
 
@@ -888,6 +894,7 @@ function playAudioClip(b64, mime) {
   catch (e) {}
 }
 function stopVoice() {
+  voiceSeq++;   // any in-flight /tts response for an older turn is now stale and will be dropped
   try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
   try { satireAudio.pause(); } catch (e) {}
 }
@@ -955,6 +962,7 @@ async function renderTurn(msg) {
 }
 
 async function typeOut(el, text) {
+  const ep = ++typeEpoch;   // a newer caption cancels this one cleanly instead of colliding
   el.textContent = "";
   const cursor = document.createElement("span");
   cursor.className = "cursor"; cursor.innerHTML = "&nbsp;";
@@ -962,17 +970,20 @@ async function typeOut(el, text) {
   const perChar = Math.min(20, Math.max(4, 6000 / Math.max(1, text.length)));
   let i = 0;
   while (i < text.length) {
+    if (ep !== typeEpoch) return;
     if (skipRequested) { el.textContent = text; el.appendChild(cursor); break; }
     const chunk = text.length > 600 ? 3 : 1;       // long turns scroll faster
-    el.insertBefore(document.createTextNode(text.slice(i, i + chunk)), cursor);
+    try { el.insertBefore(document.createTextNode(text.slice(i, i + chunk)), cursor); } catch (e) { return; }
     i += chunk;
     el.parentElement.scrollTop = el.parentElement.scrollHeight;
     await sleep(perChar);
   }
-  el.textContent = text;
+  if (ep === typeEpoch) el.textContent = text;
 }
 
 // ---------- Auto-advance loop ----------
+let pendingTurn = null;   // a turn fetched across a pause is held, not dropped or rendered over the operator
+
 async function runLoop() {
   running = true;
   while (running) {
@@ -981,15 +992,22 @@ async function runLoop() {
 
     // Fetch the next turn with retries so a transient upstream hiccup (OpenRouter
     // slow/failing, or a tunnel blip) self-heals instead of freezing the debate.
-    let data = null;
-    for (let attempt = 1; attempt <= 4 && running && !paused; attempt++) {
-      try {
-        setOpsStatus(attempt === 1 ? "…generating turn" : `…retrying turn (${attempt})`);
-        data = await api("/session/message", { session_id: session.session_id });
-        break;
-      } catch (e) {
-        setOpsStatus(`⚠ turn failed (${e.message}) — retrying… · ⏸ Pause to stop`);
-        await sleep(Math.min(6000, 1500 * attempt));   // back off, then loop retries
+    let data = pendingTurn; pendingTurn = null;
+    if (!data) {
+      // stage-visible thinking state: the timer ticks and the caption header says so,
+      // instead of a pixel-frozen stage during the 10-30s generation wait
+      startTimer();
+      document.getElementById("capSpeaker").innerHTML =
+        '<span class="tag system">roundtable</span> composing the next turn… <span class="cursor">&nbsp;</span>';
+      for (let attempt = 1; attempt <= 4 && running && !paused; attempt++) {
+        try {
+          setOpsStatus(attempt === 1 ? "…generating turn" : `…retrying turn (${attempt})`);
+          data = await api("/session/message", { session_id: session.session_id });
+          break;
+        } catch (e) {
+          setOpsStatus(`⚠ turn failed (${e.message}) — retrying… · ⏸ Pause to stop`, true);
+          await sleep(Math.min(6000, 1500 * attempt));   // back off, then loop retries
+        }
       }
     }
     if (!data) continue;   // still failing — keep trying (unless the user paused)
@@ -998,20 +1016,44 @@ async function runLoop() {
     // Skip a blank/refused turn instead of stalling on an empty caption.
     if (!msg || !(msg.content || "").trim()) { await sleep(400); continue; }
     if (!running) break;
-    const shown = await renderTurn(msg);
-    await pacedWait(readMs(shown), true);
+    if (paused) { pendingTurn = data; continue; }   // operator took the stage mid-fetch: hold the turn for resume
+    try {
+      const shown = await renderTurn(msg);
+      await pacedWait(readMs(shown), true);
+    } catch (e) {
+      setOpsStatus("render failed: " + e.message, true);   // never let a render error kill the loop
+    }
   }
 }
 
 // ---------- Operator controls ----------
-function setOpsStatus(t) { document.getElementById("opsStatus").textContent = t; }
+function setOpsStatus(t, isError) {
+  const el = document.getElementById("opsStatus");
+  el.textContent = t;
+  el.classList.toggle("err", !!isError);
+}
 function reflectPaused() {
   document.getElementById("pauseBtn").textContent = paused ? "▶ Resume" : "⏸ Pause";
   const b = document.getElementById("liveBadge");
   b.classList.toggle("paused", paused);
   document.getElementById("liveText").textContent = paused ? "PAUSED" : "LIVE";
 }
-function togglePause() { paused = !paused; reflectPaused(); }
+function togglePause() { paused = !paused; pauseEpoch++; reflectPaused(); }
+
+// Hold the stage for an operator action (summon/intervene/shock): pause, remember the
+// prior state, and only restore it if no one (Space, Dialogue toggle) changed the pause
+// while the action's API call was in flight. Dialogue mode always stays paused.
+function holdStage() {
+  const snap = { wasPaused: paused, epoch: ++pauseEpoch };
+  paused = true; reflectPaused();
+  return snap;
+}
+function releaseStage(snap) {
+  if (pauseEpoch === snap.epoch) {
+    paused = snap.wasPaused || dialogueOn;
+    reflectPaused();
+  }
+}
 
 // The "special module I can sometimes connect": flip the talking heads + satire on/off.
 function applySatire(on) {
@@ -1061,14 +1103,35 @@ function wireOps() {
   document.getElementById("satireBtn").onclick = toggleSatire;
   document.getElementById("saveTakeBtn").onclick = saveSatireTake;
 
-  document.getElementById("backStage").onclick = () => document.getElementById("closing").classList.add("hidden");
+  document.getElementById("backStage").onclick = () => {
+    document.getElementById("closing").classList.add("hidden");
+    // revive the loop paused so Resume actually continues the debate instead of
+    // flipping flags on a dead loop behind a LIVE badge
+    if (!running && !replayMode && session) {
+      paused = true; pauseEpoch++; reflectPaused();
+      runLoop().catch(e => setOpsStatus("loop crashed: " + e.message, true));
+    }
+  };
   document.getElementById("newDebate").onclick = () => location.reload();
 
   document.addEventListener("keydown", (e) => {
     if (e.target.matches("textarea, input, select")) return;
     if (document.getElementById("stage").classList.contains("hidden")) return;
     if (e.code === "Space") { e.preventDefault(); togglePause(); }
-    else if (e.key === "c" || e.key === "C") { document.getElementById("ops").classList.toggle("hidden"); }
+    else if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const ops = document.getElementById("ops");
+      ops.classList.toggle("hidden");
+      let hint = document.getElementById("opsHiddenHint");
+      if (ops.classList.contains("hidden")) {
+        if (!hint) {
+          hint = document.createElement("div");
+          hint.id = "opsHiddenHint";
+          hint.textContent = "controls hidden — press C";
+          hint.style.cssText = "position:fixed;right:14px;bottom:10px;z-index:50;font-size:12px;color:#8a94a6;background:#0b1120;border:1px solid #1c2740;border-radius:999px;padding:4px 10px;pointer-events:none";
+          document.body.appendChild(hint);
+        }
+      } else if (hint) hint.remove();
+    }
     else if (e.key === "a" || e.key === "A") {
       document.getElementById("analytics").classList.toggle("off");
       document.getElementById("themeTags").classList.toggle("off");
@@ -1081,15 +1144,15 @@ async function sendIntervention() {
   const text = document.getElementById("interveneText").value.trim();
   if (!text) return;
   const type = document.getElementById("interveneType").value;
-  const wasPaused = paused; paused = true; reflectPaused();
+  const stageHold = holdStage();
   try {
     await api("/session/intervene", { session_id: session.session_id, content: text, type });
     await renderTurn({ actor: "human", kind: "human", content: text });
-    await pacedWait(readMs(text));
-  } catch (e) { setOpsStatus("intervene failed: " + e.message); }
+    await pacedWait(readMs(text), true, true);
+  } catch (e) { setOpsStatus("intervene failed: " + e.message, true); }
   document.getElementById("interveneText").value = "";
   document.getElementById("intervenePop").classList.add("hidden");
-  paused = wasPaused; reflectPaused();
+  releaseStage(stageHold);
 }
 
 // ---------- Dialogue mode: the hall speaks, an agent answers aloud ----------
@@ -1106,20 +1169,27 @@ function toggleDialogue() {
   b.textContent = "🎙 Dialogue: " + (dialogueOn ? "ON" : "off");
   b.classList.toggle("ghost", !dialogueOn);
   document.getElementById("dialoguePanel").classList.toggle("hidden", !dialogueOn);
-  if (dialogueOn) { paused = true; reflectPaused(); setOpsStatus("dialogue mode — the room has the floor"); }
+  document.body.classList.toggle("dialogue-on", dialogueOn);
+  if (dialogueOn) { paused = true; pauseEpoch++; reflectPaused(); setOpsStatus("dialogue mode — the room has the floor"); }
   else setOpsStatus("");
 }
 
 async function startTalking() {
   if (!dialogueOn || recording) return;
+  // a mic that was unplugged or revoked leaves dead tracks — re-acquire instead of
+  // silently building a recorder on a dead stream
+  if (micStream && micStream.getTracks().some(t => t.readyState === "ended")) {
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
   try {
     if (!micStream) micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (e) { setOpsStatus("microphone blocked: " + e.message); return; }
-  recChunks = [];
-  const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
-  recorder = new MediaRecorder(micStream, mime ? { mimeType: mime } : undefined);
-  recorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
-  recorder.start();
+    recChunks = [];
+    const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+    recorder = new MediaRecorder(micStream, mime ? { mimeType: mime } : undefined);
+    recorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+    recorder.start();
+  } catch (e) { setOpsStatus("microphone problem: " + e.message, true); return; }
   recording = true;
   const b = document.getElementById("pttBig");
   b.classList.add("listening");
@@ -1133,11 +1203,14 @@ async function stopTalking() {
   const b = document.getElementById("pttBig");
   b.classList.remove("listening");
   b.disabled = true; b.textContent = "🎙 Transcribing…";
-  const done = new Promise(res => { recorder.onstop = res; });
-  recorder.stop();
-  await done;
-  const blob = new Blob(recChunks, { type: recorder.mimeType || "audio/webm" });
   try {
+    // time-box the recorder stop: if the track already died, onstop may never fire
+    if (recorder.state !== "inactive") {
+      const done = new Promise(res => { recorder.onstop = res; setTimeout(res, 3000); });
+      try { recorder.stop(); } catch (e) {}
+      await done;
+    }
+    const blob = new Blob(recChunks, { type: recorder.mimeType || "audio/webm" });
     if (blob.size < 2000) throw new Error("too short — hold the button while speaking");
     const res = await fetch(`/session/${session.session_id}/listen?speaker=audience`, {
       method: "POST",
@@ -1160,14 +1233,16 @@ async function stopTalking() {
       msg = data.messages && data.messages[0];
     }
     if (msg && (msg.content || "").trim()) {
-      const spoken = renderTurn(msg);            // type the caption while audio is fetched
-      await speakActorLine(msg.actor, msg.content);
-      await spoken;
+      // renderTurn's voice-first path speaks the reply (satirized text included when
+      // satire is on) — a second explicit /tts here would double-voice it
+      await renderTurn(msg);
     }
   } catch (e) {
-    setOpsStatus("dialogue failed: " + e.message);
+    setOpsStatus("dialogue failed: " + e.message, true);
+  } finally {
+    // the button must always come back — a dead mic can cost one exchange, never the event
+    b.disabled = false; b.textContent = "🎙 HOLD TO SPEAK";
   }
-  b.disabled = false; b.textContent = "🎙 HOLD TO SPEAK";
 }
 
 // Speak an earnest agent turn with its stage voice. Uses the satire audio element so
@@ -1176,23 +1251,26 @@ async function stopTalking() {
 async function speakActorLine(actor, text) {
   if (voiceMode === "off") return;
   const provider = voiceMode === "openai" ? "openai" : (voiceMode === "elevenlabs" ? "elevenlabs" : "edge");
+  const mySeq = voiceSeq;   // if a newer turn starts before our audio arrives, drop it
+  ttsInFlight++;
   try {
     const r = await api("/tts", { actor, text, provider }, 60000);
-    if (r && r.audio_b64) playAudioClip(r.audio_b64, r.audio_mime);
+    if (mySeq === voiceSeq && r && r.audio_b64) playAudioClip(r.audio_b64, r.audio_mime);
   } catch (e) { /* silent degradation: the caption already shows the text */ }
+  finally { ttsInFlight--; }
 }
 
 async function summonHalcyon() {
   const btn = document.getElementById("halcyonBtn");
-  const wasPaused = paused; paused = true; reflectPaused();
+  const stageHold = holdStage();
   btn.disabled = true; btn.textContent = "🕊 Halcyon is entering…";
   try {
     const data = await api(`/session/${session.session_id}/summon-halcyon`);
     const msg = data.messages && data.messages[0];
-    if (msg) { await renderTurn(msg); await pacedWait(readMs(msg.content)); }
-  } catch (e) { setOpsStatus("summon failed: " + e.message); }
+    if (msg) { await renderTurn(msg); await pacedWait(readMs(msg.content), true, true); }
+  } catch (e) { setOpsStatus("summon failed: " + e.message, true); }
   btn.disabled = false; btn.textContent = "🕊 Summon Halcyon";
-  paused = wasPaused; reflectPaused();
+  releaseStage(stageHold);
 }
 
 // The archival-logic repertoire, loaded once from the public catalog so the picker
@@ -1219,7 +1297,7 @@ function showArchivistLogicNote() {
 
 async function summonArchivist(logicKey) {
   const btn = document.getElementById("archivistBtn");
-  const wasPaused = paused; paused = true; reflectPaused();
+  const stageHold = holdStage();
   btn.disabled = true; btn.textContent = "🗂 Reorganizing…";
   try {
     const q = logicKey ? `?logic=${encodeURIComponent(logicKey)}` : "";
@@ -1227,24 +1305,24 @@ async function summonArchivist(logicKey) {
     const msg = data.messages && data.messages[0];
     if (msg) {
       if (msg.metadata && msg.metadata.logic_label) setOpsStatus("archival logic: " + msg.metadata.logic_label);
-      await renderTurn(msg); await pacedWait(readMs(msg.content));
+      await renderTurn(msg); await pacedWait(readMs(msg.content), true, true);
     }
-  } catch (e) { setOpsStatus("archivist summon failed: " + e.message); }
+  } catch (e) { setOpsStatus("archivist summon failed: " + e.message, true); }
   btn.disabled = false; btn.textContent = "🗂 Archivist ▾";
-  paused = wasPaused; reflectPaused();
+  releaseStage(stageHold);
 }
 
 async function summonJames() {
   const btn = document.getElementById("jamesBtn");
-  const wasPaused = paused; paused = true; reflectPaused();
+  const stageHold = holdStage();
   btn.disabled = true; btn.textContent = "🃏 James is typing…";
   try {
     const data = await api(`/session/${session.session_id}/summon-james`);
     const msg = data.messages && data.messages[0];
-    if (msg) { await renderTurn(msg); await pacedWait(readMs(msg.content)); }
-  } catch (e) { setOpsStatus("James went dark: " + e.message); }
+    if (msg) { await renderTurn(msg); await pacedWait(readMs(msg.content), true, true); }
+  } catch (e) { setOpsStatus("James went dark: " + e.message, true); }
   btn.disabled = false; btn.textContent = "🃏 James";
-  paused = wasPaused; reflectPaused();
+  releaseStage(stageHold);
 }
 
 // Closing screen: fetch (or reuse the cached) end-of-debate take from the Analyst.
@@ -1268,21 +1346,21 @@ async function sendShock() {
   const content = document.getElementById("shockText").value.trim();
   if (!title && !content) return;
   const severity = document.getElementById("shockSeverity").value;
-  const wasPaused = paused; paused = true; reflectPaused();
+  const stageHold = holdStage();
   try {
     await api("/session/shock", { session_id: session.session_id, title, content, severity });
     await renderTurn({ actor: "system", kind: "system", content: `⚡ ${title} — ${content} [${severity}]` });
-    await pacedWait(readMs(content));
-  } catch (e) { setOpsStatus("shock failed: " + e.message); }
+    await pacedWait(readMs(content), true, true);
+  } catch (e) { setOpsStatus("shock failed: " + e.message, true); }
   document.getElementById("shockTitle").value = "";
   document.getElementById("shockText").value = "";
   document.getElementById("shockPop").classList.add("hidden");
-  paused = wasPaused; reflectPaused();
+  releaseStage(stageHold);
 }
 
 // ---------- Closing: scoreboard + recap ----------
 async function endDebate() {
-  running = false; paused = true; stopTimer(); stopVoice();
+  running = false; paused = true; reflectPaused(); stopTimer(); stopVoice();
   // A "Satirize a past debate" replay isn't a live in-memory session, so the LLM
   // recap endpoint (in-memory + operator-token) can't score it — show a wrap instead.
   if (replayMode) { showClosingSimple(); return; }
