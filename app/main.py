@@ -1303,6 +1303,12 @@ async def session_listen(session_id: str, request: Request, speaker: str = "audi
     )
     state.transcript.append(msg)
     state.turn_index += 1
+    # Same contract as a typed intervention: the next agent turn MUST answer the room
+    # directly, not resume its argument as if the floor hadn't spoken.
+    state.prompt = (
+        f"{state.prompt}\nSpoken from the floor ({speaker}): {text} "
+        f"[{INTERVENTION_DIRECTIVES['question']}]"
+    )
     _persist_session_state(state)
     return {
         "session_id": state.session_id,
