@@ -425,6 +425,32 @@ def get_event() -> dict:
 # Who's Who so the cast has visible provenance. `inspired` lists roster agent ids.
 PARTICIPANTS = [
     {
+        "id": "denisa-reshef-kera",
+        "name": "Denisa Reshef Kera",
+        "role": "Convener",
+        "affiliation": "Associate Professor, Design & Policy Lab, Science, Technology & Society Studies, Bar-Ilan University; AI National Expert for the Czech Republic at GPAI",
+        "paper": "",
+        "abstract": (
+            "Conceived, programmed, and organized the AI Cold War roundtable: the simulation runtime, the actor "
+            "knowledge bases, the guest agents, and the archival apparatus that watches all of it. The project "
+            "practices what she calls culture-centered rather than human-centered AI — taking plurality, social "
+            "agency, and living traditions as the material of governance, and treating simulations and exploratory "
+            "sandboxes as instruments of participatory AI governance."
+        ),
+        "research_interests": (
+            "Experimental, participatory, and philosophically grounded approaches to AI ethics, accountability, and "
+            "human-machine agency; AI agent simulations and sandboxes for participatory governance; institutional "
+            "grammar and deictic structures shaping responsibility in LLMs; governance over rituals, machines, and "
+            "prototypes, from sundial to blockchain (Routledge 2023)."
+        ),
+        "inspired": ["china", "us", "eu", "halcyon", "satire-heads", "james", "archivist"],
+        "notes": (
+            "The whole cast is hers: the three state actors and their sandboxed knowledge bases, the summonable "
+            "guests, and The Critical Archivist — whose critical archival studies corpus (Derrida, Mbembe, Stoler, "
+            "Schwartz & Cook, Caswell) she curated so the simulation would carry its own critique inside it."
+        ),
+    },
+    {
         "id": "james-usher",
         "name": "James Usher",
         "affiliation": "Dublin City University",
