@@ -20,7 +20,8 @@ from fastapi.staticfiles import StaticFiles
 
 from .agent_logic import build_mirror_card, build_pulse, build_recap, build_summary, build_wiki_proposals, generate_actor_mirror_turn, generate_actor_propaganda_turn, generate_actor_turn, next_actor
 from .archivist import ARCHIVAL_LOGICS as ARCHIVIST_LOGICS, LOGIC_BY_KEY as ARCHIVIST_LOGICS_BY_KEY, archivist_notes, catalog_corpus as catalog_wiki_corpus, generate_archivist_meditation, generate_archivist_retrospective, generate_archivist_turn, pick_closing_move as pick_archivist_closing_move, pick_logic as pick_archivist_logic, reorganize as archivist_reorganize, roundtable_census, session_reorg as archivist_session_reorg
-from .audio import check_replay_audio_status, ensure_replay_audio_assets, generate_satire_audio
+from .audio import check_replay_audio_status, ensure_replay_audio_assets, generate_actor_audio, generate_satire_audio
+from .stt import transcribe_audio
 from .config import ACTOR_MODELS, HALCYON_LEDGER_PATH, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
 from .llm import SATIRE_FALLBACKS, generate_halcyon_turn, generate_james_take, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, generate_satire_line, openrouter_enabled
@@ -1265,6 +1266,60 @@ def summon_halcyon(session_id: str) -> dict:
         "next_actor": state.actors[state.next_actor_index] if state.actors else None,
         "status": state.status,
     }
+
+
+@app.post("/session/{session_id}/listen", dependencies=[Depends(require_roundtable_operator)])
+async def session_listen(session_id: str, request: Request, speaker: str = "audience", language: str | None = None) -> dict:
+    """Dialogue mode's ears: accept one recorded utterance from the hall (raw audio
+    bytes in the request body — webm/ogg/wav/mp3, per Content-Type), transcribe it via
+    the configured STT provider, and append it to the session as a human turn. The
+    frontend then requests the next agent turn as usual, so the agents react to the
+    room exactly as they react to typed interventions. No fabrication: a failed
+    transcription raises instead of guessing."""
+    state = _live_session(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+    data = await request.body()
+    if not data:
+        raise HTTPException(status_code=422, detail="no audio in request body")
+    content_type = (request.headers.get("content-type") or "audio/webm").split(";")[0]
+    ext = {"audio/webm": "webm", "audio/ogg": "ogg", "audio/wav": "wav", "audio/mpeg": "mp3", "audio/mp4": "m4a"}.get(content_type, "webm")
+    try:
+        text = transcribe_audio(data, filename=f"speech.{ext}", content_type=content_type, language=language)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"transcription failed: {exc}")
+    msg = TranscriptMessage(
+        actor="human",
+        content=text,
+        kind="human",
+        metadata={"format": "voice", "speaker": speaker},
+    )
+    state.transcript.append(msg)
+    state.turn_index += 1
+    _persist_session_state(state)
+    return {
+        "session_id": state.session_id,
+        "transcript": text,
+        "speaker": speaker,
+        "turn_index": state.turn_index,
+        "next_actor": state.actors[state.next_actor_index] if state.actors else None,
+    }
+
+
+@app.post("/tts", dependencies=[Depends(require_roundtable_operator)])
+async def tts(payload: dict) -> dict:
+    """Dialogue mode's voice: synthesize one agent utterance with that actor's
+    stage voice (free edge-tts by default; 'openai'/'elevenlabs' when keys are set).
+    Body: {"actor": "china", "text": "...", "provider": "edge"|"openai"|"elevenlabs"}."""
+    actor = (payload.get("actor") or "system").strip()
+    text = (payload.get("text") or "").strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="text required")
+    try:
+        audio = await generate_actor_audio(text[:2400], actor, provider=payload.get("provider"))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"tts failed: {exc}")
+    return {"actor": actor, "audio_b64": base64.b64encode(audio).decode("ascii"), "audio_mime": "audio/mpeg"}
 
 
 @app.post("/session/{session_id}/summon-archivist", dependencies=[Depends(require_roundtable_operator)])

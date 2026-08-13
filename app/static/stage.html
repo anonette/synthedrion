@@ -336,6 +336,9 @@
     <button class="btn sm" id="archivistBtn" style="background:linear-gradient(180deg,#b8923f,#6b4e1c)" title="The Critical Archivist really reorganizes the debate&#39;s knowledge archive by a chosen logic and confronts the room with what that order buries. Click to pick a logic or let it rotate.">🗂 Archivist ▾</button>
     <button class="btn sm" id="jamesBtn" style="background:linear-gradient(180deg,#059669,#065f46)" title="The Machiavellian Crypto-Native Analyst interjects with a contrarian counter-read in the room&#39;s real currency (liquidity, exit liquidity, MEV). No fallback: a failed call shows an error, never a canned line.">🃏 James</button>
     <span class="ops-sep"></span>
+    <button class="btn sm ghost" id="dialogueBtn" title="Dialogue mode: pause the auto-advancing debate so real people in the room can speak to the agents. Hold the mic button, talk, release — your words are transcribed into the debate and one agent answers aloud.">🎙 Dialogue: off</button>
+    <button class="btn sm hidden" id="pttBtn" style="background:linear-gradient(180deg,#dc2626,#7f1d1d)" title="Hold while speaking; release to send">🎙 Hold to speak</button>
+    <span class="ops-sep"></span>
     <button class="btn sm ghost" id="satireBtn" title="Talking heads deliver brutally satirical one-liners (Xi / Trump / von der Leyen)">🎭 Brutal satire: off</button>
     <button class="btn sm ghost" id="saveTakeBtn" title="Save this satirical performance (text + audio) for replay in Lovable">💾 Save take</button>
     <div class="spacer"></div>
@@ -1015,6 +1018,11 @@ function wireOps() {
   };
   document.getElementById("archivistLogic").onchange = showArchivistLogicNote;
   document.getElementById("jamesBtn").onclick = summonJames;
+  document.getElementById("dialogueBtn").onclick = toggleDialogue;
+  const ptt = document.getElementById("pttBtn");
+  ptt.addEventListener("pointerdown", startTalking);
+  ptt.addEventListener("pointerup", stopTalking);
+  ptt.addEventListener("pointerleave", stopTalking);
   document.getElementById("jamesTakeBtn").onclick = fetchJamesTake;
   populateArchivistLogics();
   document.getElementById("satireBtn").onclick = toggleSatire;
@@ -1049,6 +1057,85 @@ async function sendIntervention() {
   document.getElementById("interveneText").value = "";
   document.getElementById("intervenePop").classList.add("hidden");
   paused = wasPaused; reflectPaused();
+}
+
+// ---------- Dialogue mode: the hall speaks, an agent answers aloud ----------
+// Hold-to-talk records the room, POSTs raw audio to /session/{id}/listen (server
+// transcribes via Whisper), the human turn renders, then ONE agent replies and is
+// spoken with its stage voice via /tts. Auto-advance stays paused throughout so
+// the room, not the clock, drives the exchange.
+let dialogueOn = false;
+let micStream = null, recorder = null, recChunks = [], recording = false;
+
+function toggleDialogue() {
+  dialogueOn = !dialogueOn;
+  const b = document.getElementById("dialogueBtn");
+  b.textContent = "🎙 Dialogue: " + (dialogueOn ? "ON" : "off");
+  b.classList.toggle("ghost", !dialogueOn);
+  document.getElementById("pttBtn").classList.toggle("hidden", !dialogueOn);
+  if (dialogueOn) { paused = true; reflectPaused(); setOpsStatus("dialogue mode — hold the mic button to speak"); }
+  else setOpsStatus("");
+}
+
+async function startTalking() {
+  if (!dialogueOn || recording) return;
+  try {
+    if (!micStream) micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) { setOpsStatus("microphone blocked: " + e.message); return; }
+  recChunks = [];
+  const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+  recorder = new MediaRecorder(micStream, mime ? { mimeType: mime } : undefined);
+  recorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+  recorder.start();
+  recording = true;
+  const b = document.getElementById("pttBtn");
+  b.textContent = "🔴 Listening… release to send";
+  setOpsStatus("listening…");
+}
+
+async function stopTalking() {
+  if (!recording || !recorder) return;
+  recording = false;
+  const b = document.getElementById("pttBtn");
+  b.disabled = true; b.textContent = "🎙 Transcribing…";
+  const done = new Promise(res => { recorder.onstop = res; });
+  recorder.stop();
+  await done;
+  const blob = new Blob(recChunks, { type: recorder.mimeType || "audio/webm" });
+  try {
+    if (blob.size < 2000) throw new Error("too short — hold the button while speaking");
+    const res = await fetch(`/session/${session.session_id}/listen?speaker=audience`, {
+      method: "POST",
+      headers: { "Content-Type": blob.type, "X-Roundtable-Token": token, "ngrok-skip-browser-warning": "true" },
+      body: blob,
+    });
+    if (!res.ok) { let d = res.status + ""; try { d = (await res.json()).detail || d; } catch (e) {} throw new Error(d); }
+    const heard = await res.json();
+    await renderTurn({ actor: "human", kind: "human", content: heard.transcript });
+    b.textContent = "🎙 Agent is answering…";
+    const data = await api("/session/message", { session_id: session.session_id });
+    const msg = data.messages && data.messages[0];
+    if (msg && (msg.content || "").trim()) {
+      const spoken = renderTurn(msg);            // type the caption while audio is fetched
+      await speakActorLine(msg.actor, msg.content);
+      await spoken;
+    }
+  } catch (e) {
+    setOpsStatus("dialogue failed: " + e.message);
+  }
+  b.disabled = false; b.textContent = "🎙 Hold to speak";
+}
+
+// Speak an earnest agent turn with its stage voice. Uses the satire audio element so
+// dialogue and satire never talk over each other. voiceMode picks the provider:
+// edge (free) by default, openai when selected; "off" stays silent.
+async function speakActorLine(actor, text) {
+  if (voiceMode === "off") return;
+  const provider = voiceMode === "openai" ? "openai" : (voiceMode === "elevenlabs" ? "elevenlabs" : "edge");
+  try {
+    const r = await api("/tts", { actor, text, provider }, 60000);
+    if (r && r.audio_b64) playAudioClip(r.audio_b64, r.audio_mime);
+  } catch (e) { /* silent degradation: the caption already shows the text */ }
 }
 
 async function summonHalcyon() {
