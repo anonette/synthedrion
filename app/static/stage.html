@@ -11,6 +11,7 @@
     --eu: #f59e0b; --eu-deep: #78350f;
     --halcyon: #5eb2e9; --halcyon-deep: #0c4a6e;
     --archivist: #d4b26a; --archivist-deep: #6b4e1c;
+    --james: #34d399; --james-deep: #065f46;
     --human: #94a3b8; --system: #f59e0b;
     --bg: #0a0d14; --panel: #121724; --ink: #e8edf6; --muted: #8a94a6;
   }
@@ -116,6 +117,12 @@
   .tag.china{background:var(--china-deep)} .tag.us{background:var(--us-deep)} .tag.eu{background:var(--eu-deep)}
   .tag.halcyon{background:var(--halcyon-deep)} .caption.halcyon{border-left-color:var(--halcyon)}
   .tag.archivist{background:var(--archivist-deep)} .caption.archivist{border-left-color:var(--archivist)}
+  .tag.james{background:var(--james-deep)} .caption.james{border-left-color:var(--james)}
+  .ops-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #55617a; margin: 0 2px 0 6px; align-self: center; }
+  .ops-sep { width: 1px; height: 22px; background: #243049; margin: 0 4px; align-self: center; }
+  .logic-chip { font-size: 11px; font-weight: 400; letter-spacing: .3px; padding: 2px 9px; border-radius: 999px; background: #241d0e; border: 1px solid var(--archivist-deep); color: var(--archivist); margin-left: 8px; }
+  .pop .pop-hint { font-size: 12px; color: #8a94a6; line-height: 1.45; margin: 4px 0 8px; }
+  .james-quote { background: #08130f; border: 1px solid var(--james-deep); border-left: 4px solid var(--james); border-radius: 10px; padding: 14px 16px; margin: 8px 0 22px; font-style: italic; font-size: 15px; line-height: 1.55; color: #d1fae5; }
   .tag.human{background:#334155} .tag.system{background:#92400e}
   .caption.satire .body { font-style: italic; font-weight: 600; font-size: clamp(22px, 3vw, 34px); }
   .satire-badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; background: #7c2d12; color: #fde68a; letter-spacing: .6px; }
@@ -194,6 +201,14 @@
   <div class="card">
     <h1>AI Cold War — Live Stage</h1>
     <p class="sub">Auto-advancing debate stage for live events. Operators can pause, inject human points and shocks, then close with a scoreboard + recap.</p>
+
+    <div style="background:#0e1526; border:1px solid #1c2740; border-radius:10px; padding:10px 14px; margin:4px 0 14px; font-size:12.5px; color:#8a94a6; line-height:1.6;">
+      <b style="color:#cbd5e1">While the debate runs</b>, use the control bar at the bottom (press <b>C</b> if it&rsquo;s hidden) to summon guest voices &mdash; each speaks once, without consuming the actors&rsquo; turn order:
+      <span style="color:#5eb2e9">&#128330; <b>Halcyon</b></span> the peace-builder (good news first, then a dare to build together) &middot;
+      <span style="color:#d4b26a">&#128450; <b>The Archivist</b></span> (really reorganizes the debate&rsquo;s knowledge archive and asks what the current order buries &mdash; pick a logic or let it rotate) &middot;
+      <span style="color:#34d399">&#127183; <b>James</b></span> the crypto-native analyst (cynical counter-read, no safety net).
+      <b style="color:#cbd5e1">&#128483; Human point</b> and <b style="color:#cbd5e1">&#9889; Shock</b> inject your own words and events.
+    </div>
 
     <label class="f">Debate prompt</label>
     <textarea id="prompt">As compute export controls tighten, China, the US, and the EU clash over who sets the rules for frontier AI.</textarea>
@@ -302,17 +317,35 @@
   <div id="themeTags" class="off"></div>
 
   <div id="ops">
-    <button class="btn sm" id="pauseBtn">⏸ Pause</button>
-    <button class="btn sm ghost" id="skipBtn">⏭ Skip</button>
-    <button class="btn sm ghost" id="interveneBtn">🗣 Human point</button>
-    <button class="btn sm warn" id="shockBtn">⚡ Shock</button>
-    <button class="btn sm" id="halcyonBtn" style="background:linear-gradient(180deg,#0ea5e9,#0369a1)">🕊 Summon Halcyon</button>
-    <button class="btn sm" id="archivistBtn" style="background:linear-gradient(180deg,#b8923f,#6b4e1c)" title="The Critical Archivist reorganizes the corpus by the next archival logic and confronts the room with what the new order buries">🗂 Summon Archivist</button>
+    <button class="btn sm" id="pauseBtn" title="Pause / resume the auto-advancing debate (Space)">⏸ Pause</button>
+    <button class="btn sm ghost" id="skipBtn" title="Stop reading time for the current turn and move on (S)">⏭ Skip</button>
+    <span class="ops-sep"></span>
+    <span class="ops-label">Inject</span>
+    <button class="btn sm ghost" id="interveneBtn" title="Say something into the debate yourself — a question, challenge, redirect or source">🗣 Human point</button>
+    <button class="btn sm warn" id="shockBtn" title="Break a fictional news event into the debate; the actors must react to it">⚡ Shock</button>
+    <span class="ops-sep"></span>
+    <span class="ops-label">Summon</span>
+    <button class="btn sm" id="halcyonBtn" style="background:linear-gradient(180deg,#0ea5e9,#0369a1)" title="Halcyon, the outsider peace-builder: one hopeful real-news item, then a dare to build something together. Speaks once, does not consume the actors&#39; turn order.">🕊 Halcyon</button>
+    <button class="btn sm" id="archivistBtn" style="background:linear-gradient(180deg,#b8923f,#6b4e1c)" title="The Critical Archivist really reorganizes the debate&#39;s knowledge archive by a chosen logic and confronts the room with what that order buries. Click to pick a logic or let it rotate.">🗂 Archivist ▾</button>
+    <button class="btn sm" id="jamesBtn" style="background:linear-gradient(180deg,#059669,#065f46)" title="The Machiavellian Crypto-Native Analyst interjects with a contrarian counter-read in the room&#39;s real currency (liquidity, exit liquidity, MEV). No fallback: a failed call shows an error, never a canned line.">🃏 James</button>
+    <span class="ops-sep"></span>
     <button class="btn sm ghost" id="satireBtn" title="Talking heads deliver brutally satirical one-liners (Xi / Trump / von der Leyen)">🎭 Brutal satire: off</button>
     <button class="btn sm ghost" id="saveTakeBtn" title="Save this satirical performance (text + audio) for replay in Lovable">💾 Save take</button>
     <div class="spacer"></div>
     <span class="hint" id="opsStatus"></span>
-    <button class="btn sm stop" id="endBtn">⏹ End &amp; score</button>
+    <button class="btn sm stop" id="endBtn" title="End the debate and show the scoreboard + recap">⏹ End &amp; score</button>
+  </div>
+</div>
+
+<!-- archivist logic popover -->
+<div class="pop hidden" id="archivistPop">
+  <h3>🗂 Summon The Critical Archivist</h3>
+  <p class="pop-hint">It really reorganizes the debate&rsquo;s knowledge archive by an archival logic, then tells the room what the new order foregrounds, what it buries, and asks a pointed question about the last speaker&rsquo;s sources.</p>
+  <select id="archivistLogic" style="width:100%"><option value="">Auto — next logic in rotation (recommended)</option></select>
+  <p class="pop-hint" id="archivistLogicNote"></p>
+  <div style="margin-top:10px; display:flex; gap:8px;">
+    <button class="btn sm" id="archivistSend" style="background:linear-gradient(180deg,#b8923f,#6b4e1c)">Reorganize the archive</button>
+    <button class="btn sm ghost" id="archivistCancel">Cancel</button>
   </div>
 </div>
 
@@ -370,16 +403,22 @@
     <div class="section-title">Sharpest exchange</div>
     <div class="sharpest" id="sharpest"></div>
 
+    <div id="jamesTakeWrap" class="hidden">
+      <div class="section-title">James&rsquo;s take</div>
+      <div class="james-quote" id="jamesTakeText"></div>
+    </div>
+
     <div class="closing-actions">
       <button class="btn ghost" id="backStage">◀ Back to stage</button>
+      <button class="btn" id="jamesTakeBtn" style="background:linear-gradient(180deg,#059669,#065f46)" title="The Analyst reads the whole transcript and gives one cynical closing counter-prediction. No fallback — a failed call shows an error.">🃏 Get James&rsquo;s take</button>
       <button class="btn" id="newDebate">New debate</button>
     </div>
   </div>
 </div>
 
 <script>
-const LABELS = { china: "China", us: "United States", eu: "European Union", halcyon: "Halcyon", archivist: "The Critical Archivist", human: "Human", system: "System" };
-const INITIALS = { china: "CN", us: "US", eu: "EU", halcyon: "🕊", archivist: "🗂" };
+const LABELS = { china: "China", us: "United States", eu: "European Union", halcyon: "Halcyon", archivist: "The Critical Archivist", james: "James, the Crypto-Native Analyst", human: "Human", system: "System" };
+const INITIALS = { china: "CN", us: "US", eu: "EU", halcyon: "🕊", archivist: "🗂", james: "🃏" };
 const HEAD_ACTORS = ["china", "us", "eu", "halcyon"];   // have talking-head avatars under /heads/
 let satireHeadsOn = false;                              // the "special module": off until connected
 let replayMode = false;                                 // true while satirizing a stored debate (no live generation)
@@ -851,8 +890,11 @@ async function renderTurn(msg) {
   } else {
     setActive(null);
   }
+  const logicChip = (msg.metadata && msg.metadata.logic_label)
+    ? ` <span class="logic-chip">${msg.metadata.experimental ? "experimental " : ""}logic: ${msg.metadata.logic_label}</span>` : "";
   document.getElementById("capSpeaker").innerHTML =
     `<span class="tag ${actor}">${LABELS[actor] || actor}</span> ${isAgent ? "speaking" : (msg.kind === "system" ? "shock" : "from the floor")}`
+    + logicChip
     + (satire ? ` <span class="satire-badge">SATIRE</span>` : "");
 
   // Speak the satire line as it appears. Server clip (edge/openai) if we got one;
@@ -948,14 +990,26 @@ function wireOps() {
 
   const ipop = document.getElementById("intervenePop");
   const spop = document.getElementById("shockPop");
-  document.getElementById("interveneBtn").onclick = () => { ipop.classList.toggle("hidden"); spop.classList.add("hidden"); };
-  document.getElementById("shockBtn").onclick = () => { spop.classList.toggle("hidden"); ipop.classList.add("hidden"); };
+  document.getElementById("interveneBtn").onclick = () => { ipop.classList.toggle("hidden"); spop.classList.add("hidden"); document.getElementById("archivistPop").classList.add("hidden"); };
+  document.getElementById("shockBtn").onclick = () => { spop.classList.toggle("hidden"); ipop.classList.add("hidden"); document.getElementById("archivistPop").classList.add("hidden"); };
   document.getElementById("interveneCancel").onclick = () => ipop.classList.add("hidden");
   document.getElementById("shockCancel").onclick = () => spop.classList.add("hidden");
   document.getElementById("interveneSend").onclick = sendIntervention;
   document.getElementById("shockSend").onclick = sendShock;
   document.getElementById("halcyonBtn").onclick = summonHalcyon;
-  document.getElementById("archivistBtn").onclick = summonArchivist;
+  const apop = document.getElementById("archivistPop");
+  document.getElementById("archivistBtn").onclick = () => {
+    apop.classList.toggle("hidden"); ipop.classList.add("hidden"); spop.classList.add("hidden");
+  };
+  document.getElementById("archivistCancel").onclick = () => apop.classList.add("hidden");
+  document.getElementById("archivistSend").onclick = () => {
+    apop.classList.add("hidden");
+    summonArchivist(document.getElementById("archivistLogic").value || null);
+  };
+  document.getElementById("archivistLogic").onchange = showArchivistLogicNote;
+  document.getElementById("jamesBtn").onclick = summonJames;
+  document.getElementById("jamesTakeBtn").onclick = fetchJamesTake;
+  populateArchivistLogics();
   document.getElementById("satireBtn").onclick = toggleSatire;
   document.getElementById("saveTakeBtn").onclick = saveSatireTake;
 
@@ -1003,20 +1057,72 @@ async function summonHalcyon() {
   paused = wasPaused; reflectPaused();
 }
 
-async function summonArchivist() {
+// The archival-logic repertoire, loaded once from the public catalog so the picker
+// stays in sync with the backend instead of hardcoding logic keys client-side.
+const archivistLogicNotes = {};
+async function populateArchivistLogics() {
+  try {
+    const r = await getJSON("/archivist/catalog?logic=geography");
+    const sel = document.getElementById("archivistLogic");
+    (r.logics || []).forEach(l => {
+      archivistLogicNotes[l.key] = (l.experimental ? "Experimental ordering — a computational artifact, not a revealed truth. " : "") + (l.note || "");
+      const o = document.createElement("option");
+      o.value = l.key;
+      o.textContent = (l.experimental ? "🧪 " : "") + l.label;
+      sel.appendChild(o);
+    });
+  } catch (e) { /* picker still works with Auto only */ }
+}
+function showArchivistLogicNote() {
+  const k = document.getElementById("archivistLogic").value;
+  document.getElementById("archivistLogicNote").textContent =
+    k ? (archivistLogicNotes[k] || "") : "Auto rotates through the whole repertoire, one logic per summons, and contrasts each order with the previous one.";
+}
+
+async function summonArchivist(logicKey) {
   const btn = document.getElementById("archivistBtn");
   const wasPaused = paused; paused = true; reflectPaused();
-  btn.disabled = true; btn.textContent = "🗂 Reorganizing the shelves…";
+  btn.disabled = true; btn.textContent = "🗂 Reorganizing…";
   try {
-    const data = await api(`/session/${session.session_id}/summon-archivist`);
+    const q = logicKey ? `?logic=${encodeURIComponent(logicKey)}` : "";
+    const data = await api(`/session/${session.session_id}/summon-archivist${q}`);
     const msg = data.messages && data.messages[0];
     if (msg) {
       if (msg.metadata && msg.metadata.logic_label) setOpsStatus("archival logic: " + msg.metadata.logic_label);
       await renderTurn(msg); await pacedWait(readMs(msg.content));
     }
-  } catch (e) { setOpsStatus("summon failed: " + e.message); }
-  btn.disabled = false; btn.textContent = "🗂 Summon Archivist";
+  } catch (e) { setOpsStatus("archivist summon failed: " + e.message); }
+  btn.disabled = false; btn.textContent = "🗂 Archivist ▾";
   paused = wasPaused; reflectPaused();
+}
+
+async function summonJames() {
+  const btn = document.getElementById("jamesBtn");
+  const wasPaused = paused; paused = true; reflectPaused();
+  btn.disabled = true; btn.textContent = "🃏 James is typing…";
+  try {
+    const data = await api(`/session/${session.session_id}/summon-james`);
+    const msg = data.messages && data.messages[0];
+    if (msg) { await renderTurn(msg); await pacedWait(readMs(msg.content)); }
+  } catch (e) { setOpsStatus("James went dark: " + e.message); }
+  btn.disabled = false; btn.textContent = "🃏 James";
+  paused = wasPaused; reflectPaused();
+}
+
+// Closing screen: fetch (or reuse the cached) end-of-debate take from the Analyst.
+async function fetchJamesTake() {
+  const btn = document.getElementById("jamesTakeBtn");
+  btn.disabled = true; btn.textContent = "🃏 James is typing…";
+  try {
+    const r = await api(`/session/${session.session_id}/james-take`);
+    document.getElementById("jamesTakeText").textContent = r.james_take || "";
+    document.getElementById("jamesTakeWrap").classList.remove("hidden");
+    btn.classList.add("hidden");
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "🃏 Get James’s take";
+    document.getElementById("jamesTakeText").textContent = "James isn’t available right now (" + e.message + ") — no canned line, by design.";
+    document.getElementById("jamesTakeWrap").classList.remove("hidden");
+  }
 }
 
 async function sendShock() {
@@ -1085,6 +1191,9 @@ function showClosingSimple(note) {
 
 function showClosing(r) {
   const wrap = document.getElementById("closing");
+  document.getElementById("jamesTakeWrap").classList.add("hidden");
+  const jbtn = document.getElementById("jamesTakeBtn");
+  jbtn.classList.remove("hidden"); jbtn.disabled = false; jbtn.textContent = "🃏 Get James’s take";
   document.getElementById("recapWarn").innerHTML =
     r.recap_warning ? `<div class="warnbox">${r.recap_warning}</div>` : "";
   document.getElementById("verdictHead").textContent = (r.verdict && r.verdict.headline) || "The room holds its ground";
