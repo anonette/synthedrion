@@ -416,12 +416,119 @@ def get_event() -> dict:
     return {"event": UPCOMING_EVENT}
 
 
+# Roundtable participants whose research inspired individual agents — shown under
+# Who's Who so the cast has visible provenance. `inspired` lists roster agent ids.
+PARTICIPANTS = [
+    {
+        "id": "james-usher",
+        "name": "James Usher",
+        "affiliation": "Dublin City University",
+        "paper": "The Algorithmic Insurgent: Stress-Testing Sovereignty in the AI Cold War's Shadow Economy",
+        "abstract": (
+            "Argues that the \"AI Cold War\" is fundamentally a performance of sovereignty, where nation states "
+            "signal control over emergent technologies while global, decentralised infrastructures simultaneously "
+            "undermine their authority."
+        ),
+        "research_interests": (
+            "Shadow financial stacks and AI-enabled crypto-laundering (Lazarus Group, APT38); regulatory arbitrage "
+            "across MiCA, the FATF Travel Rule, and unhosted wallets; cross-chain bridging and chain-hopping as "
+            "sovereignty stress-tests; the 2025 Bybit mega-hack and the A7 cluster; sovereignty as enacted versus "
+            "merely performed."
+        ),
+        "inspired": ["james"],
+        "notes": (
+            "His shadow-stack analysis also feeds the mirror-world mode: the DPRK/Lazarus crypto-incident feed that "
+            "seeds its buried-reality layer comes from exactly the illicit-flows research his paper maps. His "
+            "proposed simulation actor, The Algorithmic Insurgent, is the roundtable's candidate next guest."
+        ),
+    },
+    {
+        "id": "lena-slachmuijlder",
+        "name": "Lena Slachmuijlder",
+        "affiliation": "Search for Common Ground",
+        "paper": "Between Escalation and Cooperation: AI Agents and Geopolitical Futures",
+        "abstract": (
+            "Focusing on interaction rather than signalling, asks how AI agents trained in different geopolitical "
+            "imaginaries manage conflict and diversity. Can they model cooperation, dissent, and pluralism, or do "
+            "they reproduce rivalry and fragmentation in emerging AI futures?"
+        ),
+        "research_interests": (
+            "Digital peacebuilding and deliberative technologies across Africa and conflict-affected settings; the "
+            "relational dynamics among AI agents — whether interaction escalates polarization or converges toward "
+            "cooperation; how the design of interaction spaces (listening, signalling intent, managing disagreement) "
+            "shapes outcomes more than formal rules; how optimization goals, training data, and feedback loops "
+            "influence trust, legitimacy, and inclusion; simulations as spaces to test norms of cooperation, "
+            "escalation, and plurality before they are embedded in real systems."
+        ),
+        "inspired": ["halcyon"],
+        "notes": (
+            "Halcyon, the summonable peace-builder, is this research made playable: an agent designed to change the "
+            "interaction space itself — good news first, then a dare toward something the rivals can only build "
+            "together — testing whether the roundtable can move beyond deterministic Cold War framings."
+        ),
+    },
+    {
+        "id": "eliyahu-keller",
+        "name": "Eliyahu Keller",
+        "affiliation": "Technion — Israel Institute of Technology",
+        "paper": "Fabulously, Textually, Artificially: On the Parallels and Differences between AI and Nuclear Apocalypses",
+        "abstract": (
+            "From atomic stockpiles to energy-hungry server farms, compares nuclear deterrence and the AI Cold War. "
+            "Reading MAD across both domains — Mutually Assured Destruction and Model Autophagy Disorder — it explores "
+            "how existential risk and apocalyptic scenarios function as techniques for performing sovereignty over "
+            "globally entangled infrastructures."
+        ),
+        "research_interests": (
+            "Derrida's 1984 reading of nuclear war as \"fabulously textual\" — a fable whose ultimate threat is the "
+            "remainderless destruction of the archive, the annihilation of the conditions that make culture possible; "
+            "apocalypse as an imminent-yet-virtual horizon that structures global politics; the stockpiling logic of "
+            "deterrence versus the continuous-supply logic of server farms; the inversion by which nuclear-age "
+            "infrastructure now underwrites AI; imagining apocalyptic scenarios, after Robert J. Lifton, as extending "
+            "imagination to its limit to prevent what exceeds it."
+        ),
+        "inspired": ["archivist"],
+        "notes": (
+            "The Critical Archivist is this insight given a job: if the ultimate threat is the destruction of the "
+            "archive, then the archive is where sovereignty lives — so the roundtable keeps an agent whose whole "
+            "practice is Derrida's point that the archiving apparatus produces what it records, made visible one "
+            "reorganization at a time."
+        ),
+    },
+    {
+        "id": "oluwakorede-ajibona",
+        "name": "Oluwakorede Ajibona",
+        "affiliation": "University of Kansas",
+        "paper": "Beyond Digital Colonialism: AI Nationalism, Sovereignty, and the Misframing of Africa's Technological Futures",
+        "abstract": (
+            "Argues that \"digital colonialism\" is analytically imprecise and normatively counterproductive for AI "
+            "governance: the present moment is better understood through AI nationalism and sovereignty politics, "
+            "where states actively negotiate digital partnerships to advance domestic modernization projects."
+        ),
+        "research_interests": (
+            "Distinguishing data colonialism (Couldry and Mejias) from digital colonialism as a structural-"
+            "continuation claim; how the colonialism rhetoric collapses complex political economies into a moral "
+            "binary that forecloses governance analysis; the risk that decolonial narratives without conceptual "
+            "rigor provoke reactionary nationalism or technological disengagement; AI governance in Africa as a "
+            "contested field of geopolitical negotiation rather than a replay of nineteenth-century imperialism."
+        ),
+        "inspired": [],
+        "notes": (
+            "No single agent — this research disciplines the shared knowledge layer all three state actors argue "
+            "from. The actors reach for \"digital colonialism\" rhetorically in live sessions; this critique is the "
+            "standing counter-position in the archive, and exactly the kind of framing dispute The Critical "
+            "Archivist exists to expose."
+        ),
+    },
+]
+
+
 @app.get("/roster")
 def get_roster() -> dict:
     """Public, unauthenticated — structured 'who's who' data for the Lovable roster screen.
     Keeps the frontend's cast list in sync with what the backend actually does, instead of
-    hardcoded copy drifting out of date."""
-    return {"roster": ROSTER}
+    hardcoded copy drifting out of date. `participants` carries the researchers whose work
+    inspired individual agents, with `inspired` linking to roster agent ids."""
+    return {"roster": ROSTER, "participants": PARTICIPANTS}
 
 
 @app.get("/auth/check")
