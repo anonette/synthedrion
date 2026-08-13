@@ -1250,7 +1250,7 @@ def summon_halcyon(session_id: str) -> dict:
 
 
 @app.post("/session/{session_id}/summon-archivist", dependencies=[Depends(require_roundtable_operator)])
-def summon_archivist(session_id: str, logic: str | None = None) -> dict:
+def summon_archivist(session_id: str, logic: str | None = None, db: DBSession = Depends(get_db)) -> dict:
     """Inject one Critical Archivist intervention. Not a round-robin actor: it does not
     advance the china/us/eu order. Each summons applies the next archival logic in the
     repertoire (or ?logic=<key> to force one), computes a REAL reorganization of the wiki
@@ -1299,6 +1299,24 @@ def summon_archivist(session_id: str, logic: str | None = None) -> dict:
     state.transcript.append(msg)
     state.turn_index += 1
     _persist_session_state(state)
+    # Mirror the intervention into the notebook table so the public reflections feed
+    # never has to re-read session transcripts (which made it painfully slow).
+    try:
+        save_archivist_reflection(
+            db, kind="intervention", content=content, logic=reorg["key"],
+            meta={
+                "session_id": state.session_id,
+                "prompt": " ".join(state.prompt.split())[:120],
+                "logic_label": reorg["label"],
+                "experimental": reorg["experimental"],
+                "foreground": reorg["foreground"],
+                "suppressed": reorg["suppressed"],
+                "sealed_count": reorg.get("sealed_count", 0),
+                "reintroduced": reorg.get("reintroduce"),
+            },
+        )
+    except Exception:
+        log.exception("failed to mirror archivist intervention into reflections")
     return {
         "session_id": state.session_id,
         "turn_index": state.turn_index,
@@ -1378,30 +1396,10 @@ def archivist_reflections(limit: int = 30, db: DBSession = Depends(get_db)) -> d
     stored transcripts (same lookup the replay uses), newest first. This is the
     permanent, browsable trace of the Archivist's work across the whole project."""
     limit = max(1, min(limit, 100))
+    # Interventions are mirrored into the reflections table at summon time (and were
+    # backfilled once for historical sessions), so this is a single indexed read —
+    # no more scanning every session transcript per request.
     entries = get_archivist_reflections(db, limit=limit)
-    for s in get_all_sessions_export(db):
-        for m in (s.get("transcript") or []):
-            if m.get("actor") != "archivist":
-                continue
-            md = m.get("metadata") or {}
-            entries.append({
-                "id": None,
-                "created_at": m.get("timestamp"),
-                "kind": "intervention",
-                "logic": md.get("logic"),
-                "content": m.get("content"),
-                "meta": {
-                    "session_id": s.get("session_id"),
-                    "prompt": " ".join((s.get("prompt") or "").split())[:120],
-                    "logic_label": md.get("logic_label"),
-                    "experimental": md.get("experimental"),
-                    "foreground": md.get("foreground"),
-                    "suppressed": md.get("suppressed"),
-                    "sealed_count": md.get("sealed_count"),
-                    "reintroduced": md.get("reintroduced"),
-                },
-            })
-    entries.sort(key=lambda e: e.get("created_at") or "", reverse=True)
     about = {
         "intro": (
             "How this notebook works: the debating agents (China, US, EU) argue from a library of documents. The "

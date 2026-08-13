@@ -74,8 +74,10 @@ class ArchivistReflectionDB(Base):
     meta = Column(JSON, nullable=True)  # census stats / reorg summary backing the text
 
 
-def save_archivist_reflection(db: DBSession, kind: str, content: str, logic: Optional[str] = None, meta: Optional[dict] = None) -> int:
+def save_archivist_reflection(db: DBSession, kind: str, content: str, logic: Optional[str] = None, meta: Optional[dict] = None, created_at: Optional[datetime] = None) -> int:
     row = ArchivistReflectionDB(kind=kind, logic=logic, content=content, meta=meta)
+    if created_at is not None:
+        row.created_at = created_at  # backfill keeps the original turn timestamp
     db.add(row)
     db.commit()
     db.refresh(row)
