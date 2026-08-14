@@ -21,6 +21,20 @@ NO_LLM_TELLS_STYLE = (
 )
 
 
+_MD_EMPHASIS = re.compile(r"\*{1,3}([^*\n]+)\*{1,3}")
+_MD_HEADER = re.compile(r"^#{1,6}\s*", re.MULTILINE)
+
+
+def sanitize_spoken_text(text: str) -> str:
+    """Strip markdown decoration models sneak in despite the style ban - asterisks,
+    backticks, headers. Spoken by TTS these read as literal 'asterisk', which is
+    unlistenable on stage; captions look cleaner without them too."""
+    text = _MD_EMPHASIS.sub(r"\1", text or "")
+    text = text.replace("**", "").replace("`", "")
+    text = _MD_HEADER.sub("", text)
+    return text.replace("*", "").strip()
+
+
 ACTOR_PROMPT_PROFILES = {
     "china": {
         "identity": "Speak as a PRC strategic actor shaped by party-state discipline, sovereignty politics, developmental legitimacy, industrial policy, and long-horizon civilizational framing.",
@@ -221,6 +235,9 @@ def generate_openrouter_turn(actor: str, actor_label: str, prompt: str, notes: l
         "messages": build_actor_messages(actor, actor_label, prompt, notes, recent_context, mode),
         "temperature": 0.9,
         "top_p": 0.95,
+        # keep turns stage-length: shorter generation AND shorter TTS synthesis,
+        # the two biggest contributors to on-stage lag
+        "max_tokens": 300,
     }
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -232,7 +249,7 @@ def generate_openrouter_turn(actor: str, actor_label: str, prompt: str, notes: l
         res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
         res.raise_for_status()
         data = res.json()
-    return data["choices"][0]["message"]["content"].strip()
+    return sanitize_spoken_text(data["choices"][0]["message"]["content"])
 
 
 def generate_openrouter_propaganda_turn(actor: str, actor_label: str, prompt: str, notes: list[str], recent_context: list[dict]) -> dict[str, str]:
@@ -307,7 +324,7 @@ def generate_halcyon_turn(prompt: str, good_news: list[str], recent_context: lis
                 res = client.post(f"{HALCYON_BASE_URL}/chat/completions", headers=headers, json=payload)
                 res.raise_for_status()
                 data = res.json()
-            return data["choices"][0]["message"]["content"].strip()
+            return sanitize_spoken_text(data["choices"][0]["message"]["content"])
         except Exception as exc:
             cerit_error = exc
 
@@ -330,7 +347,7 @@ def generate_halcyon_turn(prompt: str, good_news: list[str], recent_context: lis
             res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
             res.raise_for_status()
             data = res.json()
-        return data["choices"][0]["message"]["content"].strip()
+        return sanitize_spoken_text(data["choices"][0]["message"]["content"])
     except Exception as fallback_exc:
         raise RuntimeError(f"CERIT failed ({cerit_error}); OpenRouter fallback also failed ({fallback_exc})")
 
@@ -701,7 +718,7 @@ def generate_james_take(prompt: str, transcript: list[dict], actors: list[str]) 
         res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
         res.raise_for_status()
         data = res.json()
-    take = (data["choices"][0]["message"]["content"] or "").strip()
+    take = sanitize_spoken_text(data["choices"][0]["message"]["content"] or "")
     if not take:
         raise RuntimeError("The Analyst returned an empty take")
     return take

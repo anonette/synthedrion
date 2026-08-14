@@ -30,7 +30,7 @@ from .config import (
     OPENROUTER_SITE_URL,
     WIKI_ROOT,
 )
-from .llm import NO_LLM_TELLS_STYLE
+from .llm import NO_LLM_TELLS_STYLE, sanitize_spoken_text
 from .wiki_loader import assemble_context_notes, collect_actor_pages, extract_notes
 
 
@@ -655,7 +655,7 @@ def generate_archivist_retrospective(census: dict[str, Any], notes: list[str]) -
             res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
             res.raise_for_status()
             data = res.json()
-        content = (data["choices"][0]["message"]["content"] or "").strip()
+        content = sanitize_spoken_text(data["choices"][0]["message"]["content"] or "")
         if content:
             return content
     except Exception:
@@ -736,7 +736,7 @@ def generate_archivist_meditation(reorg: dict[str, Any], notes: list[str]) -> st
             res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
             res.raise_for_status()
             data = res.json()
-        content = (data["choices"][0]["message"]["content"] or "").strip()
+        content = sanitize_spoken_text(data["choices"][0]["message"]["content"] or "")
         if content:
             return content
     except Exception:
@@ -776,7 +776,7 @@ def generate_archivist_turn(
             res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
             res.raise_for_status()
             data = res.json()
-        content = (data["choices"][0]["message"]["content"] or "").strip()
+        content = sanitize_spoken_text(data["choices"][0]["message"]["content"] or "")
         if content:
             return content
     except Exception:

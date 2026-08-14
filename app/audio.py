@@ -1,5 +1,17 @@
 """Audio generation for session replay."""
 
+import re as _re
+
+_TTS_MD = _re.compile(r"\*{1,3}([^*\n]+)\*{1,3}")
+
+
+def _clean_for_tts(text: str) -> str:
+    """Never let TTS read markdown aloud ('asterisk...') — covers newly generated
+    turns and every old stored turn replayed with audio."""
+    text = _TTS_MD.sub(r"\1", text or "")
+    return text.replace("*", "").replace("`", "").replace("#", "")
+
+
 import asyncio
 import os
 import subprocess
@@ -91,6 +103,7 @@ async def generate_satire_audio(text: str, actor: str, provider: str | None = No
 
 async def generate_tts_elevenlabs(text: str, voice_config: dict) -> bytes:
     """Generate TTS using ElevenLabs API."""
+    text = _clean_for_tts(text)
     api_key = os.getenv("ELEVENLABS_API_KEY")
     if not api_key:
         raise ValueError("ELEVENLABS_API_KEY not set")
@@ -120,6 +133,7 @@ async def generate_tts_elevenlabs(text: str, voice_config: dict) -> bytes:
 
 async def generate_tts_openai(text: str, voice_config: dict) -> bytes:
     """Generate TTS using OpenAI speech API."""
+    text = _clean_for_tts(text)
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise ValueError("OPENAI_API_KEY not set")
@@ -147,6 +161,7 @@ async def generate_tts_edge(text: str, voice_config: dict) -> bytes:
 
     Streams the mp3 into memory — avoids a temp file (the old `/tmp/...` path did
     not exist on Windows and always failed there)."""
+    text = _clean_for_tts(text)
     try:
         import edge_tts
     except ImportError:

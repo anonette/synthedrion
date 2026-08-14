@@ -983,6 +983,7 @@ async function typeOut(el, text) {
 
 // ---------- Auto-advance loop ----------
 let pendingTurn = null;   // a turn fetched across a pause is held, not dropped or rendered over the operator
+let prefetchPromise = null;  // turn N+1 generates WHILE turn N is being spoken — kills the between-turn lag
 
 async function runLoop() {
   running = true;
@@ -993,6 +994,11 @@ async function runLoop() {
     // Fetch the next turn with retries so a transient upstream hiccup (OpenRouter
     // slow/failing, or a tunnel blip) self-heals instead of freezing the debate.
     let data = pendingTurn; pendingTurn = null;
+    if (!data && prefetchPromise) {
+      // harvest the turn that was generating during the previous turn's dwell
+      data = await prefetchPromise.catch(() => null);
+      prefetchPromise = null;
+    }
     if (!data) {
       // stage-visible thinking state: the timer ticks and the caption header says so,
       // instead of a pixel-frozen stage during the 10-30s generation wait
@@ -1019,6 +1025,11 @@ async function runLoop() {
     if (paused) { pendingTurn = data; continue; }   // operator took the stage mid-fetch: hold the turn for resume
     try {
       const shown = await renderTurn(msg);
+      // start generating the NEXT turn now, while this one is being spoken and read —
+      // by the time the dwell ends it is usually ready, so turns flow with no dead air
+      if (!prefetchPromise && !paused) {
+        prefetchPromise = api("/session/message", { session_id: session.session_id }).catch(() => null);
+      }
       await pacedWait(readMs(shown), true);
     } catch (e) {
       setOpsStatus("render failed: " + e.message, true);   // never let a render error kill the loop
@@ -1176,6 +1187,10 @@ function toggleDialogue() {
 
 async function startTalking() {
   if (!dialogueOn || recording) return;
+  // the room takes the floor: silence every agent voice NOW (playing clip, browser
+  // speech, and any in-flight TTS via the voiceSeq bump), and cut short any dwell
+  stopVoice();
+  skipRequested = true;
   // a mic that was unplugged or revoked leaves dead tracks — re-acquire instead of
   // silently building a recorder on a dead stream
   if (micStream && micStream.getTracks().some(t => t.readyState === "ended")) {
