@@ -1,0 +1,16 @@
+[Unit]
+Description=AI Cold War roundtable backend (FastAPI/uvicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=aicoldwar
+Group=aicoldwar
+WorkingDirectory=/opt/aicoldwar
+EnvironmentFile=/opt/aicoldwar/.env
+ExecStart=/opt/aicoldwar/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8600
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
