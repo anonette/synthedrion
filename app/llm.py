@@ -135,6 +135,21 @@ def build_actor_messages(actor: str, actor_label: str, prompt: str, notes: list[
                     "addressing the Archivist BY NAME, and either answer the archival question, contest the "
                     "reorganization itself, or turn it against a rival's sources. Only then continue your argument."
                 )
+        elif recent_context[-1].get("kind") == "human":
+            # A real person in the room spoke. The actors' combat training makes them
+            # treat any input as a springboard for attacking rivals — observed live:
+            # an audience member asked for creative ideas and got a leverage lecture.
+            guest_directive = (
+                " IMPORTANT: the last speaker was a REAL HUMAN in the audience, not a rival state. You are now "
+                "answering a person, and being seen to answer them well is itself a geopolitical performance. "
+                "Open by addressing them directly and answer their ACTUAL question substantively before anything "
+                "else: if they asked for creative solutions or concrete ideas, you MUST propose at least one "
+                "specific, novel, actionable idea (an institution, a mechanism, a deal, an experiment) that your "
+                "actor could credibly champion — not a restatement of your position. Do not use their question as "
+                "a springboard to attack the other actors; you may score at most one brief point against a rival, "
+                "and only AFTER the person has received a real answer. End by returning the floor to them, not by "
+                "lecturing the room."
+            )
 
     system = (
         f"You are speaking as the {actor_label} actor in a live geopolitical AI simulation. "
