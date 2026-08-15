@@ -15,7 +15,7 @@ REPO="https://github.com/anonette/synthedrion.git"
 DIR="/opt/aicoldwar"
 SVC="aicoldwar"
 
-apt-get update -qq && apt-get install -y -qq git python3-venv python3-pip >/dev/null
+apt-get update -qq && apt-get install -y -qq git python3-venv python3-pip ffmpeg >/dev/null
 
 id -u aicoldwar &>/dev/null || useradd --system --home "$DIR" --shell /usr/sbin/nologin aicoldwar
 
