@@ -1048,6 +1048,53 @@ def halcyon_good_news_feed(limit: int = 50) -> dict:
     return {"entries": deduped[:limit], "total": len(deduped)}
 
 
+_HALCYON_SOUL_CACHE: dict = {"at": 0.0, "data": None}
+
+
+@app.get("/halcyon/soul")
+def halcyon_soul(db: DBSession = Depends(get_db)) -> dict:
+    """Public: the archive of Halcyon's soul — everything his crawler ever found
+    (the full Ledger of Hope, grouped by crawl) joined with every entrance he has
+    made into a debate: his actual spoken turns harvested from stored transcripts,
+    each linked to its session. Cached for 5 minutes because the transcript harvest
+    scans the whole session table."""
+    import time as _time
+    now = _time.monotonic()
+    if _HALCYON_SOUL_CACHE["data"] is not None and now - _HALCYON_SOUL_CACHE["at"] < 300:
+        return _HALCYON_SOUL_CACHE["data"]
+    entries = _parse_halcyon_ledger()
+    crawls: dict[str, list] = {}
+    for e in entries:
+        crawls.setdefault(e.get("crawl") or "undated", []).append(
+            {k: e.get(k) for k in ("title", "source", "front", "eases", "unites", "why", "url") if e.get(k)}
+        )
+    appearances = []
+    for s in get_all_sessions_export(db):
+        for m in (s.get("transcript") or []):
+            if m.get("actor") != "halcyon":
+                continue
+            appearances.append({
+                "session_id": s.get("session_id"),
+                "prompt": public_prompt(s.get("prompt") or "")[:140],
+                "created_at": m.get("timestamp") or s.get("created_at"),
+                "content": m.get("content"),
+            })
+    appearances.sort(key=lambda a: a.get("created_at") or "", reverse=True)
+    data = {
+        "about": (
+            "Halcyon never invents his hope. A crawler gathers real, recent cooperative news onto his Ledger of "
+            "Hope; each time he is summoned into a debate he opens with one of these stories, then dares the "
+            "rivals toward something they could only build together. Below: everything the crawler has found, "
+            "and every entrance he has made."
+        ),
+        "ledger": [{"crawl": k, "entries": v} for k, v in crawls.items()],
+        "appearances": appearances,
+        "appearance_count": len(appearances),
+    }
+    _HALCYON_SOUL_CACHE.update(at=now, data=data)
+    return data
+
+
 @app.get("/james/takes")
 def james_takes_feed(limit: int = 50, db: DBSession = Depends(get_db)) -> dict:
     """Public: every session with a saved take from The Machiavellian Crypto-Native Analyst,

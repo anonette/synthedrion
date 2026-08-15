@@ -187,6 +187,18 @@ def build_actor_messages(actor: str, actor_label: str, prompt: str, notes: list[
         "- do not close with a tidy moderator-style conclusion; land the point with political force\n"
         "Keep it grounded in the provided source notes."
     )
+    # Recency wins with smaller models: when a real person just spoke, the answer-the-
+    # person rules must be the LAST thing the model reads, with hard positional order —
+    # otherwise it acknowledges the human in one clause and reverts to attacking rivals.
+    if recent_context and recent_context[-1].get("kind") == "human":
+        user += (
+            "\n\nFINAL AND OVERRIDING INSTRUCTION: a real audience member just spoke. Structure your reply in "
+            "exactly this order: (1) your FIRST sentence speaks directly to that person about what they said; "
+            "(2) your SECOND sentence begins your substantive answer, and if they asked for a creative or "
+            "concrete idea, state ONE specific, novel, actionable proposal immediately and spend most of the "
+            "turn on it; (3) only in your final sentence, at most, may you jab a rival. Do not open with any "
+            "attack on China, the United States, or the European Union. Answer the person."
+        )
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
