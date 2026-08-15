@@ -1262,10 +1262,19 @@ async def save_satire_take(session_id: str, payload: dict) -> dict:
             "audio_url": audio_url,
         })
 
+    # A take saved without its debate question is anonymous on the archive page —
+    # fall back to the session's own prompt from the store when the caller omits it.
+    prompt = (payload.get("prompt") or "").strip()
+    mode = (payload.get("mode") or "").strip()
+    if not prompt or not mode:
+        state = _live_session(sid)
+        if state:
+            prompt = prompt or public_prompt(state.prompt)
+            mode = mode or state.mode
     data = {
         "session_id": sid,
-        "prompt": (payload.get("prompt") or "")[:2000],
-        "mode": payload.get("mode") or "",
+        "prompt": prompt[:2000],
+        "mode": mode,
         "count": len(turns),
         "turns": turns,
     }
