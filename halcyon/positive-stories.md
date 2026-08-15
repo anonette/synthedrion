@@ -68,3 +68,29 @@ Positive AI-cold-war stories: evidence that another path exists.
   - front: `participation` · eases: industry vs. public-interest gridlock · unites: us
   - why hopeful: Six competing companies funded a shared 503-person deliberative poll on AI agent regulation rather than lobbying separately — rivals choosing a common evidence base over a race to the bottom.
 
+## Crawl 2026-08-15 10:52 UTC
+
+- **38 countries become founding members of global AI cooperation organization: Wang Yi - China Daily** — _China Daily_
+  - front: `standards` · eases: zero-sum standards race · unites: china, global south
+  - why hopeful: 38 countries becoming founding members of a global AI cooperation organization represents a concrete multilateral effort to establish shared AI standards and cooperation.
+  - https://news.google.com/rss/articles/CBMifkFVX3lxTE9JaGlFUUI0YjJBamgxVXVkWmhqTU9zallzVU96SVFyNkNvQk9tU0N4YWNRazFGMXJiUXNLT1VzLXNIVXpINzBsWlBLSERjODRQZjBsSzVQSWhKMDJPdjFDWU9hVUZDcWxnalpIWWI4SmxROE9HTmoxaFpTVDhxUQ?oc=5
+- **China Is Establishing a "World Organization for AI Cooperation" - logos-pres.md** — _logos-pres.md_
+  - front: `standards` · eases: fragmented AI governance · unites: china, global south
+  - why hopeful: China establishing a 'World Organization for AI Cooperation' is a factual step toward creating a platform for international AI dialogue and shared standards.
+  - https://news.google.com/rss/articles/CBMilwFBVV95cUxQeG9Ja0JGZ3dfSmJWUU83aWFja19ISktORDZab2JxTjZ4RXd2d3YyenRwUFo2NGNxQ2ZuRE12bzdGQmNBZlZwUlVyRFlCbXA4bnhCb05sVnQtbUx4QWFoeHJpNGFDVVl3UDRiSlNsS1FqVGx0M3ZYai1RUDg0VG1HMjVUYkVJZVpscHI0SXBDTTRPblE1cnVJ?oc=5
+- **Ethiopia joins 29 countries to establish the International Artificial Intelligence Cooperation Organization - mint.gov.et** — _mint.gov.et_
+  - front: `dialogue` · eases: lack of multilateral AI cooperation · unites: ethiopia, 29 other countries, global south
+  - why hopeful: Ethiopia joining 29 countries to establish the International Artificial Intelligence Cooperation Organization is a concrete development fostering multilateral AI dialogue.
+  - https://news.google.com/rss/articles/CBMizAFBVV95cUxNWGtuTGtaMmpQbG1WY2FTNU4xWG9NS21QRTdOLVc4cTVqWU9zOVVGeTAyaVRNVkRjemVjN0tSeFdoQWxQbXdKaExWcTZ3cDJSQ0xwcHNvU2o2NEN3RkMwZGhyVEp6aFhCclNfWFIzRE11MTR1QlRPbDhZYUN6bVYwYzhyRjBJZHhjZWVlN2t5MjlmNHUzSi1LSGpPMHM3VDR5UWNEUnhhcFZvM0xFQ2hHY0dPaXJ5TWNGNzZKWDJJb1RvSjY0UENBNHpoaGs?oc=5
+- **Kenya is a founding member of China’s new global AI body, WAICO - tech-ish.com** — _tech-ish.com_
+  - front: `dialogue` · eases: exclusion of African nations · unites: kenya, china, global south
+  - why hopeful: Kenya being a founding member of China’s new global AI body, WAICO, shows inclusion of African nations in AI cooperation efforts.
+  - https://news.google.com/rss/articles/CBMimgFBVV95cUxPQ085NVlyV095VmNCSUlnNTI1Vk83cUhKb1NRbVFQUmlGRDYwOHNyREIxZ3hjU0RubWswV2Z6MnJZRUVzZkRoZG9MQTFqSXpPSXJlRWtRbUh3NXhadUtHREJEV3hybWNRb0dFMGxHNTQwb0hrZHB3a3dkM04xMjMzNktQRzZySUF4SVM2NU4xQkdpY1hZYzYtR2Z3?oc=5
+- **Kaspersky pushes global AI-cybersecurity cooperation at WSIS Forum - CHOSUNBIZ - Chosunbiz** — _Chosunbiz_
+  - front: `safety` · eases: cybersecurity risks in AI · unites: global actors
+  - why hopeful: Kaspersky pushing global AI-cybersecurity cooperation at WSIS Forum is a concrete step toward shared safety standards and reducing adversarial risks.
+  - https://news.google.com/rss/articles/CBMiekFVX3lxTFBQeGk4czBMRjZKZzVWNm1FeGpRMWtQeE5kNTVRTko0dEk2aWZFeUotRnpLU0ZyX09NcGJJTl9qd2lBa0NaLVJ0cm8tZkVZWFJfUGdJWGZIQnlNVE9hbXRqdmJEeEdYMHI5TW40MTNEci1UMVhGUDVFdzR30gGOAUFVX3lxTE5nUmRsTlAwaDJ0OEdmdlJlcmprOGlweGFoNFhHV0JGNU9CdU9hT3A3bldYdnNzRktfYzZYd2tFaUgtYkJaSGVsenF6VXhNcDZIeWNWck9tX0FXRHg1ZUtoZHQzcmxseUU3emxLNWUwSUZuZWNRVXNyU2xneU1lalVGMzloeEVGT2llNDRCM1E?oc=5
+- **President Lee's show of pragmatic diplomacy in US, Latin America - KOREA.net** — _KOREA.net_
+  - front: `dialogue` · eases: diplomatic tensions · unites: us, latin america, korea
+  - why hopeful: President Lee's pragmatic diplomacy in the US and Latin America represents real diplomatic engagement easing geopolitical tensions.
+  - https://news.google.com/rss/articles/CBMibkFVX3lxTE10SDVvYUtmNjQ0S0t5VzNpWHByTnNPdGNOQk9ycEVLeHdlNF9CNVd5ekRoM0ZFZW4tX2xmbTB3R3YzTjluZEFaRk1zdTYtYzg3Nnk0T21qWnloRzdSemVnNWhMcWFlQ3lWSV83MFlB?oc=5
