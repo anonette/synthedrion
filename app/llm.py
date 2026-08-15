@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from .config import ACTOR_MODELS, HALCYON_API_KEY, HALCYON_BASE_URL, HALCYON_FALLBACK_MODEL, HALCYON_MODEL, JAMES_MODEL, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, PULSE_MODEL, RECAP_MODEL
+from .config import ACTOR_MODELS, HALCYON_API_KEY, HALCYON_BASE_URL, HALCYON_FALLBACK_MODEL, HALCYON_MODEL, JAMES_MODEL, OPENROUTER_API_KEY, OPENROUTER_APP_NAME, OPENROUTER_BASE_URL, OPENROUTER_SITE_URL, PULSE_MODEL, RECAP_MODEL, SATIRE_FALLBACK_MODEL
 
 
 # Applied to every speaking voice (actors, Halcyon, James) so turns read as live spoken
@@ -513,9 +513,36 @@ def generate_satire_line(actor: str, text: str, drift: float = 0.6, max_words: i
         "presence_penalty": 0.6,
         "max_tokens": 100,   # hard ceiling so a rant can't run away past the audio window
     }
-    headers = {"Authorization": f"Bearer {HALCYON_API_KEY}", "Content-Type": "application/json"}
+    # Primary: the low-censorship CERIT endpoint. Fallback: a real OpenRouter model
+    # (same degradation philosophy as Halcyon — a different brain, never straight to
+    # canned lines; the caller's canned SATIRE_FALLBACKS remain the last resort only
+    # if BOTH brains fail). CERIT went 404 in Aug 2026, so this fallback is currently
+    # what keeps the satire generative.
+    cerit_error: Exception | None = None
+    if HALCYON_API_KEY:
+        try:
+            headers = {"Authorization": f"Bearer {HALCYON_API_KEY}", "Content-Type": "application/json"}
+            with httpx.Client(timeout=30.0) as client:
+                res = client.post(f"{HALCYON_BASE_URL}/chat/completions", headers=headers, json=payload)
+                res.raise_for_status()
+                data = res.json()
+            line = (data["choices"][0]["message"]["content"] or "").strip()
+            line = line.splitlines()[0].strip().strip('"').strip("'").strip()
+            if line:
+                return line
+        except Exception as exc:
+            cerit_error = exc
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError(f"CERIT unavailable ({cerit_error}) and OPENROUTER_API_KEY not set")
+    payload["model"] = SATIRE_FALLBACK_MODEL
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_SITE_URL,
+        "X-Title": OPENROUTER_APP_NAME,
+    }
     with httpx.Client(timeout=30.0) as client:
-        res = client.post(f"{HALCYON_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
         res.raise_for_status()
         data = res.json()
     line = (data["choices"][0]["message"]["content"] or "").strip()

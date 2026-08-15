@@ -41,6 +41,10 @@ JAMES_MODEL = os.getenv("OPENROUTER_MODEL_JAMES", RECAP_MODEL)
 # call, not canned text, so his voice degrades to a different brain, never to fabrication.
 HALCYON_FALLBACK_MODEL = os.getenv("OPENROUTER_MODEL_HALCYON_FALLBACK", RECAP_MODEL)
 
+# Real-model fallback for the satire quips when CERIT is unreachable — DeepSeek by
+# default because caricature needs a model that doesn't flinch into blandness.
+SATIRE_FALLBACK_MODEL = os.getenv("SATIRE_FALLBACK_MODEL", ACTOR_MODELS["china"])
+
 # Model for The Critical Archivist's interventions. Its offline fallback is honest by
 # construction (built from a real reorganization of the wiki corpus), so no backup model.
 ARCHIVIST_MODEL = os.getenv("OPENROUTER_MODEL_ARCHIVIST", RECAP_MODEL)
