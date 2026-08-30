@@ -594,6 +594,7 @@ PARTICIPANTS = [
     {
         "id": "alexander-cohen",
         "name": "Alexander Cohen",
+        "role": "Co-organizer",
         "affiliation": "PhD Candidate in Electronic Arts, Rensselaer Polytechnic Institute",
         "paper": "",
         "abstract": (
