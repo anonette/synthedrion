@@ -26,7 +26,7 @@ from .audio import check_replay_audio_status, ensure_replay_audio_assets, genera
 from .stt import transcribe_audio
 from .config import ACTOR_MODELS, HALCYON_LEDGER_PATH, MIRROR_VISUAL_MODEL
 from .images import generate_actor_image, image_model_config
-from .llm import SATIRE_FALLBACKS, generate_halcyon_turn, generate_james_take, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, generate_satire_line, openrouter_enabled
+from .llm import SATIRE_FALLBACKS, generate_halcyon_turn, generate_james_take, generate_openrouter_mirror_card, generate_openrouter_mirror_turn, generate_openrouter_propaganda_turn, generate_openrouter_pulse, generate_openrouter_recap, generate_openrouter_turn, generate_openrouter_wiki_proposals, generate_satire_line, openrouter_enabled
 from .threat_intel import dataset_stats, get_incident_by_id, latest_incident, prompt_from_incident, random_incident
 
 ARCHIVIST_LOGIC_KEYS = list(ARCHIVIST_LOGICS_BY_KEY)
@@ -1922,13 +1922,34 @@ def wiki_proposals(session_id: str) -> dict:
     state = _live_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="session not found")
-    proposals = [WikiProposal(**proposal) for proposal in build_wiki_proposals(state.actors, state.prompt)]
+
+    transcript = [m.model_dump() for m in state.transcript]
+    warning = None
+    if openrouter_enabled():
+        try:
+            raw = generate_openrouter_wiki_proposals(
+                prompt=state.prompt,
+                transcript=transcript,
+                actors=state.actors,
+                loaded_pages=state.loaded_pages,
+                mode=state.mode,
+            )
+        except Exception as exc:
+            raw = build_wiki_proposals(state.actors, state.prompt)
+            warning = f"LLM wiki proposals failed, used heuristic fallback: {exc}"
+    else:
+        raw = build_wiki_proposals(state.actors, state.prompt)
+
+    proposals = [WikiProposal(**proposal) for proposal in raw]
     state.wiki_proposals = proposals
     _persist_session_state(state)
-    return {
+    resp = {
         "session_id": state.session_id,
         "wiki_proposals": [proposal.model_dump() for proposal in proposals],
     }
+    if warning:
+        resp["warning"] = warning
+    return resp
 
 
 @app.get("/sessions/recent")

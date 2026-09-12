@@ -624,6 +624,112 @@ def generate_openrouter_recap(prompt: str, transcript: list[dict], actors: list[
     return _parse_json_object(data["choices"][0]["message"]["content"])
 
 
+# --- Wiki proposals: model-mined edits back to each actor's knowledge base --
+# After a debate, the Critical Archivist reads the transcript and proposes
+# concrete edits to each actor's wiki, capturing only what genuinely shifted in
+# the room. Falls back (in the caller) to the deterministic stub when the model
+# is unavailable, so the button never returns an error.
+def build_wiki_proposal_messages(
+    prompt: str,
+    transcript: list[dict],
+    actors: list[str],
+    loaded_pages: dict[str, list[str]] | None = None,
+    mode: str = "debate",
+) -> list[dict[str, str]]:
+    labels = [ACTOR_LABELS_FOR_RECAP.get(a, a.capitalize()) for a in actors]
+    lines = []
+    for idx, msg in enumerate(transcript):
+        speaker = ACTOR_LABELS_FOR_RECAP.get(msg.get("actor", ""), msg.get("actor", "unknown"))
+        kind = msg.get("kind", "agent")
+        text = " ".join((msg.get("content", "") or "").split())[:600]
+        lines.append(f"[{idx}] {speaker} ({kind}): {text}")
+    transcript_block = "\n".join(lines) or "- No turns were recorded."
+
+    pages_parts = []
+    for a in actors:
+        pgs = (loaded_pages or {}).get(a) or []
+        if pgs:
+            pages_parts.append(
+                f"{ACTOR_LABELS_FOR_RECAP.get(a, a)} (wiki/{a}-ai-policy/): "
+                + ", ".join(str(p) for p in pgs[:12])
+            )
+    pages_block = "\n".join(pages_parts) or "- (page manifest unavailable; propose edits to the actor's policy folder)"
+
+    system = (
+        "You are the Critical Archivist for a live AI Cold War roundtable. After a debate you write concrete "
+        "proposals to update each actor's knowledge base (its wiki), capturing ONLY what genuinely changed in the "
+        "room: a shifted assumption, a new strategic option put on the table, or a rhetorical move that hardened or "
+        "softened a position. You never invent facts, and you quote the transcript verbatim when you cite it. Do not "
+        "propose an edit for a position that merely restated the existing wiki. Return valid JSON only."
+    )
+    user = (
+        f"Debate prompt:\n{prompt}\n\nMode: {mode}\nActors: {', '.join(labels)}\n\n"
+        f"Wiki pages currently grounding each actor:\n{pages_block}\n\n"
+        f"Full transcript (each line prefixed with its turn index):\n{transcript_block}\n\n"
+        "Return exactly one JSON object: {\"proposals\": [ ... ]}.\n"
+        "Each proposal is an object with EXACTLY these string fields:\n"
+        "- target: the wiki path to edit. Use 'wiki/china-ai-policy/', 'wiki/us-ai-policy/' or 'wiki/eu-ai-policy/', "
+        "optionally suffixed with a specific page filename from the manifest above "
+        "(e.g. 'wiki/eu-ai-policy/eu-compute-strategy.md').\n"
+        "- reason: one or two sentences naming the specific shift this debate surfaced for that actor, citing a "
+        "verbatim phrase from the transcript in quotation marks with its [turn index].\n"
+        "- content: the actual proposed edit, as a short markdown note (2-5 sentences or a small bullet list) that "
+        "could be pasted into that wiki page. Write the changed assumption as fact-for-the-wiki, not as commentary.\n\n"
+        "Rules:\n"
+        "- 0 to 2 proposals per actor, and only for actors that actually spoke and actually shifted. Returning fewer, "
+        "or an empty list when nothing genuinely changed, is correct and expected.\n"
+        "- every quotation must be copied verbatim from a transcript line.\n"
+        "- no markdown fences around the JSON, no extra keys, valid JSON only.\n"
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def generate_openrouter_wiki_proposals(
+    prompt: str,
+    transcript: list[dict],
+    actors: list[str],
+    loaded_pages: dict[str, list[str]] | None = None,
+    mode: str = "debate",
+) -> list[dict[str, str]]:
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not set")
+
+    payload: dict[str, Any] = {
+        "model": RECAP_MODEL,
+        "messages": build_wiki_proposal_messages(prompt, transcript, actors, loaded_pages, mode),
+        "temperature": 0.3,
+        "top_p": 0.9,
+        "response_format": {"type": "json_object"},
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_SITE_URL,
+        "X-Title": OPENROUTER_APP_NAME,
+    }
+    with httpx.Client(timeout=90.0) as client:
+        res = client.post(f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        data = res.json()
+
+    obj = _parse_json_object(data["choices"][0]["message"]["content"])
+    raw = obj.get("proposals", []) if isinstance(obj, dict) else []
+    valid_targets = tuple(f"wiki/{a}-ai-policy/" for a in ("china", "us", "eu"))
+    proposals: list[dict[str, str]] = []
+    for p in raw:
+        if not isinstance(p, dict):
+            continue
+        target = str(p.get("target", "")).strip()
+        reason = str(p.get("reason", "")).strip()
+        content = str(p.get("content", "")).strip()
+        if not (reason and content):
+            continue
+        if not target.startswith(valid_targets):
+            target = "wiki/"
+        proposals.append({"target": target, "reason": reason, "content": content})
+    return proposals
+
+
 # --- James: closing cynical counter-prediction ----------------------------
 # A 4th voice, outside the china/us/eu turn-taking loop (same shape as Halcyon):
 # reads the finished transcript and delivers ONE grounded, contrarian take.
