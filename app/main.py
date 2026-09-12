@@ -1952,6 +1952,111 @@ def wiki_proposals(session_id: str) -> dict:
     return resp
 
 
+@app.post("/session/{session_id}/propaganda-posters", dependencies=[Depends(require_roundtable_operator)])
+def propaganda_posters(session_id: str, regenerate: bool = False, db: DBSession = Depends(get_db)) -> dict:
+    """Backfill propaganda posters for a finished session (typically a debate that ran in
+    prose). Generates one poster per state actor from that actor's stance in the transcript,
+    using the same generator + image pipeline as live propaganda-lab mode, and appends them as
+    poster-dialogue turns so the replay's poster gallery renders them. Persisted; pass
+    ?regenerate=true to replace existing backfilled posters. Works on archived sessions."""
+    state = load_session_from_db(session_id, db) or SESSIONS.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    def is_poster(m) -> bool:
+        return (m.metadata or {}).get("format") == "poster-dialogue"
+
+    existing = [m for m in state.transcript if is_poster(m)]
+    if existing and not regenerate:
+        return {
+            "session_id": state.session_id,
+            "posters": [m.model_dump() for m in existing],
+            "cached": True,
+        }
+    if existing and regenerate:
+        state.transcript = [m for m in state.transcript if not is_poster(m)]
+
+    actors = state.actors or ["china", "us", "eu"]
+    created: list[TranscriptMessage] = []
+    warnings: list[str] = []
+
+    for actor in actors:
+        actor_label = actor.capitalize() if actor != "us" else "United States"
+        # Ground the poster in what this actor actually argued in the debate.
+        actor_turns = [
+            m.model_dump()
+            for m in state.transcript
+            if m.actor == actor and m.kind == "agent" and not is_poster(m)
+        ][-3:]
+        recent_context = actor_turns or [m.model_dump() for m in state.transcript[-3:]]
+        try:
+            if openrouter_enabled():
+                try:
+                    propaganda = generate_openrouter_propaganda_turn(
+                        actor=actor,
+                        actor_label=actor_label,
+                        prompt=state.prompt,
+                        notes=state.context_notes.get(actor, []),
+                        recent_context=recent_context,
+                    )
+                except Exception as exc:
+                    propaganda = generate_actor_propaganda_turn(
+                        actor=actor,
+                        prompt=state.prompt,
+                        notes=state.context_notes.get(actor, []),
+                        turn_index=state.turn_index,
+                        recent_context=recent_context,
+                    )
+                    propaganda["commentary"] = f"[LLM propaganda fallback for {actor}: {exc}] {propaganda['commentary']}"
+                    warnings.append(f"{actor}: text fallback ({exc})")
+            else:
+                propaganda = generate_actor_propaganda_turn(
+                    actor=actor,
+                    prompt=state.prompt,
+                    notes=state.context_notes.get(actor, []),
+                    turn_index=state.turn_index,
+                    recent_context=recent_context,
+                )
+
+            image_data = asyncio.run(generate_actor_image(actor, propaganda["image_prompt"]))
+            image_data = _persist_image(state.session_id, image_data, f"poster-backfill-{actor}")
+            metadata = {
+                "format": "poster-dialogue",
+                "artifact_type": propaganda.get("artifact_type", "poster"),
+                "propaganda_style": propaganda.get("propaganda_style", "state-monumental"),
+                "audience": propaganda.get("audience", "general public"),
+                "affect": propaganda.get("affect", "resolve"),
+                "visual_logic": propaganda.get("visual_logic", "politically charged composition"),
+                "slogan": propaganda["slogan"],
+                "commentary": propaganda["commentary"],
+                "image_prompt": propaganda["image_prompt"],
+                "response_target": propaganda.get("response_target", ""),
+                "intended_image_stack": image_model_config(actor),
+                "backfilled": True,
+                **image_data,
+            }
+            content = _build_poster_dialogue_content(
+                propaganda["slogan"], propaganda["image_prompt"], propaganda["commentary"]
+            )
+            msg = TranscriptMessage(actor=actor, content=content, kind="agent", metadata=metadata)
+            state.transcript.append(msg)
+            state.turn_index += 1
+            created.append(msg)
+        except Exception as exc:
+            warnings.append(f"{actor}: failed ({exc})")
+
+    if created:
+        _persist_session_state(state)
+    resp = {
+        "session_id": state.session_id,
+        "posters": [m.model_dump() for m in created],
+        "cached": False,
+    }
+    if warnings:
+        resp["warnings"] = warnings
+    return resp
+
+
 @app.get("/sessions/recent")
 def get_recent_sessions_list(
     limit: int = 10,
