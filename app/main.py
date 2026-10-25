@@ -143,7 +143,14 @@ def _persist_image(session_id: str, image_data: dict, name: str) -> dict:
         })
         log.info("saved image %s -> %s (%d KB, %s/%s)", name, served, len(raw) // 1024,
                  image_data.get("image_provider"), image_data.get("image_model"))
-        return {**image_data, "image_file": served, "image_bytes": len(raw)}
+        result = {**image_data, "image_file": served, "image_bytes": len(raw)}
+        # Never keep a multi-megabyte base64 data: URI in the session transcript: it
+        # gets persisted to the DB and reloaded into memory, which ballooned the
+        # service to ~1.5 GB and triggered repeated OOM kills (see incident 2026-10).
+        # The bytes are already on disk under /session-assets/..., so point at that.
+        if url.startswith("data:"):
+            result["image_url"] = served
+        return result
     except Exception as exc:
         log.warning("failed to save image %s: %s", name, exc)
         return {**image_data, "image_save_error": str(exc)}
