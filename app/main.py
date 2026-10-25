@@ -46,7 +46,7 @@ from .models import (
     WikiProposal,
 )
 from sqlalchemy.orm import Session as DBSession
-from .session_store import SESSIONS
+from .session_store import SESSIONS, prune_sessions, touch_session
 from .database import SessionLocal
 from .wiki_loader import assemble_context_notes, collect_actor_pages, extract_notes, relative_wiki_path
 
@@ -166,6 +166,7 @@ def _live_session(session_id: str):
     restarts instead of 404ing on sessions the DB still remembers."""
     state = SESSIONS.get(session_id)
     if state is not None:
+        touch_session(session_id)
         return state
     db = SessionLocal()
     try:
@@ -176,6 +177,8 @@ def _live_session(session_id: str):
         # atomic under the GIL: if another thread resurrected concurrently, everyone
         # shares the winner instead of holding divergent copies of the session
         state = SESSIONS.setdefault(session_id, state)
+        touch_session(session_id)
+        prune_sessions()
     return state
 
 
@@ -379,12 +382,16 @@ def _generate_session_turn(state: SessionState, force_actor: str | None = None) 
 
 @app.get("/health")
 def health() -> dict:
+    # uptime monitors hit this endpoint regularly, which makes it the heartbeat
+    # that evicts idle sessions even when no one is starting new ones
+    prune_sessions()
     return {
         "status": "ok",
         "time": datetime.utcnow().isoformat(),
         "openrouter_enabled": openrouter_enabled(),
         "actor_models": ACTOR_MODELS,
         "production": os.getenv("PRODUCTION", "false").lower() == "true",
+        "live_sessions": len(SESSIONS),
     }
 
 
@@ -850,6 +857,8 @@ def start_session(request: SessionStartRequest) -> dict:
         # repetitive across sessions, and there's no dramatic reason it should always lead.
         state.next_actor_index = random.randrange(len(state.actors))
     SESSIONS[session_id] = state
+    touch_session(session_id)
+    prune_sessions()
 
     opening_messages: list[dict] = []
     next_actor_name = state.actors[state.next_actor_index] if state.actors else None
