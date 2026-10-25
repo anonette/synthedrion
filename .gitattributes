@@ -20,3 +20,7 @@ Procfile text eol=lf
 *.png binary
 *.jpg binary
 *.jpeg binary
+
+# raw/ holds scraped source documents (PDF extractions with stray control bytes);
+# eol normalization can't round-trip them and leaves files perpetually "modified"
+raw/** -text
